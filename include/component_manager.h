@@ -9,6 +9,7 @@
 
 #include <cursor_params.h>
 #include <ecs.h>
+#include <figure.h>
 #include <gl_object.h>
 #include <parametric.h>
 #include <tags.h>
@@ -26,6 +27,7 @@ struct component_manager {
   std::map<EntityType, tag_figure> figure_component;
   std::map<EntityType, tag_point> point_component;
   std::map<EntityType, cursor_params> cursor_component;
+  std::map<EntityType, selected> selected_component;
 
   EntityType add_entity();
   void delete_entity(EntityType idx);
@@ -63,6 +65,14 @@ struct component_manager {
     return get_com_bit<C>() != ct::OTHER;
   }
 
+  template <typename T> void remove_component(EntityType idx) {
+    auto &m = get_map<T>();
+    m.erase(idx);
+    entities[idx] &= ~get_com_bit<T>();
+  }
+
+  void remove_component(EntityType idx, ecs::ct cp);
+
 private:
   template <typename C> constexpr ecs::ct get_com_bit() const {
     if constexpr (std::is_same_v<C, parametric>) {
@@ -79,6 +89,8 @@ private:
       return ct::TAG_CURSOR;
     } else if constexpr (std::is_same_v<C, tag_point>) {
       return ct::TAG_POINT;
+    } else if constexpr (std::is_same_v<C, selected>) {
+      return ct::TAG_SELECTED;
     }
     return ct::OTHER;
   }
@@ -100,12 +112,12 @@ private:
       return (point_component);
     } else if constexpr (std::is_same_v<T, cursor_params>) {
       return (cursor_component);
+    } else if constexpr (std::is_same_v<T, selected>) {
+      return (selected_component);
     }
 
     throw std::runtime_error("Couldn't find map for this type");
   }
-
-  void remove_component(EntityType idx, ecs::ct cp);
 };
 
 } // namespace ecs

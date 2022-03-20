@@ -16,10 +16,11 @@ enum ct : component_bitset {
   TAG_FIGURE = 1u << 4,
   TAG_CURSOR = 1u << 5,
   TAG_POINT = 1u << 6,
+  TAG_SELECTED = 1u << 7,
   OTHER = 1u << 31,
 };
 
-constexpr std::array<ct, 8> all_components{
-    PARAMETRIC_COM, TRANSFORMATION_COM, OGL_COM,   TORUS_COM,
-    TAG_FIGURE,     TAG_CURSOR,         TAG_POINT, OTHER};
+constexpr std::array<ct, 9> all_components{
+    PARAMETRIC_COM, TRANSFORMATION_COM, OGL_COM,      TORUS_COM, TAG_FIGURE,
+    TAG_CURSOR,     TAG_POINT,          TAG_SELECTED, OTHER};
 } // namespace ecs

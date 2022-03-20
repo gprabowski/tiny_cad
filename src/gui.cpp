@@ -93,9 +93,8 @@ static auto vector_getter = [](void *vec, int idx, const char **out_text) {
 };
 
 void render_point_gui(ecs::component_manager &cm, ecs::EntityType idx,
-                      transformation &t) {
-  std::string title = std::string("Point #") + std::to_string(idx);
-  if (ImGui::TreeNode(title.c_str())) {
+                      transformation &t, tag_figure &fc) {
+  if (ImGui::TreeNode(fc.name.c_str())) {
     if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
                             100.f)) {
     }
@@ -110,15 +109,14 @@ void render_point_gui(ecs::component_manager &cm, ecs::EntityType idx,
 
 void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
                       torus_params &tp, parametric &p, gl_object &g,
-                      transformation &t) {
+                      transformation &t, tag_figure &fc) {
   using gldm = gl_object::draw_mode;
 
   static int tmp = 0;
   static int dmode = 1;
   static std::vector<std::string> combovalues{"points", "triangles"};
 
-  std::string title = std::string("Torus #") + std::to_string(idx);
-  if (ImGui::TreeNode(title.c_str())) {
+  if (ImGui::TreeNode(fc.name.c_str())) {
 
     if (ImGui::Combo("draw mode", &dmode, vector_getter,
                      static_cast<void *>(&combovalues), combovalues.size())) {
@@ -186,7 +184,26 @@ void show_gui() {
   }
 }
 
-void render_figure_gui(ecs::component_manager &cm) {
+void render_selected_edit_gui(ecs::component_manager &cm) {
+  ImGui::Begin("Selected figures:");
+  for (auto &[idx, fc] : cm.selected_component) {
+    if (cm.has_component<torus_params>(idx)) {
+      auto &tp = cm.get_component<torus_params>(idx);
+      auto &t = cm.get_component<transformation>(idx);
+      auto &g = cm.get_component<gl_object>(idx);
+      auto &p = cm.get_component<parametric>(idx);
+      auto &fc = cm.get_component<tag_figure>(idx);
+      render_torus_gui(cm, idx, tp, p, g, t, fc);
+    } else if (cm.has_component<tag_point>(idx)) {
+      auto &t = cm.get_component<transformation>(idx);
+      auto &fc = cm.get_component<tag_figure>(idx);
+      render_point_gui(cm, idx, t, fc);
+    }
+  }
+  ImGui::End();
+}
+
+void render_figure_edit_gui(ecs::component_manager &cm) {
   ImGui::Begin("All figures:");
   for (auto &[idx, fc] : cm.figure_component) {
     if (cm.has_component<torus_params>(idx)) {
@@ -194,12 +211,35 @@ void render_figure_gui(ecs::component_manager &cm) {
       auto &t = cm.get_component<transformation>(idx);
       auto &g = cm.get_component<gl_object>(idx);
       auto &p = cm.get_component<parametric>(idx);
-      render_torus_gui(cm, idx, tp, p, g, t);
+      render_torus_gui(cm, idx, tp, p, g, t, fc);
     } else if (cm.has_component<tag_point>(idx)) {
       auto &t = cm.get_component<transformation>(idx);
-      render_point_gui(cm, idx, t);
+      render_point_gui(cm, idx, t, fc);
     }
   }
+  ImGui::End();
+}
+
+void render_figure_select_gui(ecs::component_manager &cm) {
+  static std::bitset<1024> selection{0x0};
+  static std::bitset<1024> component_set{0x0};
+
+  ImGui::Begin("Select figures:");
+
+  for (auto &[idx, fc] : cm.figure_component) {
+    if (ImGui::Selectable(fc.name.c_str(), selection[idx])) {
+      if (!ImGui::GetIO().KeyCtrl) // Clear selection when CTRL is not held
+        selection.reset();
+      selection.flip(idx);
+
+      if (selection[idx]) {
+        cm.add_component<selected>(idx, {});
+      } else {
+        cm.remove_component<selected>(idx);
+      }
+    }
+  }
+
   ImGui::End();
 }
 

@@ -55,12 +55,16 @@ void render_figures(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
     if (!cm.has_component<tag_figure>(idx)) {
       continue;
     }
+    if (cm.has_component<selected>(idx)) {
+      glVertexAttrib4f(1, 1.0f, 0.0f, 0.0f, 1.0f);
+    } else {
+      glVertexAttrib4f(1, 0.0f, 0.0f, 1.0f, 1.0f);
+    }
     if (last_program != gl.program) {
       last_program = gl.program;
       glUseProgram(gl.program);
       refresh_common_uniforms(gl.program, view, proj, w, s);
     }
-    glVertexAttrib4f(1, 1.0f, 1.0f, 0.0f, 1.0f);
     auto &t = cm.get_component<transformation>(idx);
     systems::set_model_uniform(t);
     systems::render_points(gl);
@@ -122,7 +126,7 @@ ecs::EntityType add_point(ecs::component_manager &cm, transformation &&_t,
   const auto p = cm.add_entity();
   cm.add_component<transformation>(p, std::move(_t));
   cm.add_component<gl_object>(p, gl_object{program});
-  cm.add_component<tag_figure>(p, tag_figure{});
+  cm.add_component<tag_figure>(p, tag_figure{"point #" + std::to_string(p)});
   cm.add_component<tag_point>(p, tag_point{});
 
   auto &g = cm.get_component<gl_object>(p);
@@ -144,7 +148,7 @@ ecs::EntityType add_torus(ecs::component_manager &cm, parametric &&_p,
   cm.add_component<transformation>(t, std::move(_t));
   cm.add_component<gl_object>(t, gl_object{program});
   cm.add_component<torus_params>(t, std::move(_tp));
-  cm.add_component<tag_figure>(t, tag_figure{});
+  cm.add_component<tag_figure>(t, tag_figure{"torus #" + std::to_string(t)});
 
   auto &g = cm.get_component<gl_object>(t);
   auto &tp = cm.get_component<torus_params>(t);
@@ -255,7 +259,9 @@ void main_loop(std::shared_ptr<app_state> i, std::shared_ptr<GLFWwindow> w) {
   while (!glfwWindowShouldClose(w.get())) {
     process_input(i, w, cm);
     gui::render_gui();
-    gui::render_figure_gui(cm);
+    gui::render_figure_edit_gui(cm);
+    gui::render_figure_select_gui(cm);
+    gui::render_selected_edit_gui(cm);
     gui::render_cursor_gui(cm);
     render_app(cm, w, i);
     gui::show_gui();

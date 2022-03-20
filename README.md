@@ -13,6 +13,7 @@
 - [x] deleting objects
 - [x] local transforms for all objects
 - [ ] object click selection
+- [x] list selection
 - [ ] displaying the center of mass of selected objects
 - [ ] transforms around the center of mass
 - [ ] add const component getting

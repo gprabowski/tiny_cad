@@ -6,6 +6,8 @@ using cm = component_manager;
 ecs::EntityType cm::add_entity() {
   static EntityType counter = 0;
   const auto ret = counter++;
+  if (counter > 1024)
+    throw;
   entities[ret] = 0;
   return ret;
 }
@@ -30,32 +32,28 @@ void cm::remove_component(EntityType idx, ecs::ct cp) {
   // it's an error in itself
   switch (cp) {
   case ct::OGL_COM: {
-    auto &m = get_map<gl_object>();
-    m.erase(idx);
+    remove_component<gl_object>(idx);
   } break;
   case ct::PARAMETRIC_COM: {
-    auto &m = get_map<parametric>();
-    m.erase(idx);
+    remove_component<parametric>(idx);
   } break;
   case ct::TAG_CURSOR: {
-    auto &m = get_map<cursor_params>();
-    m.erase(idx);
+    remove_component<cursor_params>(idx);
   } break;
   case ct::TAG_FIGURE: {
-    auto &m = get_map<tag_figure>();
-    m.erase(idx);
+    remove_component<tag_figure>(idx);
   } break;
   case ct::TAG_POINT: {
-    auto &m = get_map<tag_point>();
-    m.erase(idx);
+    remove_component<tag_point>(idx);
   } break;
   case ct::TORUS_COM: {
-    auto &m = get_map<torus_params>();
-    m.erase(idx);
+    remove_component<torus_params>(idx);
   } break;
   case ct::TRANSFORMATION_COM: {
-    auto &m = get_map<transformation>();
-    m.erase(idx);
+    remove_component<transformation>(idx);
+  } break;
+  case ct::TAG_SELECTED: {
+    remove_component<selected>(idx);
   } break;
 
   default:
