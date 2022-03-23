@@ -3,26 +3,33 @@
 ## todo
 
 ### compulsory
+- [x] add input modality
 - [x] 3d cursor
 - [x] gui for 3d cursor 
-- [ ] changing scene / screen coords of cursor
 - [x] multiple toruses
 - [x] adding and displaying points
 - [x] new objects are created in the current cursor position
 - [x] list of all present objects
 - [x] deleting objects
 - [x] local transforms for all objects
-- [ ] object click selection
 - [x] list selection
-- [ ] displaying the center of mass of selected objects
-- [ ] transforms around the center of mass
+- [x] displaying the center of mass of selected objects
+- [x] transforms around the center of mass
+
+- [ ] changing scene / screen coords of cursor
+- [ ] object click selection
 - [ ] add const component getting
 - [ ] change maps to sparse sets
+
+### gui
+- [ ] modality
+- [ ] top menu
+- [ ] fonts
+- [ ] styling
 
 ### nice to have
 - [ ] rotation around axis
 - [ ] box select
-- [ ] IMGUI styling / fonts
 - [ ] axis view with orthogonal projection
 - [ ] type erasure for component list storage
 

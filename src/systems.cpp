@@ -1,5 +1,6 @@
 #include "gl_object.h"
 #include "torus.h"
+#include <dummy.h>
 #include <glad/glad.h>
 
 #define GLM_FORCE_RADIANS
@@ -58,15 +59,18 @@ void set_model_uniform(const transformation &t) {
   GLint program;
   glGetIntegerv(GL_CURRENT_PROGRAM, &program);
 
-  auto model = glm::translate(glm::mat4(1.0f), t.translation);
-  model = model * glm::toMat4(t.qrotation);
-  model = glm::scale(model, t.scale);
+  auto trans = glm::translate(glm::mat4(1.0f), t.translation);
+  auto scale = glm::scale(glm::mat4(1.0f), t.scale);
+  auto rot = glm::toMat4(glm::quat(glm::radians(t.rotation)));
+
+  const auto model = trans * scale * rot;
 
   glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE,
                      glm::value_ptr(model));
 }
 
 void render_points(const gl_object &g) {
+
   using gldm = gl_object::draw_mode;
 
   glBindVertexArray(g.vao);
@@ -97,9 +101,8 @@ glm::vec4 sample_torus(const torus_params &tp, const float u, const float v) {
           tp.radii[0] * sin_v, 1.0f};
 }
 
-void generate_triangles(const parametric &p,
-                        const std::vector<glm::vec4> &points,
-                        std::vector<unsigned int> &indices) {
+void generate_lines(const parametric &p, const std::vector<glm::vec4> &points,
+                    std::vector<unsigned int> &indices) {
   for (unsigned int i = 0u; i < p.samples[0]; ++i) {
     for (unsigned int j = 0u; j < p.samples[1]; ++j) {
       // add quad as two triangles
@@ -113,9 +116,13 @@ void generate_triangles(const parametric &p,
 
       indices.push_back(i1);
       indices.push_back(i2);
+
+      indices.push_back(i2);
       indices.push_back(i3);
 
       indices.push_back(i3);
+      indices.push_back(i4);
+
       indices.push_back(i4);
       indices.push_back(i1);
     }

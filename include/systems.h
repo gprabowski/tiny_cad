@@ -40,9 +40,8 @@ bool generate_points(const ParamsType &s, const parametric &p,
 }
 
 // gl object
-void generate_triangles(const parametric &p,
-                        const std::vector<glm::vec4> &points,
-                        std::vector<unsigned int> &indices);
+void generate_lines(const parametric &p, const std::vector<glm::vec4> &points,
+                    std::vector<unsigned int> &indices);
 
 void reset_gl_objects(gl_object &g);
 void render_points(const gl_object &g);

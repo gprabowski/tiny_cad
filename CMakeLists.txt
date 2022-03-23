@@ -22,10 +22,28 @@ add_library(imgui
     thirdparty/imgui/backends/imgui_impl_glfw.cpp
     thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 
+    #cpp
+    thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
+
     # demo window
     thirdparty/imgui/imgui_demo.cpp)
 
 add_library(glad thirdparty/glad/glad.c)
+add_library(imguizmo 
+    thirdparty/ImGuizmo/GraphEditor.cpp
+    thirdparty/ImGuizmo/GraphEditor.h
+    thirdparty/ImGuizmo/ImCurveEdit.cpp
+    thirdparty/ImGuizmo/ImCurveEdit.h
+    thirdparty/ImGuizmo/ImGradient.cpp
+    thirdparty/ImGuizmo/ImGradient.h
+    thirdparty/ImGuizmo/ImGuizmo.cpp
+    thirdparty/ImGuizmo/ImGuizmo.h
+    thirdparty/ImGuizmo/ImSequencer.cpp
+    thirdparty/ImGuizmo/ImSequencer.h
+    thirdparty/ImGuizmo/ImZoomSlider.h 
+)
+target_include_directories(imguizmo PUBLIC thirdparty/imgui thirdparty/imgui/backends thirdparty/glfw/include)
+
 target_include_directories(glad PUBLIC thirdparty/glfw/include/)
 
 set(SOURCES
@@ -36,6 +54,9 @@ set(SOURCES
     src/shader.cpp
     src/systems.cpp
     src/component_manager.cpp
+    src/constructors.cpp
+    src/input_handlers.cpp
+    src/rendering_systems.cpp
     include/app_state.h
     include/gl_object.h
     include/init_gl.h
@@ -59,6 +80,8 @@ add_custom_command(TARGET prog PRE_BUILD
 target_include_directories(prog PUBLIC thirdparty)
 target_include_directories(prog PUBLIC include)
 target_include_directories(prog PUBLIC thirdparty/glfw/include/)
+target_include_directories(prog PUBLIC thirdparty/ImGuizmo/)
+
 target_include_directories(imgui PUBLIC thirdparty/imgui thirdparty/imgui/backends thirdparty/glfw/include)
 
 message(STATUS "<<${OPENGL_INCLUDE_DIRS}>>")
@@ -66,3 +89,4 @@ message(STATUS "<<${OPENGL_INCLUDE_DIRS}>>")
 target_link_libraries(prog glad)
 target_link_libraries(prog glfw)
 target_link_libraries(prog imgui)
+target_link_libraries(prog imguizmo)

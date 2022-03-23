@@ -1,17 +1,34 @@
 #include "component_manager.h"
+
 #include "imgui.h"
 #include "imgui_internal.h"
-#include <gl_object.h>
-#include <gui.h>
+#include <misc/cpp/imgui_stdlib.h>
+
+#include <algorithm>
 #include <string>
-#include <systems.h>
-#include <torus.h>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <ImGuizmo.h>
+
+#include <gl_object.h>
+#include <gui.h>
+#include <systems.h>
+#include <torus.h>
+
 namespace gui {
+
+static auto vector_getter = [](void *vec, int idx, const char **out_text) {
+  auto &vector = *static_cast<std::vector<std::string> *>(vec);
+  if (idx < 0 || idx >= static_cast<int>(vector.size())) {
+    return false;
+  }
+  *out_text = vector.at(idx).c_str();
+  return true;
+};
+
 void setup_gui(std::shared_ptr<GLFWwindow> &w) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -48,7 +65,7 @@ void cleanup_gui() {
   ImGui::DestroyContext();
 }
 
-void render_gui() {
+void render_gui(std::shared_ptr<app_state> &s) {
   static bool show_demo = true;
   static bool show_another_window = false;
   static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -66,31 +83,53 @@ void render_gui() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
+
   ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), dockspace_flags);
+  ImGuizmo::BeginFrame();
 
   if (show_demo) {
     ImGui::ShowDemoWindow(&show_demo);
   }
-  // show a simple window that we create ourselves. we use a begin/end pair to
-  // create a named window
 
-  if (show_another_window) {
-    ImGui::Begin("Another Window", &show_another_window);
-    ImGui::Text("Hello from another window!");
-    if (ImGui::Button("Close me"))
-      show_another_window = false;
-    ImGui::End();
+  // show general settings window
+  static std::vector<std::string> wasd_values{"Camera Movement",
+                                              "Cursor Movement"};
+
+  static std::vector<std::string> gizmo_values{"Translation", "Rotation",
+                                               "Scaling", "Universal"};
+
+  ImGui::Begin("General Settings");
+
+  static app_state::gizmo_mode gmode{app_state::gizmo_mode::universal};
+  if (ImGui::Combo("wasd mode", reinterpret_cast<int *>(&s->imode),
+                   vector_getter, static_cast<void *>(&wasd_values),
+                   wasd_values.size())) {
+    // reaction for input mode change
   }
+
+  if (ImGui::Combo("gizmo mode", reinterpret_cast<int *>(&gmode), vector_getter,
+                   static_cast<void *>(&gizmo_values), gizmo_values.size())) {
+    // reaction for input mode change
+    switch (gmode) {
+    case app_state::gizmo_mode::translation: {
+      s->gizmo_op = ImGuizmo::OPERATION::TRANSLATE;
+    } break;
+    case app_state::gizmo_mode::rotation: {
+      s->gizmo_op = ImGuizmo::OPERATION::ROTATE;
+    } break;
+    case app_state::gizmo_mode::scaling: {
+      s->gizmo_op = ImGuizmo::OPERATION::SCALE;
+    } break;
+    case app_state::gizmo_mode::universal: {
+      s->gizmo_op = ImGuizmo::OPERATION::UNIVERSAL;
+    }
+    }
+  }
+  ImGui::Text("");
+  ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+              1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+  ImGui::End();
 }
-
-static auto vector_getter = [](void *vec, int idx, const char **out_text) {
-  auto &vector = *static_cast<std::vector<std::string> *>(vec);
-  if (idx < 0 || idx >= static_cast<int>(vector.size())) {
-    return false;
-  }
-  *out_text = vector.at(idx).c_str();
-  return true;
-};
 
 void render_point_gui(ecs::component_manager &cm, ecs::EntityType idx,
                       transformation &t, tag_figure &fc) {
@@ -114,16 +153,16 @@ void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
 
   static int tmp = 0;
   static int dmode = 1;
-  static std::vector<std::string> combovalues{"points", "triangles"};
+  static std::vector<std::string> combovalues{"points", "lines"};
 
-  if (ImGui::TreeNode(fc.name.c_str())) {
-
+  std::string tree_id = fc.name + ("##") + std::to_string(idx);
+  if (ImGui::TreeNode(tree_id.c_str())) {
     if (ImGui::Combo("draw mode", &dmode, vector_getter,
                      static_cast<void *>(&combovalues), combovalues.size())) {
       if (dmode == 0) {
         g.dmode = gldm::points;
       } else if (dmode == 1) {
-        g.dmode = gldm::triangles;
+        g.dmode = gldm::lines;
       }
     }
 
@@ -135,7 +174,7 @@ void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
       g.points.clear();
       g.indices.clear();
       systems::generate_points(tp, p, g.points);
-      systems::generate_triangles(p, g.points, g.indices);
+      systems::generate_lines(p, g.points, g.indices);
       systems::reset_gl_objects(g);
     }
 
@@ -143,8 +182,13 @@ void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
       g.points.clear();
       g.indices.clear();
       systems::generate_points(tp, p, g.points);
-      systems::generate_triangles(p, g.points, g.indices);
+      systems::generate_lines(p, g.points, g.indices);
       systems::reset_gl_objects(g);
+    }
+
+    auto &name = cm.get_component<tag_figure>(idx).name;
+
+    if (ImGui::InputText("name", &name)) {
     }
 
     if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
@@ -154,14 +198,14 @@ void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
 
     if (ImGui::SliderFloat3("rotation", glm::value_ptr(t.rotation), -180.f,
                             180.f)) {
-      t.qrotation = glm::quat(glm::radians(t.rotation));
+    }
+
+    if (ImGui::SliderFloat3("scale", glm::value_ptr(t.scale), -10.f, 10.f)) {
     }
 
     if (ImGui::Button("Delete")) {
       cm.delete_entity(idx);
     }
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::TreePop();
   }
 }
@@ -221,18 +265,24 @@ void render_figure_edit_gui(ecs::component_manager &cm) {
 }
 
 void render_figure_select_gui(ecs::component_manager &cm) {
-  static std::bitset<1024> selection{0x0};
-  static std::bitset<1024> component_set{0x0};
+  bool sel{false};
 
   ImGui::Begin("Select figures:");
 
   for (auto &[idx, fc] : cm.figure_component) {
-    if (ImGui::Selectable(fc.name.c_str(), selection[idx])) {
-      if (!ImGui::GetIO().KeyCtrl) // Clear selection when CTRL is not held
-        selection.reset();
-      selection.flip(idx);
+    sel = cm.has_component<selected>(idx);
+    std::string tree_id = fc.name + ("##") + std::to_string(idx);
+    if (ImGui::Selectable(tree_id.c_str(), sel)) {
+      if (!ImGui::GetIO().KeyCtrl) { // Clear selection when CTRL is not held
+        for (auto &[idx, c] : cm.selected_component) {
+          cm.entities[idx] &= ~ecs::ct::TAG_SELECTED;
+        }
+        cm.selected_component.clear();
+      }
 
-      if (selection[idx]) {
+      sel = !sel;
+
+      if (sel) {
         cm.add_component<selected>(idx, {});
       } else {
         cm.remove_component<selected>(idx);
@@ -240,6 +290,14 @@ void render_figure_select_gui(ecs::component_manager &cm) {
     }
   }
 
+  ImGui::End();
+  ImGui::Begin("Group Actions");
+  if (ImGui::Button("Delete Selected")) {
+    auto local_copy = cm.selected_component;
+    for (auto &[idx, s] : local_copy) {
+      cm.delete_entity(idx);
+    }
+  }
   ImGui::End();
 }
 

@@ -15,7 +15,7 @@
 
 namespace gui {
 void setup_gui(std::shared_ptr<GLFWwindow> &w);
-void render_gui();
+void render_gui(std::shared_ptr<app_state> &s);
 void show_gui();
 void cleanup_gui();
 void render_torus_gui(torus_params &tp, parametric &p, gl_object &g,

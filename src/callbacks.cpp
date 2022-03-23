@@ -11,13 +11,15 @@
 static void key_callback(GLFWwindow *window, int key, int scancode, int action,
                          int mods) {
   auto s = reinterpret_cast<app_state *>(glfwGetWindowUserPointer(window));
+  if (ImGui::IsAnyItemHovered())
+    return;
 
   if (action == GLFW_PRESS) {
-    s->just_pressed.set(key);
-    s->pressed.set(key);
-  } else {
-    s->just_pressed.reset(key);
-    s->pressed.reset(key);
+    s->just_pressed.set(static_cast<size_t>(key));
+    s->pressed.set(static_cast<size_t>(key));
+  } else if (action == GLFW_RELEASE) {
+    s->just_pressed.reset(static_cast<size_t>(key));
+    s->pressed.reset(static_cast<size_t>(key));
   }
 }
 
@@ -38,6 +40,10 @@ void mouse_button_callback(GLFWwindow *w, int button, int action, int mods) {
   auto s = reinterpret_cast<app_state *>(glfwGetWindowUserPointer(w));
   double xpos, ypos;
   glfwGetCursorPos(w, &xpos, &ypos);
+
+  if (ImGui::IsAnyItemHovered())
+    return;
+
   if (action == GLFW_PRESS) {
     s->last_mouse = {xpos, ypos};
     const auto pos = mbutton_glfw_to_enum(button);
@@ -60,7 +66,7 @@ void mouse_move_callback(GLFWwindow *w, double xpos, double ypos) {
     return;
 
   if (s->mouse_pressed[app_state::mouse_button::left] &&
-      s->pressed[GLFW_KEY_LEFT_CONTROL]) {
+      s->pressed[static_cast<size_t>(GLFW_KEY_LEFT_ALT)]) {
     float xoffset = xpos - s->last_mouse.x;
     float yoffset =
         s->last_mouse.y -

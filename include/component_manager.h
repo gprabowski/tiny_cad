@@ -71,6 +71,14 @@ struct component_manager {
     entities[idx] &= ~get_com_bit<T>();
   }
 
+  template <typename T> void remove_all() {
+    auto &m = get_map<T>();
+    for (auto &[idx, c] : m) {
+      entities[idx] &= ~get_com_bit<T>();
+    }
+    m.clear();
+  }
+
   void remove_component(EntityType idx, ecs::ct cp);
 
 private:
