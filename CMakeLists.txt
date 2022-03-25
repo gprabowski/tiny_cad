@@ -14,6 +14,8 @@ set(GLFW_BUILD_X11 OFF CACHE BOOL "Turn off X11 support" FORCE)
 
 add_subdirectory(thirdparty/glfw)
 
+add_subdirectory(thirdparty/spdlog)
+
 add_library(imgui
     #Main imgui files
     thirdparty/imgui/imgui.cpp thirdparty/imgui/imgui_draw.cpp

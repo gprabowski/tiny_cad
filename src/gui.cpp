@@ -133,9 +133,15 @@ void render_gui(std::shared_ptr<app_state> &s) {
 
 void render_point_gui(ecs::component_manager &cm, ecs::EntityType idx,
                       transformation &t, tag_figure &fc) {
-  if (ImGui::TreeNode(fc.name.c_str())) {
+  std::string tree_id = fc.name + ("##") + std::to_string(idx);
+  if (ImGui::TreeNode(tree_id.c_str())) {
     if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
                             100.f)) {
+    }
+
+    auto &name = cm.get_component<tag_figure>(idx).name;
+
+    if (ImGui::InputText("name", &name)) {
     }
 
     if (ImGui::Button("Delete")) {
