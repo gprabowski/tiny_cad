@@ -59,6 +59,25 @@ void mouse_button_callback(GLFWwindow *w, int button, int action, int mods) {
   }
 }
 
+void reorient_camera(app_state *s, double xpos, double ypos) {
+  float xoffset = xpos - s->last_mouse.x;
+  float yoffset = s->last_mouse.y -
+                  ypos; // reversed since y-coordinates range from bottom to top
+  s->last_mouse = {xpos, ypos};
+
+  const float sensitivity = 0.1f;
+  xoffset *= sensitivity;
+  yoffset *= sensitivity;
+
+  s->yaw += xoffset;
+  s->pitch = std::clamp<float>(s->pitch + yoffset, -90, 90);
+  glm::vec3 direction;
+  direction.x = cos(glm::radians(s->yaw)) * cos(glm::radians(s->pitch));
+  direction.y = sin(glm::radians(s->pitch));
+  direction.z = sin(glm::radians(s->yaw)) * cos(glm::radians(s->pitch));
+  s->cam_front = glm::normalize(direction);
+}
+
 void mouse_move_callback(GLFWwindow *w, double xpos, double ypos) {
   auto s = reinterpret_cast<app_state *>(glfwGetWindowUserPointer(w));
 
@@ -67,23 +86,7 @@ void mouse_move_callback(GLFWwindow *w, double xpos, double ypos) {
 
   if (s->mouse_pressed[app_state::mouse_button::left] &&
       s->pressed[static_cast<size_t>(GLFW_KEY_LEFT_ALT)]) {
-    float xoffset = xpos - s->last_mouse.x;
-    float yoffset =
-        s->last_mouse.y -
-        ypos; // reversed since y-coordinates range from bottom to top
-    s->last_mouse = {xpos, ypos};
-
-    const float sensitivity = 0.1f;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-
-    s->yaw += xoffset;
-    s->pitch = std::clamp<float>(s->pitch + yoffset, -90, 90);
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(s->yaw)) * cos(glm::radians(s->pitch));
-    direction.y = sin(glm::radians(s->pitch));
-    direction.z = sin(glm::radians(s->yaw)) * cos(glm::radians(s->pitch));
-    s->cam_front = glm::normalize(direction);
+    reorient_camera(s, xpos, ypos);
   }
 }
 

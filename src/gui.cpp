@@ -65,7 +65,7 @@ void cleanup_gui() {
   ImGui::DestroyContext();
 }
 
-void render_gui(std::shared_ptr<app_state> &s) {
+void start_frame(std::shared_ptr<app_state> &s) {
   static bool show_demo = true;
   static bool show_another_window = false;
   static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -90,14 +90,15 @@ void render_gui(std::shared_ptr<app_state> &s) {
   if (show_demo) {
     ImGui::ShowDemoWindow(&show_demo);
   }
+}
 
+void render_general_settings(std::shared_ptr<app_state> &s) {
   // show general settings window
   static std::vector<std::string> wasd_values{"Camera Movement",
                                               "Cursor Movement"};
 
   static std::vector<std::string> gizmo_values{"Translation", "Rotation",
                                                "Scaling", "Universal"};
-
   ImGui::Begin("General Settings");
 
   static app_state::gizmo_mode gmode{app_state::gizmo_mode::universal};
@@ -161,8 +162,9 @@ void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
   static int dmode = 1;
   static std::vector<std::string> combovalues{"points", "lines"};
 
-  std::string tree_id = fc.name + ("##") + std::to_string(idx);
-  if (ImGui::TreeNode(tree_id.c_str())) {
+  ImGui::Text("%s", fc.name.c_str());
+  std::string desc = ("Show more##") + std::to_string(idx);
+  if (ImGui::TreeNode(desc.c_str())) {
     if (ImGui::Combo("draw mode", &dmode, vector_getter,
                      static_cast<void *>(&combovalues), combovalues.size())) {
       if (dmode == 0) {
@@ -199,7 +201,6 @@ void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
 
     if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
                             100.f)) {
-      // cool
     }
 
     if (ImGui::SliderFloat3("rotation", glm::value_ptr(t.rotation), -180.f,
@@ -216,7 +217,7 @@ void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
   }
 }
 
-void show_gui() {
+void end_frame() {
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -272,9 +273,7 @@ void render_figure_edit_gui(ecs::component_manager &cm) {
 
 void render_figure_select_gui(ecs::component_manager &cm) {
   bool sel{false};
-
   ImGui::Begin("Select figures:");
-
   for (auto &[idx, fc] : cm.figure_component) {
     sel = cm.has_component<selected>(idx);
     std::string tree_id = fc.name + ("##") + std::to_string(idx);
@@ -285,9 +284,7 @@ void render_figure_select_gui(ecs::component_manager &cm) {
         }
         cm.selected_component.clear();
       }
-
       sel = !sel;
-
       if (sel) {
         cm.add_component<selected>(idx, {});
       } else {
@@ -318,7 +315,6 @@ void render_cursor_gui(ecs::component_manager &cm) {
 
     if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
                             100.f)) {
-      // cool
     }
 
     if (ImGui::Combo("current shape", &dmode, vector_getter,

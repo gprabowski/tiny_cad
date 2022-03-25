@@ -5,6 +5,6 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-namespace init_gl {
-std::shared_ptr<GLFWwindow> init_screen(const char *caption);
+namespace init {
+std::shared_ptr<GLFWwindow> init_all(const char *caption);
 }

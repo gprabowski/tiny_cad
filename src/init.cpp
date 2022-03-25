@@ -3,7 +3,8 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include <init_gl.h>
+#include <init.h>
+#include <log.h>
 
 static void framebuffer_size_callback(GLFWwindow *window, int width,
                                       int height) {
@@ -11,12 +12,12 @@ static void framebuffer_size_callback(GLFWwindow *window, int width,
 }
 
 void glfw_window_destroyer(GLFWwindow *w) {
-  printf("Destroying GLFW window\n");
+  TINY_CAD_INFO("Destroying GLFW window");
   glfwDestroyWindow(w);
 }
 
 static void glfw_error_callback(int error, const char *description) {
-  fprintf(stderr, "[GLFW ERROR] %d: %s\n", error, description);
+  TINY_CAD_ERROR("{0}: {1}", error, description);
 }
 
 void teardown() { glfwTerminate(); }
@@ -24,7 +25,7 @@ void teardown() { glfwTerminate(); }
 void glfw_die(const char *message) {
   const char *err;
   glfwGetError(&err);
-  fprintf(stderr, "%s: %s\n", message, err);
+  TINY_CAD_CRITICAL("{0} : {1} ", message, err);
   exit(-1);
 }
 
@@ -39,28 +40,16 @@ static void APIENTRY openglCallbackFunction(GLenum source, GLenum type,
   (void)severity;
   (void)length;
   (void)userParam;
-  fprintf(stderr, "%s\n", message);
+  TINY_CAD_ERROR("{0}", message);
   if (severity == GL_DEBUG_SEVERITY_HIGH) {
-    fprintf(stderr, "Aborting...\n");
+    TINY_CAD_CRITICAL("Aborting...");
     abort();
   }
 }
 
-namespace init_gl {
-std::shared_ptr<GLFWwindow> init_screen(const char *caption) {
-  static constexpr int init_w = 1600;
-  static constexpr int init_h = 900;
+namespace init {
 
-  glfwSetErrorCallback(glfw_error_callback);
-  atexit(teardown);
-
-  if (!glfwInit()) {
-    glfw_die("[ERROR] Couldn't initialize GLFW\n");
-  }
-
-  printf("[INFO] GLFW initialized\n");
-
-  // Setup GLFW window
+void glfw_window_hints() {
   glfwWindowHint(GLFW_DOUBLEBUFFER, 1);
   glfwWindowHint(GLFW_DEPTH_BITS, 24);
   glfwWindowHint(GLFW_STENCIL_BITS, 8);
@@ -73,34 +62,55 @@ std::shared_ptr<GLFWwindow> init_screen(const char *caption) {
   // Debugging
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 #endif
+}
 
-  constexpr float high_dpi_scale_factor = 1.0f;
+void glfw_setup() {
+  glfwSetErrorCallback(glfw_error_callback);
+  atexit(teardown);
 
-  auto w = std::shared_ptr<GLFWwindow>(
-      glfwCreateWindow(init_w, init_h, caption, NULL, NULL),
-      glfw_window_destroyer);
-
-  if (!w) {
-    glfw_die("[ERROR] Couldn't create a GLFW window");
+  if (!glfwInit()) {
+    glfw_die("Couldn't initialize GLFW");
   }
 
+  TINY_CAD_INFO("GLFW Successfully initialized");
+}
+
+std::shared_ptr<GLFWwindow> glfw_get_window(const int w, const int h,
+                                            const char *title) {
+  auto window = std::shared_ptr<GLFWwindow>(
+      glfwCreateWindow(w, h, title, NULL, NULL), glfw_window_destroyer);
+
+  if (!window) {
+    glfw_die("Couldn't create a GLFW window");
+  }
+  return window;
+}
+
+void glfw_set_window_options(std::shared_ptr<GLFWwindow> &w) {
   glfwMakeContextCurrent(w.get());
-
   glfwSetFramebufferSizeCallback(w.get(), framebuffer_size_callback);
-  // VSync
   glfwSwapInterval(1);
+}
 
+void glad_setup() {
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     glfw_die("[ERROR] Couldn't initialize GLAD");
   } else {
-    printf("[INFO] GLAD initialized\n");
+    TINY_CAD_INFO("GLAD Successfully initialized");
   }
+}
 
-  printf("OpenGL loaded\n");
-  printf("Vendor: %s\n", glGetString(GL_VENDOR));
-  printf("Renderer: %s\n", glGetString(GL_RENDERER));
-  printf("Version: %s\n", glGetString(GL_VERSION));
+void ogl_print_info() {
+  TINY_CAD_INFO("OpenGL loaded");
+  TINY_CAD_INFO("Vendor: {0}",
+                reinterpret_cast<const char *>(glGetString(GL_VENDOR)));
+  TINY_CAD_INFO("Renderer: {0}",
+                reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
+  TINY_CAD_INFO("Version: {0}",
+                reinterpret_cast<const char *>(glGetString(GL_VERSION)));
+}
 
+void ogl_setup(std::shared_ptr<GLFWwindow> w) {
 #ifndef RELEASE_MODE
   glEnable(GL_DEBUG_OUTPUT);
   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -110,12 +120,31 @@ std::shared_ptr<GLFWwindow> init_screen(const char *caption) {
 #endif
 
   // glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
 
   int actualWindowWidth, actualWindowHeight;
   glfwGetWindowSize(w.get(), &actualWindowWidth, &actualWindowHeight);
   glViewport(0, 0, actualWindowWidth, actualWindowHeight);
   glClearColor(0.1f, 0.3f, 0.2f, 1.0f);
+}
+
+std::shared_ptr<GLFWwindow> init_all(const char *caption) {
+  static constexpr int init_w = 1600;
+  static constexpr int init_h = 900;
+
+  // GLFW
+  glfw_setup();
+  glfw_window_hints();
+  auto w = glfw_get_window(init_w, init_h, caption);
+  glfw_set_window_options(w);
+
+  // GLAD
+  glad_setup();
+
+  // OPENGL STATE
+  ogl_print_info();
+  ogl_setup(w);
 
   return w;
 }
-} // namespace init_gl
+} // namespace init

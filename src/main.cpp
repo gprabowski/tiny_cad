@@ -1,75 +1,68 @@
-#include "component_manager.h"
-#include "gl_object.h"
-#include "parametric.h"
-
-#include "glad/glad.h"
+#include <algorithm>
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <tuple>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-// order is important here
-// as imguizmo depends on imgui
-#include <imgui.h>
-
-#define USE_IMGUI_API
-#include <ImGuizmo.h>
-
-#include <algorithm>
-#include <cstdio>
-#include <memory>
-#include <tuple>
-
 #include <app_state.h>
 #include <callbacks.h>
+#include <component_manager.h>
 #include <constructors.h>
-#include <dummy.h>
 #include <gui.h>
-#include <init_gl.h>
+#include <init.h>
 #include <input_handlers.h>
+#include <log.h>
 #include <rendering_systems.h>
 #include <shader.h>
 #include <systems.h>
-#include <tags.h>
-#include <torus.h>
 
-#include <iostream>
+namespace cst = constructors;
+namespace clb = callbacks;
+namespace hnd = handlers;
+namespace sys = systems;
 
-void main_loop(std::shared_ptr<app_state> i, std::shared_ptr<GLFWwindow> w) {
-  ecs::component_manager cm;
-  glEnable(GL_DEPTH_TEST);
-  i->default_program = shader::LoadProgram("resources/general");
-
-  auto c_gl = constructors::get_cursor_geometry(i->default_program);
-  const auto c =
-      constructors::add_cursor(cm, transformation{}, std::move(c_gl));
-  auto &cursor_transf = cm.get_component<transformation>(c);
-
-  glUseProgram(i->default_program);
+void main_loop(ecs::component_manager &cm, std::shared_ptr<app_state> state,
+               std::shared_ptr<GLFWwindow> w) {
   while (!glfwWindowShouldClose(w.get())) {
-    handlers::process_input(i, w, cm, cursor_transf);
-    gui::render_gui(i);
+    hnd::process_input(state, w, cm);
+
+    gui::start_frame(state);
+
+    gui::render_general_settings(state);
     gui::render_figure_edit_gui(cm);
     gui::render_figure_select_gui(cm);
     gui::render_selected_edit_gui(cm);
     gui::render_cursor_gui(cm);
-    systems::render_app(cm, w, i);
 
-    gui::show_gui();
+    sys::render_app(cm, w, state);
+
+    gui::end_frame();
+
     glfwSwapBuffers(w.get());
     glfwPollEvents();
   }
 }
 
 int main() {
+  log::init();
+
+  auto window = init::init_all("tinyCAD");
+
+  clb::set_keyboard_callback(window);
+  clb::set_mouse_callback(window);
+
   auto state = std::make_shared<app_state>();
-  auto window = init_gl::init_screen("GLFW test");
-
+  state->default_program = shader::LoadProgram("resources/general");
   glfwSetWindowUserPointer(window.get(), static_cast<void *>(state.get()));
+  glUseProgram(state->default_program);
 
-  callbacks::set_keyboard_callback(window);
-  callbacks::set_mouse_callback(window);
+  ecs::component_manager cm;
+  cst::setup_initial_geometry(cm, state->default_program);
 
   gui::setup_gui(window);
-  main_loop(state, window);
+  main_loop(cm, state, window);
   gui::cleanup_gui();
 }

@@ -2,9 +2,11 @@
 #include <fstream>
 #include <iterator>
 #include <limits>
-#include <shader.h>
 
 #include <glad/glad.h>
+
+#include <log.h>
+#include <shader.h>
 
 std::string
 shader::read_shader_file(const std::filesystem::path::value_type *shader_file) {
@@ -41,7 +43,7 @@ GLuint shader::LoadProgram(const std::string &name) {
     GLsizei log_length = 0;
     GLchar message[1024];
     glGetShaderInfoLog(vertex_shader, 1024, &log_length, message);
-    fprintf(stderr, "[VERT SHADER] %s\n", message);
+    TINY_CAD_ERROR("[VERT SHADER] {0}", message);
   }
 
   GLuint frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -54,7 +56,7 @@ GLuint shader::LoadProgram(const std::string &name) {
     GLsizei log_length = 0;
     GLchar message[1024];
     glGetShaderInfoLog(frag_shader, 1024, &log_length, message);
-    fprintf(stderr, "[FRAG SHADER] %s\n", message);
+    TINY_CAD_ERROR("[FRAG SHADER] {0}", message);
   }
 
   GLuint program = glCreateProgram();
@@ -69,7 +71,7 @@ GLuint shader::LoadProgram(const std::string &name) {
     GLsizei log_length = 0;
     GLchar message[1024];
     glGetProgramInfoLog(program, 1024, &log_length, message);
-    fprintf(stderr, "[PROG LINK] %s\n", message);
+    TINY_CAD_ERROR("[PROG LINK] {0}", message);
   }
 
   glDeleteShader(vertex_shader);

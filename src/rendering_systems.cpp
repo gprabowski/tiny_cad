@@ -118,10 +118,6 @@ void render_figures(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
 
       gizmo_changed = true;
 
-      // ImGuizmo::DecomposeMatrixToComponents(
-      //    glm::value_ptr(model), glm::value_ptr(trans), glm::value_ptr(rot),
-      //   glm::value_ptr(scale));
-
       decompose(model, trans, scale, rot);
 
       scale = glm::vec3{1.f, 1.f, 1.f} + scale - prev_scale;

@@ -73,4 +73,8 @@ ecs::EntityType add_torus(ecs::component_manager &cm, parametric &&_p,
 
   return t;
 }
+
+void setup_initial_geometry(ecs::component_manager &cm, GLuint program) {
+  add_cursor(cm, transformation{}, get_cursor_geometry(program));
+}
 } // namespace constructors

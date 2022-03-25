@@ -1,6 +1,5 @@
 #include "gl_object.h"
 #include "torus.h"
-#include <dummy.h>
 #include <glad/glad.h>
 
 #define GLM_FORCE_RADIANS
@@ -13,15 +12,24 @@
 namespace systems {
 
 void reset_gl_objects(gl_object &g) {
-  glCreateBuffers(1, &g.vbo);
-  glNamedBufferStorage(g.vbo, sizeof(g.points[0]) * g.points.size(),
-                       g.points.data(), GL_DYNAMIC_STORAGE_BIT);
+  if (!glIsBuffer(g.vbo)) {
+    glCreateBuffers(1, &g.vbo);
+  }
+  // allocation or reallocation
+  glNamedBufferData(g.vbo, sizeof(g.points[0]) * g.points.size(),
+                    g.points.data(), GL_DYNAMIC_DRAW);
 
-  glCreateBuffers(1, &g.ebo);
-  glNamedBufferStorage(g.ebo, sizeof(unsigned int) * g.indices.size(),
-                       g.indices.data(), GL_DYNAMIC_STORAGE_BIT);
+  if (!glIsBuffer(g.ebo)) {
+    glCreateBuffers(1, &g.ebo);
+  }
+  // allocation or reallocation
+  glNamedBufferData(g.ebo, sizeof(unsigned int) * g.indices.size(),
+                    g.indices.data(), GL_DYNAMIC_DRAW);
 
-  glCreateVertexArrays(1, &g.vao);
+  if (!glIsVertexArray(g.vao)) {
+    glCreateVertexArrays(1, &g.vao);
+  }
+
   glVertexArrayVertexBuffer(g.vao, 0, g.vbo, 0, sizeof(g.points[0]));
   glVertexArrayElementBuffer(g.vao, g.ebo);
 
@@ -70,7 +78,6 @@ void set_model_uniform(const transformation &t) {
 }
 
 void render_points(const gl_object &g) {
-
   using gldm = gl_object::draw_mode;
 
   glBindVertexArray(g.vao);

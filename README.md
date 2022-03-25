@@ -1,4 +1,4 @@
-# MG1 CAD Renderer
+# tinyCAD
 
 ## todo
 
