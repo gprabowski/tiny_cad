@@ -15,7 +15,6 @@
 #include <init.h>
 #include <input_handlers.h>
 #include <log.h>
-#include <rendering_systems.h>
 #include <shader.h>
 #include <systems.h>
 

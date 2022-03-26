@@ -1,13 +1,32 @@
 #pragma once
 
 #include "torus.h"
+#include <app_state.h>
 #include <component_manager.h>
 #include <ecs.h>
 #include <gl_object.h>
+#include <memory>
 #include <parametric.h>
 #include <vector>
 
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+
 namespace systems {
+
+void render_figures(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
+                    std::shared_ptr<app_state> s);
+
+void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
+                std::shared_ptr<app_state> i);
+
+void render_cursors(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
+                    std::shared_ptr<app_state> s);
+
+void refresh_common_uniforms(GLuint program, const glm::mat4 &view,
+                             const glm::mat4 proj,
+                             std::shared_ptr<GLFWwindow> w,
+                             std::shared_ptr<app_state> s);
 
 glm::vec4 sample_torus(const torus_params &tp, const float u, const float v);
 
@@ -29,8 +48,8 @@ bool generate_points(const ParamsType &s, const parametric &p,
   const auto u_inv_div = 1.0f / static_cast<float>(p.samples[0]);
   const auto v_inv_div = 1.0f / static_cast<float>(p.samples[1]);
 
-  for (unsigned int i = 0u; i < p.samples[0]; ++i) {
-    for (unsigned int j = 0u; j < p.samples[1]; ++j) {
+  for (int i = 0u; i < p.samples[0]; ++i) {
+    for (int j = 0u; j < p.samples[1]; ++j) {
       out_vertices.emplace_back(
           sample<ParamsType>(s, p.u_min + u_diff * i * u_inv_div,
                              p.v_min + v_diff * j * v_inv_div));

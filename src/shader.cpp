@@ -18,7 +18,7 @@ shader::read_shader_file(const std::filesystem::path::value_type *shader_file) {
 
   ifs.open(shader_file);
   ifs.ignore(std::numeric_limits<std::streamsize>::max());
-  auto size = ifs.gcount();
+  // auto size = ifs.gcount();
 
   ifs.clear();
   ifs.seekg(0, std::ios_base::beg);

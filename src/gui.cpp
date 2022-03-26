@@ -67,9 +67,6 @@ void cleanup_gui() {
 
 void start_frame(std::shared_ptr<app_state> &s) {
   static bool show_demo = true;
-  static bool show_another_window = false;
-  static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
   ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
   ImGuiWindowFlags host_window_flags = 0;
   host_window_flags |= ImGuiWindowFlags_NoTitleBar |
@@ -126,7 +123,7 @@ void render_general_settings(std::shared_ptr<app_state> &s) {
     }
     }
   }
-  ImGui::Text("");
+  ImGui::Text(" ");
   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
               1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
   ImGui::End();
@@ -158,7 +155,6 @@ void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
                       transformation &t, tag_figure &fc) {
   using gldm = gl_object::draw_mode;
 
-  static int tmp = 0;
   static int dmode = 1;
   static std::vector<std::string> combovalues{"points", "lines"};
 
