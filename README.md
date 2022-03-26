@@ -7,6 +7,7 @@
 - [ ] object click selection
 - [ ] add const component getting
 - [ ] change maps to sparse sets
+- [ ] get rid of passing cm, pass vectors to iterate over instead
 
 ### QoL
 - [ ] naming of components / systems
