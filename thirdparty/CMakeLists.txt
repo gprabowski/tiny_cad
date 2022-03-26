@@ -41,3 +41,4 @@ set(GLFW_BUILD_X11 OFF CACHE BOOL "Turn off X11 support" FORCE)
 
 add_subdirectory(glfw)
 add_subdirectory(spdlog)
+add_subdirectory(glm)
