@@ -13,8 +13,10 @@ set(SOURCES
 
 add_executable(tiny_cad)
 
-target_compile_options(tiny_cad PRIVATE -Werror -Wall)
-target_compile_features(tiny_cad PRIVATE cxx_std_17)
+target_compile_options(tiny_cad PUBLIC -Werror -Wall)
+target_compile_features(tiny_cad PUBLIC cxx_std_17)
+set_target_properties(tiny_cad PROPERTIES
+    CXX_STANDARD 17 )
 
 target_sources(tiny_cad PUBLIC ${SOURCES})
 

@@ -24,7 +24,8 @@ void render_torus_gui(torus_params &tp, parametric &p, gl_object &g,
 void render_general_settings(std::shared_ptr<app_state> &s);
 void render_figure_edit_gui(ecs::component_manager &cm);
 void render_figure_select_gui(ecs::component_manager &cm);
-void render_selected_edit_gui(ecs::component_manager &cm);
+void render_selected_edit_gui(ecs::component_manager &cm,
+                              std::vector<ecs::EntityType> &sel);
 void render_cursor_gui(ecs::component_manager &cm);
 
 } // namespace gui

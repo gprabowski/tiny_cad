@@ -30,15 +30,16 @@ void main_loop(ecs::component_manager &cm, std::shared_ptr<app_state> state,
 
     gui::start_frame(state);
 
+    auto sel = sys::render_app(cm, w, state);
+
     gui::render_general_settings(state);
-    gui::render_figure_edit_gui(cm);
+    // gui::render_figure_edit_gui(cm);
     gui::render_figure_select_gui(cm);
-    gui::render_selected_edit_gui(cm);
+    gui::render_selected_edit_gui(cm, sel);
     gui::render_cursor_gui(cm);
-
-    sys::render_app(cm, w, state);
-
     gui::end_frame();
+
+    sys::update_changed_relationships(cm, sel);
 
     glfwSwapBuffers(w.get());
     glfwPollEvents();

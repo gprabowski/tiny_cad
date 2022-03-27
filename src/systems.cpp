@@ -1,5 +1,5 @@
-#include "gl_object.h"
-#include "torus.h"
+#include <set>
+
 #include <glad/glad.h>
 
 #define GLM_FORCE_RADIANS
@@ -8,7 +8,9 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include <dummy.h>
+#include <gl_object.h>
 #include <systems.h>
+#include <torus.h>
 
 namespace systems {
 
@@ -68,9 +70,9 @@ void set_model_uniform(const transformation &t) {
   GLint program;
   glGetIntegerv(GL_CURRENT_PROGRAM, &program);
 
-  auto trans = glm::translate(glm::mat4(1.0f), t.translation);
-  auto scale = glm::scale(glm::mat4(1.0f), t.scale);
-  auto rot = glm::toMat4(glm::quat(glm::radians(t.rotation)));
+  const auto trans = glm::translate(glm::mat4(1.0f), t.translation);
+  const auto scale = glm::scale(glm::mat4(1.0f), t.scale);
+  const auto rot = glm::toMat4(glm::quat(glm::radians(t.rotation)));
 
   const auto model = trans * scale * rot;
 
@@ -90,11 +92,15 @@ void render_points(const gl_object &g) {
   } else if (g.dmode == gldm::lines) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glDrawElements(GL_LINES, g.indices.size(), GL_UNSIGNED_INT, NULL);
+  } else if (g.dmode == gldm::line_strip) {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glDrawElements(GL_LINE_STRIP, g.indices.size(), GL_UNSIGNED_INT, NULL);
   } else if (g.dmode == gldm::triangles) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDrawElements(GL_TRIANGLES, g.indices.size(), GL_UNSIGNED_INT, NULL);
   }
   glBindVertexArray(0);
+  glPointSize(1.0f);
 }
 
 glm::vec4 sample_torus(const torus_params &tp, const float u, const float v) {
@@ -154,10 +160,10 @@ void refresh_common_uniforms(GLuint program, const glm::mat4 &view,
                              const glm::mat4 proj,
                              std::shared_ptr<GLFWwindow> w,
                              std::shared_ptr<app_state> s) {
-  glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE,
-                     glm::value_ptr(view));
-  glUniformMatrix4fv(glGetUniformLocation(program, "proj"), 1, GL_FALSE,
-                     glm::value_ptr(proj));
+  glProgramUniformMatrix4fv(program, glGetUniformLocation(program, "view"), 1,
+                            GL_FALSE, glm::value_ptr(view));
+  glProgramUniformMatrix4fv(program, glGetUniformLocation(program, "proj"), 1,
+                            GL_FALSE, glm::value_ptr(proj));
 }
 
 void decompose(const glm::mat4 &m, glm::vec3 &trans, glm::vec3 &scale,
@@ -171,11 +177,14 @@ void decompose(const glm::mat4 &m, glm::vec3 &trans, glm::vec3 &scale,
   rot = glm::degrees(glm::eulerAngles(glm::quat_cast(m_rot)));
 }
 
-void render_figures(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
-                    std::shared_ptr<app_state> s) {
+void render_figures(
+    const std::vector<ecs::EntityType> selected_indices,
+    const std::vector<ecs::EntityType> unselected_indices,
+    ecs::ComponentStorage<transformation> &transformation_component,
+    ecs::ComponentStorage<gl_object> &ogl_component,
+    std::shared_ptr<GLFWwindow> w, std::shared_ptr<app_state> s,
+    glm::vec3 &center_out) {
   static dummy_point center_of_weight{get_initial_dummy(s->default_program)};
-  static glm::vec3 prev_scale = {1.0f, 1.0f, 1.0f};
-  static bool gizmo_changed = false;
 
   GLint _last_program;
   glGetIntegerv(GL_CURRENT_PROGRAM, &_last_program);
@@ -191,95 +200,101 @@ void render_figures(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
     refresh_common_uniforms(last_program, view, proj, w, s);
   }
 
-  for (const auto &[idx, gl] : cm.ogl_components) {
-    if (!cm.has_component<tag_figure>(idx)) {
-      continue;
-    }
-
-    auto &t = cm.get_component<transformation>(idx);
-
-    if (cm.has_component<selected>(idx)) {
-      glVertexAttrib4f(1, 1.0f, 0.0f, 0.0f, 1.0f);
-      center_of_weight.t.translation += t.translation;
-    } else {
-      glVertexAttrib4f(1, 0.0f, 0.0f, 1.0f, 1.0f);
-    }
-    if (last_program != gl.program) {
-      last_program = gl.program;
-      glUseProgram(gl.program);
-      refresh_common_uniforms(gl.program, view, proj, w, s);
-    }
+  for (const auto idx : unselected_indices) {
+    auto &t = transformation_component[idx];
+    auto &gl = ogl_component[idx];
+    glUseProgram(gl.program);
+    refresh_common_uniforms(gl.program, view, proj, w, s);
     systems::set_model_uniform(t);
+    glVertexAttrib4f(1, 0.0f, 0.0f, 1.0f, 1.0f);
     systems::render_points(gl);
   }
 
-  center_of_weight.t.translation *= (1.f / cm.selected_component.size());
+  for (const auto idx : selected_indices) {
+    auto &t = transformation_component[idx];
+    auto &gl = ogl_component[idx];
+    refresh_common_uniforms(gl.program, view, proj, w, s);
+    systems::set_model_uniform(t);
+    glVertexAttrib4f(1, 1.0f, 0.0f, 0.0f, 1.0f);
+    center_of_weight.t.translation += t.translation;
+    systems::render_points(gl);
+  }
+
+  center_of_weight.t.translation *= (1.f / selected_indices.size());
+
   glVertexAttrib4f(1, 1.0f, 1.0f, 1.0f, 1.0f);
   systems::set_model_uniform(center_of_weight.t);
   systems::render_points(center_of_weight.g);
-  // gizmo
-  if (cm.selected_component.size()) {
-    ImGui::Begin("gizmo");
-    ImGuizmo::SetOrthographic(false);
-    ImGuizmo::SetDrawlist();
-    auto w_w = ImGui::GetWindowWidth();
-    auto w_h = ImGui::GetWindowHeight();
-    ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, w_w,
-                      w_h);
-    auto model =
-        glm::translate(glm::mat4(1.0f), center_of_weight.t.translation);
 
-    ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj),
-                         s->gizmo_op, ImGuizmo::MODE::WORLD,
-                         glm::value_ptr(model));
-
-    if (ImGuizmo::IsUsing()) {
-      glm::vec3 trans;
-      glm::vec3 rot;
-      glm::vec3 scale;
-
-      gizmo_changed = true;
-
-      decompose(model, trans, scale, rot);
-
-      scale = glm::vec3{1.f, 1.f, 1.f} + scale - prev_scale;
-      trans = trans - center_of_weight.t.translation;
-
-      auto mtrans = glm::translate(glm::mat4(1.0f), trans);
-      auto mscale = glm::scale(glm::mat4(1.0f), scale);
-      auto mrot = glm::toMat4(glm::quat(glm::radians(rot)));
-
-      model = mtrans * mscale * mrot;
-
-      prev_scale += scale - glm::vec3{1.0f, 1.0f, 1.0f};
-
-      for (auto &[idx, tmp] : cm.selected_component) {
-        auto &t = cm.get_component<transformation>(idx);
-
-        auto trans = glm::translate(
-            glm::mat4(1.0f), t.translation - center_of_weight.t.translation);
-        auto scale = glm::scale(glm::mat4(1.0f), t.scale);
-        auto rot = glm::toMat4(glm::quat(glm::radians(t.rotation)));
-
-        auto tmodel = trans * scale * rot;
-
-        tmodel = model * tmodel;
-
-        decompose(tmodel, t.translation, t.scale, t.rotation);
-        t.translation += center_of_weight.t.translation;
-      }
-    } else if (gizmo_changed == true && !ImGuizmo::IsOver()) {
-      gizmo_changed = false;
-      prev_scale = {1.0f, 1.0f, 1.0f};
-    }
-    ImGui::End();
-  }
-
+  center_out = center_of_weight.t.translation;
   center_of_weight.t.translation = {0.0f, 0.0f, 0.0f};
 }
 
-void render_cursors(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
-                    std::shared_ptr<app_state> s) {
+bool render_and_apply_gizmo(
+    const std::vector<ecs::EntityType> indices,
+    ecs::ComponentStorage<transformation> &transformation_component,
+    std::shared_ptr<GLFWwindow> &w, std::shared_ptr<app_state> &s,
+    const glm::vec3 &center) {
+  bool ret{false};
+
+  static glm::vec3 prev_scale = {1.0f, 1.0f, 1.0f};
+  static bool gizmo_changed = false;
+
+  int display_w, display_h;
+  glfwGetFramebufferSize(w.get(), &display_w, &display_h);
+  auto proj = glm::perspective(45.f, static_cast<float>(display_w) / display_h,
+                               0.1f, 1000.f);
+  auto view = glm::lookAt(s->cam_pos, s->cam_pos + s->cam_front, s->cam_up);
+
+  ImGui::Begin("gizmo");
+  ImGuizmo::SetOrthographic(false);
+  ImGuizmo::SetDrawlist();
+  auto w_w = ImGui::GetWindowWidth();
+  auto w_h = ImGui::GetWindowHeight();
+  ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, w_w, w_h);
+  auto model = glm::translate(glm::mat4(1.0f), center);
+
+  ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), s->gizmo_op,
+                       ImGuizmo::MODE::WORLD, glm::value_ptr(model));
+
+  if (ImGuizmo::IsUsing()) {
+    glm::vec3 trans;
+    glm::vec3 rot;
+    glm::vec3 scale;
+    ret = true;
+    gizmo_changed = true;
+    decompose(model, trans, scale, rot);
+    scale = glm::vec3{1.f, 1.f, 1.f} + scale - prev_scale;
+    trans = trans - center;
+    auto mtrans = glm::translate(glm::mat4(1.0f), trans);
+    auto mscale = glm::scale(glm::mat4(1.0f), scale);
+    auto mrot = glm::toMat4(glm::quat(glm::radians(rot)));
+    model = mtrans * mscale * mrot;
+    prev_scale += scale - glm::vec3{1.0f, 1.0f, 1.0f};
+    for (const auto idx : indices) {
+      auto &t = transformation_component[idx];
+      const auto trans =
+          glm::translate(glm::mat4(1.0f), t.translation - center);
+      const auto scale = glm::scale(glm::mat4(1.0f), t.scale);
+      const auto rot = glm::toMat4(glm::quat(glm::radians(t.rotation)));
+      const auto tmodel = model * trans * scale * rot;
+      decompose(tmodel, t.translation, t.scale, t.rotation);
+      t.translation += center;
+    }
+  } else if (gizmo_changed == true && !ImGuizmo::IsOver()) {
+    gizmo_changed = false;
+    prev_scale = {1.0f, 1.0f, 1.0f};
+  }
+  ImGui::End();
+  return ret;
+}
+
+void render_cursors(
+    const std::vector<ecs::EntityType> indices,
+    const ecs::ComponentStorage<gl_object> &ogl_components,
+    ecs::ComponentStorage<transformation> &transformation_component,
+    std::shared_ptr<GLFWwindow> w, std::shared_ptr<app_state> s) {
+
   GLint _last_program;
   GLuint last_program;
 
@@ -297,17 +312,15 @@ void render_cursors(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
     refresh_common_uniforms(last_program, view, proj, w, s);
   }
 
-  for (const auto &[idx, gl] : cm.ogl_components) {
-    if (!cm.has_component<cursor_params>(idx)) {
-      continue;
-    }
+  for (auto idx : indices) {
+    const auto &gl = ogl_components.at(idx);
     if (last_program != gl.program) {
       last_program = gl.program;
       glUseProgram(gl.program);
       refresh_common_uniforms(gl.program, view, proj, w, s);
     }
     glVertexAttrib4f(1, 1.0f, 1.0f, 0.0f, 1.0f);
-    auto &t = cm.get_component<transformation>(idx);
+    auto &t = transformation_component[idx];
     const auto val = std::abs((view * glm::vec4(t.translation, 1)).z);
     t.scale = glm::vec3(val, val, val);
     systems::set_model_uniform(t);
@@ -316,8 +329,9 @@ void render_cursors(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
   glLineWidth(1.0f);
 }
 
-void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
-                std::shared_ptr<app_state> i) {
+std::vector<ecs::EntityType> render_app(ecs::component_manager &cm,
+                                        std::shared_ptr<GLFWwindow> &w,
+                                        std::shared_ptr<app_state> s) {
   static ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
   int display_w, display_h;
   glfwGetFramebufferSize(w.get(), &display_w, &display_h);
@@ -327,7 +341,134 @@ void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
   glClearDepth(1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  render_figures(cm, w, i);
-  render_cursors(cm, w, i);
+  glm::vec3 center;
+  std::vector<ecs::EntityType> sel;
+  std::vector<ecs::EntityType> unsel;
+  std::vector<ecs::EntityType> cursors;
+
+  for (auto &[idx, _] : cm.figure_component) {
+    if (cm.has_component<selected>(idx))
+      sel.push_back(idx);
+    else {
+      unsel.push_back(idx);
+    }
+  }
+
+  for (auto &[idx, _] : cm.cursor_component) {
+    cursors.push_back(idx);
+  }
+
+  render_figures(sel, unsel, cm.transformation_components, cm.ogl_components, w,
+                 s, center);
+  render_and_apply_gizmo(sel, cm.transformation_components, w, s, center);
+
+  render_cursors(cursors, cm.ogl_components, cm.transformation_components, w,
+                 s);
+
+  return sel;
 }
+
+bool regenerate_bezier(const relationship &r,
+                       ecs::ComponentStorage<transformation> transformations,
+                       ecs::ComponentStorage<relationship> relationships,
+                       std::vector<glm::vec4> &out_vertices,
+                       std::vector<unsigned int> &out_indices) {
+  out_vertices.clear();
+  out_indices.clear();
+  ecs::EntityType curr_child{r.first_child};
+  for (int remaining = r.num_children; remaining > 0; remaining -= 3) {
+    if (remaining > 3) {
+      const auto first_child = curr_child;
+      const auto b_a = transformations[first_child].translation;
+
+      const auto second_child = relationships[first_child].next_child;
+      const auto b_b = transformations[second_child].translation;
+
+      const auto third_child = relationships[second_child].next_child;
+      const auto b_c = transformations[third_child].translation;
+
+      const auto fourth_child = relationships[third_child].next_child;
+      const auto b_d = transformations[fourth_child].translation;
+
+      for (float t = 0.0; t < 1.0f; t = t + 0.01f) {
+        const auto b_e = (1.f - t) * b_a + t * b_b;
+        const auto b_f = (1.f - t) * b_b + t * b_c;
+        const auto b_g = (1.f - t) * b_c + t * b_d;
+        const auto b_h = (1.f - t) * b_e + t * b_f;
+        const auto b_i = (1.f - t) * b_f + t * b_g;
+        out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
+      }
+
+      curr_child = fourth_child;
+
+      // from de casteljau find all necessary points
+    } else if (remaining == 3) {
+
+      const auto first_child = curr_child;
+      const auto b_e = transformations[first_child].translation;
+
+      const auto second_child = relationships[first_child].next_child;
+      const auto b_f = transformations[second_child].translation;
+
+      const auto third_child = relationships[second_child].next_child;
+      const auto b_g = transformations[third_child].translation;
+
+      for (float t = 0.0; t < 1.0f; t = t + 0.01f) {
+        const auto b_h = (1.f - t) * b_e + t * b_f;
+        const auto b_i = (1.f - t) * b_f + t * b_g;
+        out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
+      }
+
+      curr_child = third_child;
+    } else if (remaining == 2) {
+
+      const auto first_child = curr_child;
+      const auto b_h = transformations[first_child].translation;
+
+      const auto second_child = relationships[first_child].next_child;
+      const auto b_i = transformations[second_child].translation;
+
+      for (float t = 0.0; t < 1.0f; t = t + 0.01f) {
+        out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
+      }
+
+      curr_child = second_child;
+    } else if (remaining == 1) {
+      const auto first_child = curr_child;
+      const auto first_t = transformations[first_child];
+
+      out_vertices.push_back({first_t.translation, 1.0f});
+
+      curr_child = first_child;
+    }
+  }
+
+  for (std::size_t i = 0; i < out_vertices.size(); ++i) {
+    out_indices.push_back(i);
+  }
+  return true;
+}
+
+void update_changed_relationships(ecs::component_manager &cm,
+                                  const std::vector<ecs::EntityType> &sel) {
+  std::set<ecs::EntityType> changed_rel;
+  for (const auto id : sel) {
+    if (cm.has_component<relationship>(id)) {
+      auto &rel = cm.get_component<relationship>(id);
+      if (rel.parent != ecs::null_entity)
+        changed_rel.insert(rel.parent);
+    }
+  }
+
+  for (const auto &p : changed_rel) {
+    if (cm.has_component<tag_bezierc>(p)) {
+      auto &rel = cm.get_component<relationship>(p);
+      auto &gl = cm.get_component<gl_object>(p);
+      regenerate_bezier(rel, cm.transformation_components,
+                        cm.relationship_component, gl.points, gl.indices);
+      reset_gl_objects(gl);
+    }
+  }
+}
+
 } // namespace systems

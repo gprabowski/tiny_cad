@@ -18,4 +18,6 @@ ecs::EntityType add_point(ecs::component_manager &cm, transformation &&_t,
 ecs::EntityType add_torus(ecs::component_manager &cm, parametric &&_p,
                           transformation &&_t, torus_params &&_tp,
                           const GLuint program);
+
+ecs::EntityType add_bezier(ecs::component_manager &cm, const GLuint program);
 } // namespace constructors

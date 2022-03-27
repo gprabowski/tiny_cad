@@ -129,12 +129,14 @@ void render_general_settings(std::shared_ptr<app_state> &s) {
   ImGui::End();
 }
 
-void render_point_gui(ecs::component_manager &cm, ecs::EntityType idx,
+bool render_point_gui(ecs::component_manager &cm, ecs::EntityType idx,
                       transformation &t, tag_figure &fc) {
+  bool ret{false};
   std::string tree_id = fc.name + ("##") + std::to_string(idx);
   if (ImGui::TreeNode(tree_id.c_str())) {
     if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
                             100.f)) {
+      ret = true;
     }
 
     auto &name = cm.get_component<tag_figure>(idx).name;
@@ -143,11 +145,13 @@ void render_point_gui(ecs::component_manager &cm, ecs::EntityType idx,
     }
 
     if (ImGui::Button("Delete")) {
+      ret = true;
       cm.delete_entity(idx);
     }
 
     ImGui::TreePop();
   }
+  return ret;
 }
 
 void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
@@ -231,7 +235,8 @@ void end_frame() {
   }
 }
 
-void render_selected_edit_gui(ecs::component_manager &cm) {
+void render_selected_edit_gui(ecs::component_manager &cm,
+                              std::vector<ecs::EntityType> &changed) {
   ImGui::Begin("Selected figures:");
   for (auto &[idx, fc] : cm.selected_component) {
     if (cm.has_component<torus_params>(idx)) {
@@ -244,7 +249,9 @@ void render_selected_edit_gui(ecs::component_manager &cm) {
     } else if (cm.has_component<tag_point>(idx)) {
       auto &t = cm.get_component<transformation>(idx);
       auto &fc = cm.get_component<tag_figure>(idx);
-      render_point_gui(cm, idx, t, fc);
+      if (render_point_gui(cm, idx, t, fc)) {
+        changed.push_back(idx);
+      }
     }
   }
   ImGui::End();
@@ -302,7 +309,7 @@ void render_figure_select_gui(ecs::component_manager &cm) {
 
 void render_cursor_gui(ecs::component_manager &cm) {
   static int dmode = 0;
-  static std::vector<std::string> combovalues{"torus", "point"};
+  static std::vector<std::string> combovalues{"torus", "point", "bezier curve"};
 
   for (auto &[idx, p] : cm.cursor_component) {
     auto &t = cm.get_component<transformation>(idx);
@@ -319,6 +326,8 @@ void render_cursor_gui(ecs::component_manager &cm) {
         p.current_shape = cursor_params::cursor_shape::torus;
       } else if (dmode == 1) {
         p.current_shape = cursor_params::cursor_shape::point;
+      } else if (dmode == 2) {
+        p.current_shape = cursor_params::cursor_shape::bezierc;
       }
     }
 

@@ -14,14 +14,31 @@
 
 namespace systems {
 
-void render_figures(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
-                    std::shared_ptr<app_state> s);
+void render_points(const gl_object &g);
 
-void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
-                std::shared_ptr<app_state> i);
+void render_figures(
+    const std::vector<ecs::EntityType> selected_indices,
+    const std::vector<ecs::EntityType> unselected_indices,
+    ecs::ComponentStorage<transformation> &transformation_component,
+    ecs::ComponentStorage<gl_object> &ogl_component,
+    std::shared_ptr<GLFWwindow> w, std::shared_ptr<app_state> s,
+    glm::vec3 &center_out);
 
-void render_cursors(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> w,
-                    std::shared_ptr<app_state> s);
+std::vector<ecs::EntityType> render_app(ecs::component_manager &cm,
+                                        std::shared_ptr<GLFWwindow> &w,
+                                        std::shared_ptr<app_state> i);
+
+bool render_and_apply_gizmo(
+    const std::vector<ecs::EntityType> indices,
+    ecs::ComponentStorage<transformation> &transformation_component,
+    std::shared_ptr<GLFWwindow> &w, std::shared_ptr<app_state> &s,
+    const glm::vec3 &center);
+
+void render_cursors(
+    const std::vector<ecs::EntityType> indices,
+    const ecs::ComponentStorage<gl_object> &ogl_components,
+    ecs::ComponentStorage<transformation> &transformation_component,
+    std::shared_ptr<GLFWwindow> w, std::shared_ptr<app_state> s);
 
 void refresh_common_uniforms(GLuint program, const glm::mat4 &view,
                              const glm::mat4 proj,
@@ -58,12 +75,18 @@ bool generate_points(const ParamsType &s, const parametric &p,
   return true;
 }
 
-// gl object
+bool regenerate_bezier(const relationship &r,
+                       ecs::ComponentStorage<transformation> transformations,
+                       ecs::ComponentStorage<relationship> relationships,
+                       std::vector<glm::vec4> &out_vertices,
+                       std::vector<unsigned int> &out_indices);
+
 void generate_lines(const parametric &p, const std::vector<glm::vec4> &points,
                     std::vector<unsigned int> &indices);
 
 void reset_gl_objects(gl_object &g);
-void render_points(const gl_object &g);
 void set_model_uniform(const transformation &t);
+void update_changed_relationships(ecs::component_manager &cm,
+                                  const std::vector<ecs::EntityType> &sel);
 
 } // namespace systems

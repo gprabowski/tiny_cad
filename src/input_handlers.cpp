@@ -8,16 +8,21 @@ inline void add_current_shape_at_cursor(ecs::component_manager &cm,
                                         std::shared_ptr<app_state> &state) {
   for (auto &[idx, com] : cm.cursor_component) {
     auto t = cm.get_component<transformation>(idx);
-    auto cp = cm.get_component<cursor_params>(idx);
+    const auto &cp = cm.get_component<cursor_params>(idx);
     t.scale = glm::vec3{1.0f, 1.0f, 1.0f};
     if (cp.current_shape == cursor_params::cursor_shape::torus) {
       constructors::add_torus(cm,
-                              parametric{0.0f, 2 * glm::pi<float>(), 0.0f,
-                                         2 * glm::pi<float>(), 20u, 50u},
+                              parametric{0.0f,
+                                         2 * glm::pi<float>(),
+                                         0.0f,
+                                         2 * glm::pi<float>(),
+                                         {20u, 50u}},
                               std::move(t), torus_params{1.f, 2.f},
                               state->default_program);
     } else if (cp.current_shape == cursor_params::cursor_shape::point) {
       constructors::add_point(cm, std::move(t), state->default_program);
+    } else if (cp.current_shape == cursor_params::cursor_shape::bezierc) {
+      constructors::add_bezier(cm, state->default_program);
     }
   }
 }

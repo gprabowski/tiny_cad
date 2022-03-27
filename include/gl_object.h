@@ -15,7 +15,13 @@ struct gl_object {
   std::vector<glm::vec4> points;
   std::vector<unsigned int> indices;
 
-  enum class draw_mode { points, lines, triangles } dmode{draw_mode::lines};
+  enum class draw_mode {
+    points,
+    lines,
+    line_strip,
+    triangles
+  } dmode{draw_mode::lines};
+
   enum class vertex_t {
     point,
     point_color,

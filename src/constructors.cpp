@@ -1,4 +1,6 @@
 #include <constructors.h>
+#include <log.h>
+#include <relationship.h>
 #include <systems.h>
 
 namespace constructors {
@@ -32,6 +34,49 @@ gl_object get_cursor_geometry(const GLint program) {
   cursor.program = program;
 
   return cursor;
+}
+
+ecs::EntityType add_bezier(ecs::component_manager &cm, const GLuint program) {
+  std::vector<ecs::EntityType> sel_points;
+  for (auto &[idx, _] : cm.selected_component) {
+    if (cm.has_component<tag_point>(idx)) {
+      sel_points.push_back(idx);
+    }
+  }
+
+  if (sel_points.size() < 1)
+    return ecs::null_entity;
+
+  const auto b = cm.add_entity();
+  cm.add_component<gl_object>(b, gl_object{program});
+  cm.add_component<transformation>(b, {});
+  cm.add_component<tag_figure>(
+      b, tag_figure{"bezier curve #" + std::to_string(b)});
+  cm.add_component<tag_bezierc>(b, tag_bezierc{});
+
+  auto &g = cm.get_component<gl_object>(b);
+
+  // add relationships to selected points
+  for (std::size_t i = 0; i < sel_points.size(); ++i) {
+    const auto prev = (i == 0) ? 0 : i - 1;
+    const auto next = (i + 1 >= sel_points.size()) ? i : i + 1;
+
+    relationship r{b, sel_points[next], sel_points[prev], ecs::null_entity, 0};
+    cm.add_component<relationship>(sel_points[i], std::move(r));
+  }
+
+  cm.add_component<relationship>(b, {ecs::null_entity, ecs::null_entity,
+                                     ecs::null_entity, sel_points[0],
+                                     sel_points.size()});
+
+  auto &r = cm.get_component<relationship>(b);
+
+  systems::regenerate_bezier(r, cm.transformation_components,
+                             cm.relationship_component, g.points, g.indices);
+  g.dmode = gl_object::draw_mode::line_strip;
+  systems::reset_gl_objects(g);
+
+  return b;
 }
 
 ecs::EntityType add_point(ecs::component_manager &cm, transformation &&_t,

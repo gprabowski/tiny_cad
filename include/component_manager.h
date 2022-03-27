@@ -12,22 +12,27 @@
 #include <figure.h>
 #include <gl_object.h>
 #include <parametric.h>
+#include <relationship.h>
 #include <tags.h>
 #include <transformation.h>
 
 namespace ecs {
 
+template <typename C> using ComponentStorage = std::map<EntityType, C>;
+
 struct component_manager {
   std::unordered_map<EntityType, component_bitset> entities;
 
-  std::map<EntityType, parametric> parametric_components;
-  std::map<EntityType, transformation> transformation_components;
-  std::map<EntityType, gl_object> ogl_components;
-  std::map<EntityType, torus_params> torus_components;
-  std::map<EntityType, tag_figure> figure_component;
-  std::map<EntityType, tag_point> point_component;
-  std::map<EntityType, cursor_params> cursor_component;
-  std::map<EntityType, selected> selected_component;
+  ComponentStorage<parametric> parametric_components;
+  ComponentStorage<transformation> transformation_components;
+  ComponentStorage<gl_object> ogl_components;
+  ComponentStorage<torus_params> torus_components;
+  ComponentStorage<tag_figure> figure_component;
+  ComponentStorage<tag_point> point_component;
+  ComponentStorage<tag_bezierc> bezierc_component;
+  ComponentStorage<cursor_params> cursor_component;
+  ComponentStorage<selected> selected_component;
+  ComponentStorage<relationship> relationship_component;
 
   EntityType add_entity();
   void delete_entity(EntityType idx);
@@ -97,14 +102,18 @@ private:
       return ct::TAG_CURSOR;
     } else if constexpr (std::is_same_v<C, tag_point>) {
       return ct::TAG_POINT;
+    } else if constexpr (std::is_same_v<C, tag_bezierc>) {
+      return ct::TAG_BEZIERC;
     } else if constexpr (std::is_same_v<C, selected>) {
       return ct::TAG_SELECTED;
+    } else if constexpr (std::is_same_v<C, relationship>) {
+      return ct::RELATIONSHIP;
     }
     return ct::OTHER;
   }
 
-  template <typename T> constexpr std::map<EntityType, T> &get_map() {
-    using ret_t = std::map<EntityType, T>;
+  template <typename T> constexpr ComponentStorage<T> &get_map() {
+    using ret_t = ComponentStorage<T>;
     ret_t ret;
     if constexpr (std::is_same_v<T, parametric>) {
       return (parametric_components);
@@ -118,10 +127,14 @@ private:
       return (figure_component);
     } else if constexpr (std::is_same_v<T, tag_point>) {
       return (point_component);
+    } else if constexpr (std::is_same_v<T, tag_bezierc>) {
+      return (bezierc_component);
     } else if constexpr (std::is_same_v<T, cursor_params>) {
       return (cursor_component);
     } else if constexpr (std::is_same_v<T, selected>) {
       return (selected_component);
+    } else if constexpr (std::is_same_v<T, relationship>) {
+      return (relationship_component);
     }
 
     throw std::runtime_error("Couldn't find map for this type");
