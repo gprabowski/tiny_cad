@@ -17,19 +17,19 @@ namespace systems {
 void render_points(const gl_object &g);
 
 void render_figures(
-    const std::vector<ecs::EntityType> selected_indices,
-    const std::vector<ecs::EntityType> unselected_indices,
+    const std::vector<ecs::EntityType> &selected_indices,
+    const std::vector<ecs::EntityType> &unselected_indices,
     ecs::ComponentStorage<transformation> &transformation_component,
     ecs::ComponentStorage<gl_object> &ogl_component,
     std::shared_ptr<GLFWwindow> w, std::shared_ptr<app_state> s,
     glm::vec3 &center_out);
 
-std::vector<ecs::EntityType> render_app(ecs::component_manager &cm,
-                                        std::shared_ptr<GLFWwindow> &w,
-                                        std::shared_ptr<app_state> i);
+void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
+                std::shared_ptr<app_state> s, std::vector<ecs::EntityType> &sel,
+                std::vector<ecs::EntityType> &unsel);
 
 bool render_and_apply_gizmo(
-    const std::vector<ecs::EntityType> indices,
+    std::vector<ecs::EntityType> &indices,
     ecs::ComponentStorage<transformation> &transformation_component,
     std::shared_ptr<GLFWwindow> &w, std::shared_ptr<app_state> &s,
     const glm::vec3 &center);
@@ -87,6 +87,9 @@ void generate_lines(const parametric &p, const std::vector<glm::vec4> &points,
 void reset_gl_objects(gl_object &g);
 void set_model_uniform(const transformation &t);
 void update_changed_relationships(ecs::component_manager &cm,
-                                  const std::vector<ecs::EntityType> &sel);
+                                  const std::vector<ecs::EntityType> &sel,
+                                  const std::vector<ecs::EntityType> &del);
+void delete_entities(ecs::component_manager &cm,
+                     const std::vector<ecs::EntityType> &del);
 
 } // namespace systems

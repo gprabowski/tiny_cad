@@ -23,7 +23,8 @@ enum ct : component_bitset {
   OTHER = 1ull << 63,
 };
 
-constexpr std::array<ct, 10> all_components{
-    PARAMETRIC_COM, TRANSFORMATION_COM, OGL_COM,      TORUS_COM,   TAG_FIGURE,
-    TAG_CURSOR,     TAG_POINT,          TAG_SELECTED, TAG_BEZIERC, OTHER};
+constexpr std::array<ct, 11> all_components{
+    PARAMETRIC_COM, TRANSFORMATION_COM, OGL_COM,   TORUS_COM,
+    TAG_FIGURE,     TAG_CURSOR,         TAG_POINT, TAG_SELECTED,
+    TAG_BEZIERC,    RELATIONSHIP,       OTHER};
 } // namespace ecs

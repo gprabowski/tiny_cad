@@ -178,8 +178,8 @@ void decompose(const glm::mat4 &m, glm::vec3 &trans, glm::vec3 &scale,
 }
 
 void render_figures(
-    const std::vector<ecs::EntityType> selected_indices,
-    const std::vector<ecs::EntityType> unselected_indices,
+    const std::vector<ecs::EntityType> &selected_indices,
+    const std::vector<ecs::EntityType> &unselected_indices,
     ecs::ComponentStorage<transformation> &transformation_component,
     ecs::ComponentStorage<gl_object> &ogl_component,
     std::shared_ptr<GLFWwindow> w, std::shared_ptr<app_state> s,
@@ -231,7 +231,7 @@ void render_figures(
 }
 
 bool render_and_apply_gizmo(
-    const std::vector<ecs::EntityType> indices,
+    std::vector<ecs::EntityType> &indices,
     ecs::ComponentStorage<transformation> &transformation_component,
     std::shared_ptr<GLFWwindow> &w, std::shared_ptr<app_state> &s,
     const glm::vec3 &center) {
@@ -282,6 +282,7 @@ bool render_and_apply_gizmo(
       t.translation += center;
     }
   } else if (gizmo_changed == true && !ImGuizmo::IsOver()) {
+    indices.clear();
     gizmo_changed = false;
     prev_scale = {1.0f, 1.0f, 1.0f};
   }
@@ -329,9 +330,9 @@ void render_cursors(
   glLineWidth(1.0f);
 }
 
-std::vector<ecs::EntityType> render_app(ecs::component_manager &cm,
-                                        std::shared_ptr<GLFWwindow> &w,
-                                        std::shared_ptr<app_state> s) {
+void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
+                std::shared_ptr<app_state> s, std::vector<ecs::EntityType> &sel,
+                std::vector<ecs::EntityType> &unsel) {
   static ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
   int display_w, display_h;
   glfwGetFramebufferSize(w.get(), &display_w, &display_h);
@@ -342,17 +343,7 @@ std::vector<ecs::EntityType> render_app(ecs::component_manager &cm,
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glm::vec3 center;
-  std::vector<ecs::EntityType> sel;
-  std::vector<ecs::EntityType> unsel;
   std::vector<ecs::EntityType> cursors;
-
-  for (auto &[idx, _] : cm.figure_component) {
-    if (cm.has_component<selected>(idx))
-      sel.push_back(idx);
-    else {
-      unsel.push_back(idx);
-    }
-  }
 
   for (auto &[idx, _] : cm.cursor_component) {
     cursors.push_back(idx);
@@ -364,8 +355,6 @@ std::vector<ecs::EntityType> render_app(ecs::component_manager &cm,
 
   render_cursors(cursors, cm.ogl_components, cm.transformation_components, w,
                  s);
-
-  return sel;
 }
 
 bool regenerate_bezier(const relationship &r,
@@ -450,13 +439,42 @@ bool regenerate_bezier(const relationship &r,
 }
 
 void update_changed_relationships(ecs::component_manager &cm,
-                                  const std::vector<ecs::EntityType> &sel) {
+                                  const std::vector<ecs::EntityType> &sel,
+                                  const std::vector<ecs::EntityType> &del) {
   std::set<ecs::EntityType> changed_rel;
   for (const auto id : sel) {
     if (cm.has_component<relationship>(id)) {
       auto &rel = cm.get_component<relationship>(id);
       if (rel.parent != ecs::null_entity)
         changed_rel.insert(rel.parent);
+    }
+  }
+
+  for (const auto id : del) {
+    if (cm.has_component<relationship>(id)) {
+      auto &rel = cm.get_component<relationship>(id);
+      if (rel.parent != ecs::null_entity) {
+        auto &parent = cm.get_component<relationship>(rel.parent);
+        --parent.num_children;
+
+        if (rel.next_child != id && rel.prev_child != id) {
+          auto &prev = cm.get_component<relationship>(rel.prev_child);
+          auto &next = cm.get_component<relationship>(rel.next_child);
+          prev.next_child = rel.next_child;
+          next.prev_child = rel.prev_child;
+        } else if (rel.next_child != id) {
+          auto &next = cm.get_component<relationship>(rel.next_child);
+          next.prev_child = rel.next_child;
+          parent.first_child = rel.next_child;
+        } else if (rel.prev_child != id) {
+          auto &prev = cm.get_component<relationship>(rel.prev_child);
+          prev.next_child = rel.prev_child;
+        } else {
+            parent.first_child = ecs::null_entity;
+        }
+
+        changed_rel.insert(rel.parent);
+      }
     }
   }
 
@@ -469,6 +487,12 @@ void update_changed_relationships(ecs::component_manager &cm,
       reset_gl_objects(gl);
     }
   }
+}
+
+void delete_entities(ecs::component_manager &cm,
+                     const std::vector<ecs::EntityType> &del) {
+  for (const auto idx : del)
+    cm.delete_entity(idx);
 }
 
 } // namespace systems

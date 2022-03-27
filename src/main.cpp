@@ -23,26 +23,47 @@ namespace clb = callbacks;
 namespace hnd = handlers;
 namespace sys = systems;
 
+void get_selected_figure_indices(ecs::component_manager &cm,
+                                 std::vector<ecs::EntityType> &sel,
+                                 std::vector<ecs::EntityType> &unsel) {
+  for (auto &[idx, _] : cm.figure_component) {
+    if (cm.has_component<selected>(idx))
+      sel.push_back(idx);
+    else {
+      unsel.push_back(idx);
+    }
+  }
+}
 void main_loop(ecs::component_manager &cm, std::shared_ptr<app_state> state,
                std::shared_ptr<GLFWwindow> w) {
+  std::vector<ecs::EntityType> sel, unsel, del, parents;
   while (!glfwWindowShouldClose(w.get())) {
     hnd::process_input(state, w, cm);
 
     gui::start_frame(state);
 
-    auto sel = sys::render_app(cm, w, state);
+    get_selected_figure_indices(cm, sel, unsel);
+
+    // if no batch action on selected
+    // the vector is cleared
+    sys::render_app(cm, w, state, sel, unsel);
 
     gui::render_general_settings(state);
-    // gui::render_figure_edit_gui(cm);
-    gui::render_figure_select_gui(cm);
-    gui::render_selected_edit_gui(cm, sel);
+    gui::render_figure_select_gui(cm, del);
+    gui::render_selected_edit_gui(cm, sel, del);
+
     gui::render_cursor_gui(cm);
     gui::end_frame();
 
-    sys::update_changed_relationships(cm, sel);
+    sys::update_changed_relationships(cm, sel, del);
+    sys::delete_entities(cm, del);
 
     glfwSwapBuffers(w.get());
     glfwPollEvents();
+
+    sel.clear();
+    unsel.clear();
+    del.clear();
   }
 }
 

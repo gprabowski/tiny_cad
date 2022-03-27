@@ -129,14 +129,14 @@ void render_general_settings(std::shared_ptr<app_state> &s) {
   ImGui::End();
 }
 
-bool render_point_gui(ecs::component_manager &cm, ecs::EntityType idx,
-                      transformation &t, tag_figure &fc) {
-  bool ret{false};
+point_action render_point_gui(ecs::component_manager &cm, ecs::EntityType idx,
+                              transformation &t, tag_figure &fc) {
+  point_action ret{point_action::none};
   std::string tree_id = fc.name + ("##") + std::to_string(idx);
   if (ImGui::TreeNode(tree_id.c_str())) {
     if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
                             100.f)) {
-      ret = true;
+      ret = point_action::edit;
     }
 
     auto &name = cm.get_component<tag_figure>(idx).name;
@@ -145,8 +145,7 @@ bool render_point_gui(ecs::component_manager &cm, ecs::EntityType idx,
     }
 
     if (ImGui::Button("Delete")) {
-      ret = true;
-      cm.delete_entity(idx);
+      ret = point_action::del;
     }
 
     ImGui::TreePop();
@@ -236,7 +235,8 @@ void end_frame() {
 }
 
 void render_selected_edit_gui(ecs::component_manager &cm,
-                              std::vector<ecs::EntityType> &changed) {
+                              std::vector<ecs::EntityType> &changed,
+                              std::vector<ecs::EntityType> &deleted) {
   ImGui::Begin("Selected figures:");
   for (auto &[idx, fc] : cm.selected_component) {
     if (cm.has_component<torus_params>(idx)) {
@@ -249,32 +249,24 @@ void render_selected_edit_gui(ecs::component_manager &cm,
     } else if (cm.has_component<tag_point>(idx)) {
       auto &t = cm.get_component<transformation>(idx);
       auto &fc = cm.get_component<tag_figure>(idx);
-      if (render_point_gui(cm, idx, t, fc)) {
+      switch (render_point_gui(cm, idx, t, fc)) {
+      case point_action::none: {
+      } break;
+      case point_action::edit: {
         changed.push_back(idx);
+      } break;
+      case point_action::del: {
+        deleted.push_back(idx);
+      } break;
       }
     }
   }
   ImGui::End();
 }
 
-void render_figure_edit_gui(ecs::component_manager &cm) {
-  ImGui::Begin("All figures:");
-  for (auto &[idx, fc] : cm.figure_component) {
-    if (cm.has_component<torus_params>(idx)) {
-      auto &tp = cm.get_component<torus_params>(idx);
-      auto &t = cm.get_component<transformation>(idx);
-      auto &g = cm.get_component<gl_object>(idx);
-      auto &p = cm.get_component<parametric>(idx);
-      render_torus_gui(cm, idx, tp, p, g, t, fc);
-    } else if (cm.has_component<tag_point>(idx)) {
-      auto &t = cm.get_component<transformation>(idx);
-      render_point_gui(cm, idx, t, fc);
-    }
-  }
-  ImGui::End();
-}
-
-void render_figure_select_gui(ecs::component_manager &cm) {
+point_action render_figure_select_gui(ecs::component_manager &cm,
+                                      std::vector<ecs::EntityType> &deleted) {
+  point_action ret{point_action::none};
   bool sel{false};
   ImGui::Begin("Select figures:");
   for (auto &[idx, fc] : cm.figure_component) {
@@ -299,12 +291,12 @@ void render_figure_select_gui(ecs::component_manager &cm) {
   ImGui::End();
   ImGui::Begin("Group Actions");
   if (ImGui::Button("Delete Selected")) {
-    auto local_copy = cm.selected_component;
-    for (auto &[idx, s] : local_copy) {
-      cm.delete_entity(idx);
+    for (auto &[idx, s] : cm.selected_component) {
+      deleted.push_back(idx);
     }
   }
   ImGui::End();
+  return ret;
 }
 
 void render_cursor_gui(ecs::component_manager &cm) {
