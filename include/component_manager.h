@@ -70,10 +70,52 @@ struct component_manager {
     return get_com_bit<C>() != ct::OTHER;
   }
 
-  template <typename T> void remove_component(EntityType idx) {
+  template <typename T>
+  std::enable_if_t<!std::is_same_v<T, relationship>, void>
+  remove_component(EntityType idx) {
     auto &m = get_map<T>();
     m.erase(idx);
     entities[idx] &= ~get_com_bit<T>();
+  }
+
+  template <typename T>
+  std::enable_if_t<std::is_same_v<T, relationship>, void>
+  remove_component(EntityType id) {
+    auto &rel = get_component<relationship>(id);
+      if (rel.parent != ecs::null_entity) {
+      // is a child
+        auto &parent = get_component<relationship>(rel.parent);
+        --parent.num_children;
+        if (rel.next_child != id && rel.prev_child != id) {
+          auto &prev = get_component<relationship>(rel.prev_child);
+          auto &next = get_component<relationship>(rel.next_child);
+          prev.next_child = rel.next_child;
+          next.prev_child = rel.prev_child;
+        } else if (rel.next_child != id) {
+          auto &next = get_component<relationship>(rel.next_child);
+          next.prev_child = rel.next_child;
+          parent.first_child = rel.next_child;
+        } else if (rel.prev_child != id) {
+          auto &prev = get_component<relationship>(rel.prev_child);
+          prev.next_child = rel.prev_child;
+        } else {
+          parent.first_child = ecs::null_entity;
+        }
+      } else if (rel.first_child != null_entity) {
+        // parent needs to lose the component and all the kids do too (not
+        // recursively)
+        auto curr_child = rel.first_child;
+        auto next = relationship_component[curr_child].next_child;
+        for (std::size_t c = 0; c < rel.num_children; ++c) {
+            auto tmp = curr_child;
+          curr_child = next;
+          next = relationship_component[curr_child].next_child;
+          relationship_component.erase(tmp);
+          entities[tmp] &= ~get_com_bit<relationship>();
+        }
+      }
+      relationship_component.erase(id);
+      entities[id] &= ~get_com_bit<relationship>();
   }
 
   template <typename T> void remove_all() {

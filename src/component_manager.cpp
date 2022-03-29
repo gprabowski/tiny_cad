@@ -58,10 +58,10 @@ void cm::remove_component(EntityType idx, ecs::ct cp) {
   } break;
   case ct::TAG_BEZIERC: {
     remove_component<tag_bezierc>(idx);
-  }
+  } break;
   case ct::RELATIONSHIP: {
     remove_component<relationship>(idx);
-  }
+  } break;
   default:
     return;
   }

@@ -235,6 +235,9 @@ bool render_and_apply_gizmo(
     ecs::ComponentStorage<transformation> &transformation_component,
     std::shared_ptr<GLFWwindow> &w, std::shared_ptr<app_state> &s,
     const glm::vec3 &center) {
+  if (indices.size() == 0) {
+    return false;
+  }
   bool ret{false};
 
   static glm::vec3 prev_scale = {1.0f, 1.0f, 1.0f};
@@ -351,6 +354,7 @@ void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
 
   render_figures(sel, unsel, cm.transformation_components, cm.ogl_components, w,
                  s, center);
+
   render_and_apply_gizmo(sel, cm.transformation_components, w, s, center);
 
   render_cursors(cursors, cm.ogl_components, cm.transformation_components, w,
@@ -454,32 +458,16 @@ void update_changed_relationships(ecs::component_manager &cm,
     if (cm.has_component<relationship>(id)) {
       auto &rel = cm.get_component<relationship>(id);
       if (rel.parent != ecs::null_entity) {
-        auto &parent = cm.get_component<relationship>(rel.parent);
-        --parent.num_children;
-
-        if (rel.next_child != id && rel.prev_child != id) {
-          auto &prev = cm.get_component<relationship>(rel.prev_child);
-          auto &next = cm.get_component<relationship>(rel.next_child);
-          prev.next_child = rel.next_child;
-          next.prev_child = rel.prev_child;
-        } else if (rel.next_child != id) {
-          auto &next = cm.get_component<relationship>(rel.next_child);
-          next.prev_child = rel.next_child;
-          parent.first_child = rel.next_child;
-        } else if (rel.prev_child != id) {
-          auto &prev = cm.get_component<relationship>(rel.prev_child);
-          prev.next_child = rel.prev_child;
-        } else {
-            parent.first_child = ecs::null_entity;
-        }
-
+        cm.remove_component<relationship>(id);
         changed_rel.insert(rel.parent);
+      } else {
+        cm.remove_component<relationship>(id);
       }
     }
   }
 
   for (const auto &p : changed_rel) {
-    if (cm.has_component<tag_bezierc>(p)) {
+    if (cm.has_component<tag_bezierc>(p) && cm.has_component<relationship>(p)) {
       auto &rel = cm.get_component<relationship>(p);
       auto &gl = cm.get_component<gl_object>(p);
       regenerate_bezier(rel, cm.transformation_components,
