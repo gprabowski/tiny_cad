@@ -26,7 +26,6 @@ void cm::delete_entity(ecs::EntityType idx) {
   entities.erase(idx);
 }
 
-
 void cm::remove_component(EntityType idx, ecs::ct cp) {
   // we know that component exists for sure becomes it comes from
   // iteration over enum values which MUST exist, if they don't
@@ -61,6 +60,15 @@ void cm::remove_component(EntityType idx, ecs::ct cp) {
   } break;
   case ct::RELATIONSHIP: {
     remove_component<relationship>(idx);
+  } break;
+  case ct::TAG_PARENT: {
+    remove_component<tag_parent>(idx);
+  } break;
+  case ct::ADAPTIVE: {
+    remove_component<adaptive>(idx);
+  } break;
+  case ct::SECONDARY: {
+    remove_component<secondary_object>(idx);
   } break;
   default:
     return;

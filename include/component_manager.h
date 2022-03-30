@@ -1,18 +1,21 @@
 #pragma once
 
 #include "torus.h"
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
 
+#include <adaptive.h>
 #include <cursor_params.h>
 #include <ecs.h>
 #include <figure.h>
 #include <gl_object.h>
 #include <parametric.h>
 #include <relationship.h>
+#include <secondary.h>
 #include <tags.h>
 #include <transformation.h>
 
@@ -26,6 +29,7 @@ struct component_manager {
   ComponentStorage<parametric> parametric_components;
   ComponentStorage<transformation> transformation_components;
   ComponentStorage<gl_object> ogl_components;
+  ComponentStorage<secondary_object> secondary_component;
   ComponentStorage<torus_params> torus_components;
   ComponentStorage<tag_figure> figure_component;
   ComponentStorage<tag_point> point_component;
@@ -33,6 +37,8 @@ struct component_manager {
   ComponentStorage<cursor_params> cursor_component;
   ComponentStorage<selected> selected_component;
   ComponentStorage<relationship> relationship_component;
+  ComponentStorage<tag_parent> parent_component;
+  ComponentStorage<adaptive> adaptive_component;
 
   EntityType add_entity();
   void delete_entity(EntityType idx);
@@ -71,7 +77,9 @@ struct component_manager {
   }
 
   template <typename T>
-  std::enable_if_t<!std::is_same_v<T, relationship>, void>
+  std::enable_if_t<!std::is_same_v<T, relationship> &&
+                       !std::is_same_v<T, secondary_object>,
+                   void>
   remove_component(EntityType idx) {
     auto &m = get_map<T>();
     m.erase(idx);
@@ -79,43 +87,44 @@ struct component_manager {
   }
 
   template <typename T>
+  std::enable_if_t<std::is_same_v<T, secondary_object>, void>
+  remove_component(EntityType idx) {
+    const auto s = get_component<secondary_object>(idx);
+    delete_entity(s.val);
+    secondary_component.erase(idx);
+    entities[idx] &= ~get_com_bit<secondary_object>();
+  }
+
+  template <typename T>
   std::enable_if_t<std::is_same_v<T, relationship>, void>
   remove_component(EntityType id) {
     auto &rel = get_component<relationship>(id);
-      if (rel.parent != ecs::null_entity) {
-      // is a child
-        auto &parent = get_component<relationship>(rel.parent);
-        --parent.num_children;
-        if (rel.next_child != id && rel.prev_child != id) {
-          auto &prev = get_component<relationship>(rel.prev_child);
-          auto &next = get_component<relationship>(rel.next_child);
-          prev.next_child = rel.next_child;
-          next.prev_child = rel.prev_child;
-        } else if (rel.next_child != id) {
-          auto &next = get_component<relationship>(rel.next_child);
-          next.prev_child = rel.next_child;
-          parent.first_child = rel.next_child;
-        } else if (rel.prev_child != id) {
-          auto &prev = get_component<relationship>(rel.prev_child);
-          prev.next_child = rel.prev_child;
-        } else {
-          parent.first_child = ecs::null_entity;
-        }
-      } else if (rel.first_child != null_entity) {
-        // parent needs to lose the component and all the kids do too (not
-        // recursively)
-        auto curr_child = rel.first_child;
-        auto next = relationship_component[curr_child].next_child;
-        for (std::size_t c = 0; c < rel.num_children; ++c) {
-            auto tmp = curr_child;
-          curr_child = next;
-          next = relationship_component[curr_child].next_child;
-          relationship_component.erase(tmp);
-          entities[tmp] &= ~get_com_bit<relationship>();
+    if (rel.parents.size()) {
+      for (auto p : rel.parents) {
+        // delete from parent this relationship
+        auto &prel = get_component<relationship>(p);
+        prel.children.erase(std::remove_if(prel.children.begin(),
+                                           prel.children.end(),
+                                           [=](auto pc) { return pc == id; }),
+                            prel.children.end());
+      }
+    } else if (rel.children.size()) {
+      for (auto c : rel.children) {
+        // delete from child this relationship
+        // check if child is still in a diff rel
+        auto &crel = get_component<relationship>(c);
+        crel.parents.erase(std::remove_if(crel.parents.begin(),
+                                          crel.parents.end(),
+                                          [=](auto cp) { return cp == id; }),
+                           crel.parents.end());
+        if (0 == crel.parents.size()) {
+          relationship_component.erase(c);
+          entities[c] &= ~get_com_bit<relationship>();
         }
       }
-      relationship_component.erase(id);
-      entities[id] &= ~get_com_bit<relationship>();
+    }
+    relationship_component.erase(id);
+    entities[id] &= ~get_com_bit<relationship>();
   }
 
   template <typename T> void remove_all() {
@@ -150,6 +159,12 @@ private:
       return ct::TAG_SELECTED;
     } else if constexpr (std::is_same_v<C, relationship>) {
       return ct::RELATIONSHIP;
+    } else if constexpr (std::is_same_v<C, tag_parent>) {
+      return ct::TAG_PARENT;
+    } else if constexpr (std::is_same_v<C, secondary_object>) {
+      return ct::SECONDARY;
+    } else if constexpr (std::is_same_v<C, adaptive>) {
+      return ct::ADAPTIVE;
     }
     return ct::OTHER;
   }
@@ -177,6 +192,12 @@ private:
       return (selected_component);
     } else if constexpr (std::is_same_v<T, relationship>) {
       return (relationship_component);
+    } else if constexpr (std::is_same_v<T, tag_parent>) {
+      return (parent_component);
+    } else if constexpr (std::is_same_v<T, secondary_object>) {
+      return (secondary_component);
+    } else if constexpr (std::is_same_v<T, adaptive>) {
+      return (adaptive_component);
     }
 
     throw std::runtime_error("Couldn't find map for this type");

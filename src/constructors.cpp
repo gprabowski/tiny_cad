@@ -36,7 +36,9 @@ gl_object get_cursor_geometry(const GLint program) {
   return cursor;
 }
 
-ecs::EntityType add_bezier(ecs::component_manager &cm, const GLuint program) {
+ecs::EntityType add_bezier(ecs::component_manager &cm,
+                           std::shared_ptr<app_state> &s,
+                           const GLuint program) {
   std::vector<ecs::EntityType> sel_points;
   for (auto &[idx, _] : cm.selected_component) {
     if (cm.has_component<tag_point>(idx)) {
@@ -47,34 +49,44 @@ ecs::EntityType add_bezier(ecs::component_manager &cm, const GLuint program) {
   if (sel_points.size() < 1)
     return ecs::null_entity;
 
+  const auto secondary = cm.add_entity();
+  cm.add_component<gl_object>(secondary, gl_object{program});
+  auto &sec_g = cm.get_component<gl_object>(secondary);
+  sec_g.dmode = gl_object::draw_mode::line_strip;
+
   const auto b = cm.add_entity();
   cm.add_component<gl_object>(b, gl_object{program});
   cm.add_component<transformation>(b, {});
   cm.add_component<tag_figure>(
       b, tag_figure{"bezier curve #" + std::to_string(b)});
   cm.add_component<tag_bezierc>(b, tag_bezierc{});
+  cm.add_component<tag_parent>(b, tag_parent{});
+  cm.add_component<secondary_object>(b, {secondary});
+  cm.add_component<adaptive>(b, {});
 
   auto &g = cm.get_component<gl_object>(b);
 
   // add relationships to selected points
-  for (std::size_t i = 0; i < sel_points.size(); ++i) {
-    const auto prev = (i == 0) ? 0 : i - 1;
-    const auto next = (i + 1 >= sel_points.size()) ? i : i + 1;
-
-    relationship r{b, sel_points[next], sel_points[prev], ecs::null_entity, 0};
-    cm.add_component<relationship>(sel_points[i], std::move(r));
+  for (const auto p : sel_points) {
+    if (cm.has_component<relationship>(p)) {
+      auto &r = cm.get_component<relationship>(p);
+      r.parents.push_back(b);
+    } else {
+      cm.add_component<relationship>(p, {{b}, {}});
+    }
   }
 
-  cm.add_component<relationship>(b, {ecs::null_entity, ecs::null_entity,
-                                     ecs::null_entity, sel_points[0],
-                                     sel_points.size()});
-
+  cm.add_component<relationship>(b, {{}, std::move(sel_points)});
   auto &r = cm.get_component<relationship>(b);
+  auto &a = cm.get_component<adaptive>(b);
 
-  systems::regenerate_bezier(r, cm.transformation_components,
-                             cm.relationship_component, g.points, g.indices);
+  systems::regenerate_bezier(r, a, cm.transformation_components,
+                             cm.relationship_component, g.points, g.indices,
+                             sec_g.points, sec_g.indices);
+
   g.dmode = gl_object::draw_mode::line_strip;
   systems::reset_gl_objects(g);
+  systems::reset_gl_objects(sec_g);
 
   return b;
 }

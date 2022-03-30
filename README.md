@@ -3,11 +3,9 @@
 ## todo
 
 ### compulsory
-- [ ] deleting a curve but not its points
-- [ ] adding single points to a curve from selection list
 - [ ] adaptive curve rendering
 - [ ] scene transformations affect points not the curve
-- [ ] displaying bounding shape of a curve
+- [ ] introduce frame state struct with proj, view, lists etc
 
 - [ ] add bitset entity list getter
 - [ ] add bitset has/can't have entity list getter
@@ -18,6 +16,7 @@
 - [ ] selecting a curve makes all points added be added to that curve
 - [ ] moving to geom shader
 - [ ] changing scene / screen coords of cursor
+- [ ] change all uniforms setting to DSA
 
 ### QoL
 - [ ] naming of components / systems

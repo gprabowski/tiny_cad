@@ -16,6 +16,9 @@ namespace systems {
 
 void render_points(const gl_object &g);
 
+void add_sel_points_to_parent(ecs::EntityType idx, ecs::component_manager &cm,
+                              std::shared_ptr<app_state> &s);
+
 void render_figures(
     const std::vector<ecs::EntityType> &selected_indices,
     const std::vector<ecs::EntityType> &unselected_indices,
@@ -26,10 +29,12 @@ void render_figures(
 
 void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
                 std::shared_ptr<app_state> s, std::vector<ecs::EntityType> &sel,
-                std::vector<ecs::EntityType> &unsel);
+                std::vector<ecs::EntityType> &unsel,
+                std::vector<ecs::EntityType> &changed);
 
 bool render_and_apply_gizmo(
     std::vector<ecs::EntityType> &indices,
+    std::vector<ecs::EntityType> &changed,
     ecs::ComponentStorage<transformation> &transformation_component,
     std::shared_ptr<GLFWwindow> &w, std::shared_ptr<app_state> &s,
     const glm::vec3 &center);
@@ -40,10 +45,7 @@ void render_cursors(
     ecs::ComponentStorage<transformation> &transformation_component,
     std::shared_ptr<GLFWwindow> w, std::shared_ptr<app_state> s);
 
-void refresh_common_uniforms(GLuint program, const glm::mat4 &view,
-                             const glm::mat4 proj,
-                             std::shared_ptr<GLFWwindow> w,
-                             std::shared_ptr<app_state> s);
+void refresh_common_uniforms(GLuint program);
 
 glm::vec4 sample_torus(const torus_params &tp, const float u, const float v);
 
@@ -75,11 +77,13 @@ bool generate_points(const ParamsType &s, const parametric &p,
   return true;
 }
 
-bool regenerate_bezier(const relationship &r,
+bool regenerate_bezier(const relationship &r, adaptive &a,
                        ecs::ComponentStorage<transformation> transformations,
                        ecs::ComponentStorage<relationship> relationships,
                        std::vector<glm::vec4> &out_vertices,
-                       std::vector<unsigned int> &out_indices);
+                       std::vector<unsigned int> &out_indices,
+                       std::vector<glm::vec4> &out_vertices_polygon,
+                       std::vector<unsigned int> &out_indices_polygon);
 
 void generate_lines(const parametric &p, const std::vector<glm::vec4> &points,
                     std::vector<unsigned int> &indices);
@@ -87,7 +91,8 @@ void generate_lines(const parametric &p, const std::vector<glm::vec4> &points,
 void reset_gl_objects(gl_object &g);
 void set_model_uniform(const transformation &t);
 void update_changed_relationships(ecs::component_manager &cm,
-                                  const std::vector<ecs::EntityType> &sel,
+                                  std::shared_ptr<app_state> &s,
+                                  const std::vector<ecs::EntityType> &changed,
                                   const std::vector<ecs::EntityType> &del);
 void delete_entities(ecs::component_manager &cm,
                      const std::vector<ecs::EntityType> &del);

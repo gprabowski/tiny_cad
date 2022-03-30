@@ -86,6 +86,7 @@ void mouse_move_callback(GLFWwindow *w, double xpos, double ypos) {
 
   if (s->mouse_pressed[app_state::mouse_button::left] &&
       s->pressed[static_cast<size_t>(GLFW_KEY_LEFT_ALT)]) {
+    s->moved = true;
     reorient_camera(s, xpos, ypos);
   }
 }

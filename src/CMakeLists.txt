@@ -9,6 +9,7 @@ set(SOURCES
     constructors.cpp
     input_handlers.cpp
     log.cpp
+    frame_state.cpp
     )
 
 add_executable(tiny_cad)

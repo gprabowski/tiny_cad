@@ -1,28 +1,50 @@
 #include <input_handlers.h>
 
 #include <constructors.h>
+#include <frame_state.h>
+#include <systems.h>
 
 namespace handlers {
 
 inline void add_current_shape_at_cursor(ecs::component_manager &cm,
                                         std::shared_ptr<app_state> &state) {
-  for (auto &[idx, com] : cm.cursor_component) {
-    auto t = cm.get_component<transformation>(idx);
-    const auto &cp = cm.get_component<cursor_params>(idx);
-    t.scale = glm::vec3{1.0f, 1.0f, 1.0f};
-    if (cp.current_shape == cursor_params::cursor_shape::torus) {
-      constructors::add_torus(cm,
-                              parametric{0.0f,
-                                         2 * glm::pi<float>(),
-                                         0.0f,
-                                         2 * glm::pi<float>(),
-                                         {20u, 50u}},
-                              std::move(t), torus_params{1.f, 2.f},
-                              state->default_program);
-    } else if (cp.current_shape == cursor_params::cursor_shape::point) {
-      constructors::add_point(cm, std::move(t), state->default_program);
-    } else if (cp.current_shape == cursor_params::cursor_shape::bezierc) {
-      constructors::add_bezier(cm, state->default_program);
+  auto idx = cm.cursor_component.begin()->first;
+  ecs::EntityType new_shape;
+
+  auto t = cm.get_component<transformation>(idx);
+  const auto &cp = cm.get_component<cursor_params>(idx);
+  t.scale = glm::vec3{1.0f, 1.0f, 1.0f};
+  if (cp.current_shape == cursor_params::cursor_shape::torus) {
+    new_shape = constructors::add_torus(
+        cm,
+        parametric{
+            0.0f, 2 * glm::pi<float>(), 0.0f, 2 * glm::pi<float>(), {20u, 50u}},
+        std::move(t), torus_params{1.f, 2.f}, state->default_program);
+  } else if (cp.current_shape == cursor_params::cursor_shape::point) {
+    new_shape =
+        constructors::add_point(cm, std::move(t), state->default_program);
+  } else if (cp.current_shape == cursor_params::cursor_shape::bezierc) {
+    new_shape = constructors::add_bezier(cm, state, state->default_program);
+  }
+
+  if (cm.selected_component.size() == 1) {
+    auto s = cm.selected_component.begin()->first;
+    if (cm.has_component<tag_parent>(s) &&
+        cp.current_shape == cursor_params::cursor_shape::point) {
+      cm.add_component<relationship>(new_shape, {{s}, {}});
+      auto &srel = cm.get_component<relationship>(s);
+      srel.children.push_back(new_shape);
+      if (cm.has_component<tag_bezierc>(s)) {
+        auto &g = cm.get_component<gl_object>(s);
+        auto &sgl = cm.get_component<gl_object>(
+            cm.get_component<secondary_object>(s).val);
+        auto &a = cm.get_component<adaptive>(s);
+        systems::regenerate_bezier(srel, a, cm.transformation_components,
+                                   cm.relationship_component, g.points,
+                                   g.indices, sgl.points, sgl.indices);
+        systems::reset_gl_objects(g);
+        systems::reset_gl_objects(sgl);
+      }
     }
   }
 }
@@ -39,18 +61,26 @@ void handle_keyboard(std::shared_ptr<app_state> state,
 
   if (state->imode == app_state::wasd_mode::camera) {
     const float cameraSpeed = 30.f * delta_time; // adjust accordingly
-    if (state->pressed[GLFW_KEY_W])
+    if (state->pressed[GLFW_KEY_W]) {
       state->cam_pos += cameraSpeed * state->cam_front;
-    if (state->pressed[GLFW_KEY_S])
+      state->moved = true;
+    }
+    if (state->pressed[GLFW_KEY_S]) {
       state->cam_pos -= cameraSpeed * state->cam_front;
-    if (state->pressed[GLFW_KEY_A])
+      state->moved = true;
+    }
+    if (state->pressed[GLFW_KEY_A]) {
       state->cam_pos -=
           glm::normalize(glm::cross(state->cam_front, state->cam_up)) *
           cameraSpeed;
-    if (state->pressed[GLFW_KEY_D])
+      state->moved = true;
+    }
+    if (state->pressed[GLFW_KEY_D]) {
       state->cam_pos +=
           glm::normalize(glm::cross(state->cam_front, state->cam_up)) *
           cameraSpeed;
+      state->moved = true;
+    }
   }
   if (state->imode == app_state::wasd_mode::cursor) {
     const float cursor_speed = 10.f * delta_time; // adjust accordingly
@@ -112,15 +142,9 @@ void handle_mouse(std::shared_ptr<app_state> state,
 
     glm::vec4 ndc_dir{ndc_x, ndc_y, -1, 1};
 
-    auto view = (glm::lookAt(state->cam_pos, state->cam_pos + state->cam_front,
-                             state->cam_up));
-
-    auto proj = (glm::perspective(45.f, static_cast<float>(width) / height,
-                                  0.1f, 1000.f));
-
-    glm::vec4 world_p = glm::inverse(proj) * ndc_dir;
+    glm::vec4 world_p = glm::inverse(frame_state::proj) * ndc_dir;
     world_p = world_p / world_p.z;
-    world_p = glm::inverse(view) * world_p;
+    world_p = glm::inverse(frame_state::view) * world_p;
     world_p = world_p / world_p.w;
 
     auto dir = glm::normalize(glm::vec3(world_p) - state->cam_pos);

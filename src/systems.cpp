@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <istream>
 #include <set>
 
 #include <glad/glad.h>
@@ -8,6 +10,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include <dummy.h>
+#include <frame_state.h>
 #include <gl_object.h>
 #include <systems.h>
 #include <torus.h>
@@ -64,6 +67,42 @@ void reset_gl_objects(gl_object &g) {
   default:
     break;
   }
+}
+void add_sel_points_to_parent(ecs::EntityType idx, ecs::component_manager &cm,
+                              std::shared_ptr<app_state> &s) {
+  if (!cm.has_component<tag_parent>(idx)) {
+    return;
+  }
+  auto &rel = cm.get_component<relationship>(idx);
+  for (const auto &[pidx, _] : cm.selected_component) {
+    if (!cm.has_component<tag_point>(pidx)) {
+      continue;
+    }
+    if (!cm.has_component<relationship>(pidx)) {
+      cm.add_component<relationship>(pidx, {});
+    }
+    auto &prel = cm.get_component<relationship>(pidx);
+    rel.children.push_back(pidx);
+    prel.parents.push_back(idx);
+  }
+
+  auto &g = cm.get_component<gl_object>(idx);
+  auto &a = cm.get_component<adaptive>(idx);
+  auto &sgl =
+      cm.get_component<gl_object>(cm.get_component<secondary_object>(idx).val);
+  regenerate_bezier(rel, a, cm.transformation_components,
+                    cm.relationship_component, g.points, g.indices, sgl.points,
+                    sgl.indices);
+  reset_gl_objects(g);
+  reset_gl_objects(sgl);
+}
+
+void set_vanilla_model_uniform() {
+  GLint program;
+  glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+  const auto model = glm::mat4(1.0f);
+  glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE,
+                     glm::value_ptr(model));
 }
 
 void set_model_uniform(const transformation &t) {
@@ -156,14 +195,11 @@ inline dummy_point get_initial_dummy(GLuint program) {
   return dummy_point{std::move(t), std::move(g)};
 }
 
-void refresh_common_uniforms(GLuint program, const glm::mat4 &view,
-                             const glm::mat4 proj,
-                             std::shared_ptr<GLFWwindow> w,
-                             std::shared_ptr<app_state> s) {
+void refresh_common_uniforms(GLuint program) {
   glProgramUniformMatrix4fv(program, glGetUniformLocation(program, "view"), 1,
-                            GL_FALSE, glm::value_ptr(view));
+                            GL_FALSE, glm::value_ptr(frame_state::view));
   glProgramUniformMatrix4fv(program, glGetUniformLocation(program, "proj"), 1,
-                            GL_FALSE, glm::value_ptr(proj));
+                            GL_FALSE, glm::value_ptr(frame_state::proj));
 }
 
 void decompose(const glm::mat4 &m, glm::vec3 &trans, glm::vec3 &scale,
@@ -190,21 +226,15 @@ void render_figures(
   glGetIntegerv(GL_CURRENT_PROGRAM, &_last_program);
   GLuint last_program = _last_program;
 
-  int display_w, display_h;
-  glfwGetFramebufferSize(w.get(), &display_w, &display_h);
-  auto proj = glm::perspective(45.f, static_cast<float>(display_w) / display_h,
-                               0.1f, 1000.f);
-  auto view = glm::lookAt(s->cam_pos, s->cam_pos + s->cam_front, s->cam_up);
-
   if (last_program != 0) {
-    refresh_common_uniforms(last_program, view, proj, w, s);
+    refresh_common_uniforms(last_program);
   }
 
   for (const auto idx : unselected_indices) {
     auto &t = transformation_component[idx];
     auto &gl = ogl_component[idx];
     glUseProgram(gl.program);
-    refresh_common_uniforms(gl.program, view, proj, w, s);
+    refresh_common_uniforms(gl.program);
     systems::set_model_uniform(t);
     glVertexAttrib4f(1, 0.0f, 0.0f, 1.0f, 1.0f);
     systems::render_points(gl);
@@ -213,7 +243,7 @@ void render_figures(
   for (const auto idx : selected_indices) {
     auto &t = transformation_component[idx];
     auto &gl = ogl_component[idx];
-    refresh_common_uniforms(gl.program, view, proj, w, s);
+    refresh_common_uniforms(gl.program);
     systems::set_model_uniform(t);
     glVertexAttrib4f(1, 1.0f, 0.0f, 0.0f, 1.0f);
     center_of_weight.t.translation += t.translation;
@@ -229,9 +259,34 @@ void render_figures(
   center_out = center_of_weight.t.translation;
   center_of_weight.t.translation = {0.0f, 0.0f, 0.0f};
 }
+void render_secondary_geometry(ecs::ComponentStorage<secondary_object> &sec,
+                               ecs::ComponentStorage<gl_object> &ogl_component,
+                               std::shared_ptr<GLFWwindow> w,
+                               std::shared_ptr<app_state> s) {
+  GLint _last_program;
+  glGetIntegerv(GL_CURRENT_PROGRAM, &_last_program);
+  GLuint last_program = _last_program;
+
+  if (last_program != 0) {
+    refresh_common_uniforms(last_program);
+  }
+
+  for (const auto &[idx, v] : sec) {
+    if (!v.enabled) {
+      continue;
+    }
+    auto &gl = ogl_component[v.val];
+    glUseProgram(gl.program);
+    refresh_common_uniforms(gl.program);
+    systems::set_vanilla_model_uniform();
+    glVertexAttrib4f(1, 0.0f, 1.0f, 0.0f, 1.0f);
+    systems::render_points(gl);
+  }
+}
 
 bool render_and_apply_gizmo(
     std::vector<ecs::EntityType> &indices,
+    std::vector<ecs::EntityType> &changed,
     ecs::ComponentStorage<transformation> &transformation_component,
     std::shared_ptr<GLFWwindow> &w, std::shared_ptr<app_state> &s,
     const glm::vec3 &center) {
@@ -245,10 +300,6 @@ bool render_and_apply_gizmo(
 
   int display_w, display_h;
   glfwGetFramebufferSize(w.get(), &display_w, &display_h);
-  auto proj = glm::perspective(45.f, static_cast<float>(display_w) / display_h,
-                               0.1f, 1000.f);
-  auto view = glm::lookAt(s->cam_pos, s->cam_pos + s->cam_front, s->cam_up);
-
   ImGui::Begin("gizmo");
   ImGuizmo::SetOrthographic(false);
   ImGuizmo::SetDrawlist();
@@ -257,13 +308,15 @@ bool render_and_apply_gizmo(
   ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, w_w, w_h);
   auto model = glm::translate(glm::mat4(1.0f), center);
 
-  ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), s->gizmo_op,
+  ImGuizmo::Manipulate(glm::value_ptr(frame_state::view),
+                       glm::value_ptr(frame_state::proj), s->gizmo_op,
                        ImGuizmo::MODE::WORLD, glm::value_ptr(model));
 
   if (ImGuizmo::IsUsing()) {
     glm::vec3 trans;
     glm::vec3 rot;
     glm::vec3 scale;
+    changed.insert(changed.end(), indices.begin(), indices.end());
     ret = true;
     gizmo_changed = true;
     decompose(model, trans, scale, rot);
@@ -302,18 +355,11 @@ void render_cursors(
   GLint _last_program;
   GLuint last_program;
 
-  int display_w, display_h;
-  glfwGetFramebufferSize(w.get(), &display_w, &display_h);
-  glLineWidth(2.0f);
-  auto proj = glm::perspective(45.f, static_cast<float>(display_w) / display_h,
-                               0.1f, 1000.f);
-  auto view = glm::lookAt(s->cam_pos, s->cam_pos + s->cam_front, s->cam_up);
-
   glGetIntegerv(GL_CURRENT_PROGRAM, &_last_program);
   last_program = _last_program;
 
   if (last_program != 0) {
-    refresh_common_uniforms(last_program, view, proj, w, s);
+    refresh_common_uniforms(last_program);
   }
 
   for (auto idx : indices) {
@@ -321,11 +367,12 @@ void render_cursors(
     if (last_program != gl.program) {
       last_program = gl.program;
       glUseProgram(gl.program);
-      refresh_common_uniforms(gl.program, view, proj, w, s);
+      refresh_common_uniforms(gl.program);
     }
     glVertexAttrib4f(1, 1.0f, 1.0f, 0.0f, 1.0f);
     auto &t = transformation_component[idx];
-    const auto val = std::abs((view * glm::vec4(t.translation, 1)).z);
+    const auto val =
+        std::abs((frame_state::view * glm::vec4(t.translation, 1)).z);
     t.scale = glm::vec3(val, val, val);
     systems::set_model_uniform(t);
     systems::render_points(gl);
@@ -335,7 +382,8 @@ void render_cursors(
 
 void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
                 std::shared_ptr<app_state> s, std::vector<ecs::EntityType> &sel,
-                std::vector<ecs::EntityType> &unsel) {
+                std::vector<ecs::EntityType> &unsel,
+                std::vector<ecs::EntityType> &changed) {
   static ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
   int display_w, display_h;
   glfwGetFramebufferSize(w.get(), &display_w, &display_h);
@@ -355,124 +403,185 @@ void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
   render_figures(sel, unsel, cm.transformation_components, cm.ogl_components, w,
                  s, center);
 
-  render_and_apply_gizmo(sel, cm.transformation_components, w, s, center);
+  render_secondary_geometry(cm.secondary_component, cm.ogl_components, w, s);
+
+  render_and_apply_gizmo(sel, changed, cm.transformation_components, w, s,
+                         center);
 
   render_cursors(cursors, cm.ogl_components, cm.transformation_components, w,
                  s);
 }
 
-bool regenerate_bezier(const relationship &r,
+int get_score(const glm::vec3 &a, const glm::vec3 &b, const glm::vec3 &c,
+              const glm::vec3 &d) {
+  auto pv = frame_state::proj * frame_state::view;
+
+  auto f_a = pv * glm::vec4(a, 1.0f);
+  f_a = f_a / f_a.w;
+  glm::clamp(f_a, -1.0f, 1.0f);
+  auto f_b = pv * glm::vec4(b, 1.0f);
+  f_b = f_b / f_b.w;
+  glm::clamp(f_b, -1.0f, 1.0f);
+  auto f_c = pv * glm::vec4(c, 1.0f);
+  f_c = f_c / f_c.w;
+  glm::clamp(f_c, -1.0f, 1.0f);
+  auto f_d = pv * glm::vec4(d, 1.0f);
+  f_d = f_d / f_d.w;
+  glm::clamp(f_d, -1.0f, 1.0f);
+
+  // get field of the first triangle
+  float ar1 = 0.0f;
+  ar1 = fabs(0.5f * (f_a.x * (f_b.y - f_c.y) + f_b.x * (f_c.y - f_a.y) +
+                     f_c.x * (f_a.y - f_b.y)));
+  float ar2 = 0.0f;
+  ar2 = fabs(0.5f * (f_a.x * (f_b.y - f_c.y) + f_b.x * (f_c.y - f_a.y) +
+                     f_c.x * (f_a.y - f_b.y)));
+
+  return (ar1 + ar2) / 4 * frame_state::window_h * frame_state::window_w;
+}
+
+int get_score(const glm::vec3 &a, const glm::vec3 &b, const glm::vec3 &c) {
+  return get_score(a, b, c, a);
+}
+
+bool regenerate_bezier(const relationship &r, adaptive &a,
                        ecs::ComponentStorage<transformation> transformations,
                        ecs::ComponentStorage<relationship> relationships,
                        std::vector<glm::vec4> &out_vertices,
-                       std::vector<unsigned int> &out_indices) {
+                       std::vector<unsigned int> &out_indices,
+                       std::vector<glm::vec4> &out_vertices_polygon,
+                       std::vector<unsigned int> &out_indices_polygon) {
+  out_vertices_polygon.clear();
+  out_indices_polygon.clear();
   out_vertices.clear();
   out_indices.clear();
-  ecs::EntityType curr_child{r.first_child};
-  for (int remaining = r.num_children; remaining > 0; remaining -= 3) {
+  // bool new_sizes = (a.scores.size() > 0);
+
+  for (int remaining = r.children.size(); remaining > 0; remaining -= 3) {
     if (remaining > 3) {
-      const auto first_child = curr_child;
+      const auto first_child = r.children[remaining - 1];
       const auto b_a = transformations[first_child].translation;
 
-      const auto second_child = relationships[first_child].next_child;
+      const auto second_child = r.children[remaining - 2];
       const auto b_b = transformations[second_child].translation;
 
-      const auto third_child = relationships[second_child].next_child;
+      const auto third_child = r.children[remaining - 3];
       const auto b_c = transformations[third_child].translation;
 
-      const auto fourth_child = relationships[third_child].next_child;
+      const auto fourth_child = r.children[remaining - 4];
       const auto b_d = transformations[fourth_child].translation;
-
-      for (float t = 0.0; t < 1.0f; t = t + 0.01f) {
-        const auto b_e = (1.f - t) * b_a + t * b_b;
+      // check if we need to recalculate
+      auto tmp = get_score(b_a, b_b, b_c, b_d) * 5;
+      auto current_score = std::clamp(tmp, 3, 100);
+      float div = 1.0f / current_score;
+      for (float t = 0.0; t < 1.0f; t = t + div) {
+        const auto b_e = (1.f - t) * b_a + t * b_b + current_score * 0.0f;
         const auto b_f = (1.f - t) * b_b + t * b_c;
         const auto b_g = (1.f - t) * b_c + t * b_d;
         const auto b_h = (1.f - t) * b_e + t * b_f;
         const auto b_i = (1.f - t) * b_f + t * b_g;
         out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
       }
-
-      curr_child = fourth_child;
+      out_vertices_polygon.push_back(glm::vec4(b_a, 1.0f));
+      out_vertices_polygon.push_back(glm::vec4(b_b, 1.0f));
+      out_vertices_polygon.push_back(glm::vec4(b_c, 1.0f));
+      out_vertices_polygon.push_back(glm::vec4(b_d, 1.0f));
 
       // from de casteljau find all necessary points
     } else if (remaining == 3) {
 
-      const auto first_child = curr_child;
+      const auto first_child = r.children[remaining - 1];
       const auto b_e = transformations[first_child].translation;
 
-      const auto second_child = relationships[first_child].next_child;
+      const auto second_child = r.children[remaining - 2];
       const auto b_f = transformations[second_child].translation;
 
-      const auto third_child = relationships[second_child].next_child;
+      const auto third_child = r.children[remaining - 3];
       const auto b_g = transformations[third_child].translation;
 
-      for (float t = 0.0; t < 1.0f; t = t + 0.01f) {
+      for (float t = 0.0; t <= 1.0f; t = t + 0.01f) {
         const auto b_h = (1.f - t) * b_e + t * b_f;
         const auto b_i = (1.f - t) * b_f + t * b_g;
         out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
       }
 
-      curr_child = third_child;
+      out_vertices_polygon.push_back(glm::vec4(b_e, 1.0f));
+      out_vertices_polygon.push_back(glm::vec4(b_f, 1.0f));
+      out_vertices_polygon.push_back(glm::vec4(b_g, 1.0f));
+
     } else if (remaining == 2) {
 
-      const auto first_child = curr_child;
+      const auto first_child = r.children[remaining - 1];
       const auto b_h = transformations[first_child].translation;
 
-      const auto second_child = relationships[first_child].next_child;
+      const auto second_child = r.children[remaining - 2];
       const auto b_i = transformations[second_child].translation;
 
-      for (float t = 0.0; t < 1.0f; t = t + 0.01f) {
+      for (float t = 0.0; t <= 1.0f; t = t + 1.0f) {
         out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
       }
+      out_vertices_polygon.push_back(glm::vec4(b_h, 1.0f));
+      out_vertices_polygon.push_back(glm::vec4(b_i, 1.0f));
 
-      curr_child = second_child;
     } else if (remaining == 1) {
-      const auto first_child = curr_child;
+      const auto first_child = r.children[remaining - 1];
       const auto first_t = transformations[first_child];
 
       out_vertices.push_back({first_t.translation, 1.0f});
-
-      curr_child = first_child;
+      out_vertices_polygon.push_back(glm::vec4(first_t.translation, 1.0f));
     }
   }
 
   for (std::size_t i = 0; i < out_vertices.size(); ++i) {
     out_indices.push_back(i);
   }
+
+  for (std::size_t i = 0; i < out_vertices_polygon.size(); ++i) {
+    out_indices_polygon.push_back(i);
+  }
+
   return true;
 }
 
 void update_changed_relationships(ecs::component_manager &cm,
-                                  const std::vector<ecs::EntityType> &sel,
+                                  std::shared_ptr<app_state> &s,
+                                  const std::vector<ecs::EntityType> &changed,
                                   const std::vector<ecs::EntityType> &del) {
   std::set<ecs::EntityType> changed_rel;
-  for (const auto id : sel) {
+  for (const auto id : changed) {
     if (cm.has_component<relationship>(id)) {
       auto &rel = cm.get_component<relationship>(id);
-      if (rel.parent != ecs::null_entity)
-        changed_rel.insert(rel.parent);
+      if (rel.parents.size())
+        for (auto p : rel.parents) {
+          changed_rel.insert(p);
+        }
     }
   }
 
   for (const auto id : del) {
     if (cm.has_component<relationship>(id)) {
       auto &rel = cm.get_component<relationship>(id);
-      if (rel.parent != ecs::null_entity) {
-        cm.remove_component<relationship>(id);
-        changed_rel.insert(rel.parent);
-      } else {
-        cm.remove_component<relationship>(id);
+      if (rel.parents.size()) {
+        for (auto p : rel.parents) {
+          changed_rel.insert(p);
+        }
       }
+      cm.remove_component<relationship>(id);
     }
   }
 
-  for (const auto &p : changed_rel) {
+  for (const auto p : changed_rel) {
     if (cm.has_component<tag_bezierc>(p) && cm.has_component<relationship>(p)) {
       auto &rel = cm.get_component<relationship>(p);
       auto &gl = cm.get_component<gl_object>(p);
-      regenerate_bezier(rel, cm.transformation_components,
-                        cm.relationship_component, gl.points, gl.indices);
+      auto &a = cm.get_component<adaptive>(p);
+      auto &sgl = cm.get_component<gl_object>(
+          cm.get_component<secondary_object>(p).val);
+      regenerate_bezier(rel, a, cm.transformation_components,
+                        cm.relationship_component, gl.points, gl.indices,
+                        sgl.points, sgl.indices);
       reset_gl_objects(gl);
+      reset_gl_objects(sgl);
     }
   }
 }

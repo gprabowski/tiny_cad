@@ -12,7 +12,7 @@
 
 struct app_state {
   enum mouse_button : int { left = 0, right = 1, middle = 2, other = 3 };
-  enum wasd_mode : int { camera = 0, cursor = 1 } imode{camera};
+  enum wasd_mode : int { camera = 0, cursor = 1 } imode{cursor};
   enum gizmo_mode : int {
     translation = 0,
     rotation = 1,
@@ -24,6 +24,8 @@ struct app_state {
   float yaw{-90.0f};
   float pitch{0.0f};
   float roll{0.0f};
+
+  bool moved{false};
 
   glm::vec3 cam_pos{10.0f, 10.0f, 70.0f};
   glm::vec3 cam_front{0.0f, 0.0f, -1.0f};
