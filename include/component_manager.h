@@ -110,8 +110,9 @@ struct component_manager {
       }
     } else if (rel.children.size()) {
       for (auto c : rel.children) {
-        // delete from child this relationship
-        // check if child is still in a diff rel
+        if(!has_component<relationship>(c)) {
+            continue;
+        }
         auto &crel = get_component<relationship>(c);
         crel.parents.erase(std::remove_if(crel.parents.begin(),
                                           crel.parents.end(),

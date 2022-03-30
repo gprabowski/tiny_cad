@@ -3,5 +3,4 @@
 
 struct adaptive {
   std::vector<int> scores;
-  std::vector<int> offsets;
 };

@@ -20,7 +20,8 @@ void add_sel_points_to_parent(ecs::EntityType idx, ecs::component_manager &cm,
                               std::shared_ptr<app_state> &s);
 
 void render_figures(
-    const std::vector<ecs::EntityType> &selected_indices,
+    const std::vector<ecs::EntityType> &selected_parents,
+    const std::vector<ecs::EntityType> &selected_primitives,
     const std::vector<ecs::EntityType> &unselected_indices,
     ecs::ComponentStorage<transformation> &transformation_component,
     ecs::ComponentStorage<gl_object> &ogl_component,

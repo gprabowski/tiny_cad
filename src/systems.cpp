@@ -12,6 +12,7 @@
 #include <dummy.h>
 #include <frame_state.h>
 #include <gl_object.h>
+#include <log.h>
 #include <systems.h>
 #include <torus.h>
 
@@ -214,7 +215,8 @@ void decompose(const glm::mat4 &m, glm::vec3 &trans, glm::vec3 &scale,
 }
 
 void render_figures(
-    const std::vector<ecs::EntityType> &selected_indices,
+    const std::vector<ecs::EntityType> &selected_parents,
+    const std::vector<ecs::EntityType> &selected_primitives,
     const std::vector<ecs::EntityType> &unselected_indices,
     ecs::ComponentStorage<transformation> &transformation_component,
     ecs::ComponentStorage<gl_object> &ogl_component,
@@ -240,7 +242,7 @@ void render_figures(
     systems::render_points(gl);
   }
 
-  for (const auto idx : selected_indices) {
+  for (const auto idx : selected_primitives) {
     auto &t = transformation_component[idx];
     auto &gl = ogl_component[idx];
     refresh_common_uniforms(gl.program);
@@ -250,7 +252,16 @@ void render_figures(
     systems::render_points(gl);
   }
 
-  center_of_weight.t.translation *= (1.f / selected_indices.size());
+  for (const auto idx : selected_parents) {
+    auto &t = transformation_component[idx];
+    auto &gl = ogl_component[idx];
+    refresh_common_uniforms(gl.program);
+    systems::set_model_uniform(t);
+    glVertexAttrib4f(1, 1.0f, 0.0f, 0.0f, 1.0f);
+    systems::render_points(gl);
+  }
+
+  center_of_weight.t.translation *= (1.f / selected_primitives.size());
 
   glVertexAttrib4f(1, 1.0f, 1.0f, 1.0f, 1.0f);
   systems::set_model_uniform(center_of_weight.t);
@@ -290,6 +301,7 @@ bool render_and_apply_gizmo(
     ecs::ComponentStorage<transformation> &transformation_component,
     std::shared_ptr<GLFWwindow> &w, std::shared_ptr<app_state> &s,
     const glm::vec3 &center) {
+
   if (indices.size() == 0) {
     return false;
   }
@@ -400,13 +412,24 @@ void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
     cursors.push_back(idx);
   }
 
-  render_figures(sel, unsel, cm.transformation_components, cm.ogl_components, w,
-                 s, center);
+  std::vector<ecs::EntityType> sel_primitives;
+  std::vector<ecs::EntityType> sel_parents;
+
+  for (const auto idx : sel) {
+    if (!cm.has_component<tag_parent>(idx)) {
+      sel_primitives.push_back(idx);
+    } else {
+      sel_parents.push_back(idx);
+    }
+  }
+
+  render_figures(sel_parents, sel_primitives, unsel,
+                 cm.transformation_components, cm.ogl_components, w, s, center);
 
   render_secondary_geometry(cm.secondary_component, cm.ogl_components, w, s);
 
-  render_and_apply_gizmo(sel, changed, cm.transformation_components, w, s,
-                         center);
+  render_and_apply_gizmo(sel_primitives, changed, cm.transformation_components,
+                         w, s, center);
 
   render_cursors(cursors, cm.ogl_components, cm.transformation_components, w,
                  s);
@@ -414,7 +437,7 @@ void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
 
 int get_score(const glm::vec3 &a, const glm::vec3 &b, const glm::vec3 &c,
               const glm::vec3 &d) {
-  auto pv = frame_state::proj * frame_state::view;
+  const auto pv = frame_state::proj * frame_state::view;
 
   auto f_a = pv * glm::vec4(a, 1.0f);
   f_a = f_a / f_a.w;
@@ -429,19 +452,25 @@ int get_score(const glm::vec3 &a, const glm::vec3 &b, const glm::vec3 &c,
   f_d = f_d / f_d.w;
   glm::clamp(f_d, -1.0f, 1.0f);
 
-  // get field of the first triangle
-  float ar1 = 0.0f;
-  ar1 = fabs(0.5f * (f_a.x * (f_b.y - f_c.y) + f_b.x * (f_c.y - f_a.y) +
-                     f_c.x * (f_a.y - f_b.y)));
-  float ar2 = 0.0f;
-  ar2 = fabs(0.5f * (f_a.x * (f_b.y - f_c.y) + f_b.x * (f_c.y - f_a.y) +
-                     f_c.x * (f_a.y - f_b.y)));
-
-  return (ar1 + ar2) / 4 * frame_state::window_h * frame_state::window_w;
+  const float len =
+      glm::length(f_a - f_b) + glm::length(f_b - f_c) + glm::length(f_c - f_d);
+  return (len)*0.5f * (frame_state::window_h + frame_state::window_w);
 }
 
 int get_score(const glm::vec3 &a, const glm::vec3 &b, const glm::vec3 &c) {
-  return get_score(a, b, c, a);
+  const auto pv = frame_state::proj * frame_state::view;
+  auto f_a = pv * glm::vec4(a, 1.0f);
+  f_a = f_a / f_a.w;
+  glm::clamp(f_a, -1.0f, 1.0f);
+  auto f_b = pv * glm::vec4(b, 1.0f);
+  f_b = f_b / f_b.w;
+  glm::clamp(f_b, -1.0f, 1.0f);
+  auto f_c = pv * glm::vec4(c, 1.0f);
+  f_c = f_c / f_c.w;
+  glm::clamp(f_c, -1.0f, 1.0f);
+
+  const float len = glm::length(f_a - f_b) + glm::length(f_b - f_c);
+  return (len)*0.5f * (frame_state::window_h + frame_state::window_w);
 }
 
 bool regenerate_bezier(const relationship &r, adaptive &a,
@@ -455,8 +484,6 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
   out_indices_polygon.clear();
   out_vertices.clear();
   out_indices.clear();
-  // bool new_sizes = (a.scores.size() > 0);
-
   for (int remaining = r.children.size(); remaining > 0; remaining -= 3) {
     if (remaining > 3) {
       const auto first_child = r.children[remaining - 1];
@@ -471,7 +498,8 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
       const auto fourth_child = r.children[remaining - 4];
       const auto b_d = transformations[fourth_child].translation;
       // check if we need to recalculate
-      auto tmp = get_score(b_a, b_b, b_c, b_d) * 5;
+      auto tmp = get_score(b_a, b_b, b_c, b_d) / 20;
+      TINY_CAD_INFO("{0}", tmp);
       auto current_score = std::clamp(tmp, 3, 100);
       float div = 1.0f / current_score;
       for (float t = 0.0; t < 1.0f; t = t + div) {
@@ -486,8 +514,6 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
       out_vertices_polygon.push_back(glm::vec4(b_b, 1.0f));
       out_vertices_polygon.push_back(glm::vec4(b_c, 1.0f));
       out_vertices_polygon.push_back(glm::vec4(b_d, 1.0f));
-
-      // from de casteljau find all necessary points
     } else if (remaining == 3) {
 
       const auto first_child = r.children[remaining - 1];
@@ -499,7 +525,11 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
       const auto third_child = r.children[remaining - 3];
       const auto b_g = transformations[third_child].translation;
 
-      for (float t = 0.0; t <= 1.0f; t = t + 0.01f) {
+      auto tmp = get_score(b_e, b_f, b_g) / 20;
+      TINY_CAD_INFO("{0}", tmp);
+      auto current_score = std::clamp(tmp, 3, 100);
+      float div = 1.0f / current_score;
+      for (float t = 0.0; t <= 1.0f; t = t + div) {
         const auto b_h = (1.f - t) * b_e + t * b_f;
         const auto b_i = (1.f - t) * b_f + t * b_g;
         out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
@@ -508,25 +538,20 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
       out_vertices_polygon.push_back(glm::vec4(b_e, 1.0f));
       out_vertices_polygon.push_back(glm::vec4(b_f, 1.0f));
       out_vertices_polygon.push_back(glm::vec4(b_g, 1.0f));
-
     } else if (remaining == 2) {
-
       const auto first_child = r.children[remaining - 1];
       const auto b_h = transformations[first_child].translation;
 
       const auto second_child = r.children[remaining - 2];
       const auto b_i = transformations[second_child].translation;
-
       for (float t = 0.0; t <= 1.0f; t = t + 1.0f) {
         out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
       }
       out_vertices_polygon.push_back(glm::vec4(b_h, 1.0f));
       out_vertices_polygon.push_back(glm::vec4(b_i, 1.0f));
-
     } else if (remaining == 1) {
       const auto first_child = r.children[remaining - 1];
       const auto first_t = transformations[first_child];
-
       out_vertices.push_back({first_t.translation, 1.0f});
       out_vertices_polygon.push_back(glm::vec4(first_t.translation, 1.0f));
     }
