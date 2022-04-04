@@ -196,13 +196,6 @@ inline dummy_point get_initial_dummy(GLuint program) {
   return dummy_point{std::move(t), std::move(g)};
 }
 
-void refresh_common_uniforms(GLuint program) {
-  glProgramUniformMatrix4fv(program, glGetUniformLocation(program, "view"), 1,
-                            GL_FALSE, glm::value_ptr(frame_state::view));
-  glProgramUniformMatrix4fv(program, glGetUniformLocation(program, "proj"), 1,
-                            GL_FALSE, glm::value_ptr(frame_state::proj));
-}
-
 void decompose(const glm::mat4 &m, glm::vec3 &trans, glm::vec3 &scale,
                glm::vec3 &rot) {
   trans = glm::vec3(m[3]);
@@ -224,19 +217,10 @@ void render_figures(
     glm::vec3 &center_out) {
   static dummy_point center_of_weight{get_initial_dummy(s->default_program)};
 
-  GLint _last_program;
-  glGetIntegerv(GL_CURRENT_PROGRAM, &_last_program);
-  GLuint last_program = _last_program;
-
-  if (last_program != 0) {
-    refresh_common_uniforms(last_program);
-  }
-
   for (const auto idx : unselected_indices) {
     auto &t = transformation_component[idx];
     auto &gl = ogl_component[idx];
     glUseProgram(gl.program);
-    refresh_common_uniforms(gl.program);
     systems::set_model_uniform(t);
     glVertexAttrib4f(1, 0.0f, 0.0f, 1.0f, 1.0f);
     systems::render_points(gl);
@@ -245,7 +229,6 @@ void render_figures(
   for (const auto idx : selected_primitives) {
     auto &t = transformation_component[idx];
     auto &gl = ogl_component[idx];
-    refresh_common_uniforms(gl.program);
     systems::set_model_uniform(t);
     glVertexAttrib4f(1, 1.0f, 0.0f, 0.0f, 1.0f);
     center_of_weight.t.translation += t.translation;
@@ -255,7 +238,6 @@ void render_figures(
   for (const auto idx : selected_parents) {
     auto &t = transformation_component[idx];
     auto &gl = ogl_component[idx];
-    refresh_common_uniforms(gl.program);
     systems::set_model_uniform(t);
     glVertexAttrib4f(1, 1.0f, 0.0f, 0.0f, 1.0f);
     systems::render_points(gl);
@@ -274,21 +256,12 @@ void render_secondary_geometry(ecs::ComponentStorage<secondary_object> &sec,
                                ecs::ComponentStorage<gl_object> &ogl_component,
                                std::shared_ptr<GLFWwindow> w,
                                std::shared_ptr<app_state> s) {
-  GLint _last_program;
-  glGetIntegerv(GL_CURRENT_PROGRAM, &_last_program);
-  GLuint last_program = _last_program;
-
-  if (last_program != 0) {
-    refresh_common_uniforms(last_program);
-  }
-
   for (const auto &[idx, v] : sec) {
     if (!v.enabled) {
       continue;
     }
     auto &gl = ogl_component[v.val];
     glUseProgram(gl.program);
-    refresh_common_uniforms(gl.program);
     systems::set_vanilla_model_uniform();
     glVertexAttrib4f(1, 0.0f, 1.0f, 0.0f, 1.0f);
     systems::render_points(gl);
@@ -364,23 +337,9 @@ void render_cursors(
     ecs::ComponentStorage<transformation> &transformation_component,
     std::shared_ptr<GLFWwindow> w, std::shared_ptr<app_state> s) {
 
-  GLint _last_program;
-  GLuint last_program;
-
-  glGetIntegerv(GL_CURRENT_PROGRAM, &_last_program);
-  last_program = _last_program;
-
-  if (last_program != 0) {
-    refresh_common_uniforms(last_program);
-  }
-
   for (auto idx : indices) {
     const auto &gl = ogl_components.at(idx);
-    if (last_program != gl.program) {
-      last_program = gl.program;
-      glUseProgram(gl.program);
-      refresh_common_uniforms(gl.program);
-    }
+    glUseProgram(gl.program);
     glVertexAttrib4f(1, 1.0f, 1.0f, 0.0f, 1.0f);
     auto &t = transformation_component[idx];
     const auto val =
@@ -498,9 +457,12 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
       const auto fourth_child = r.children[remaining - 4];
       const auto b_d = transformations[fourth_child].translation;
       // check if we need to recalculate
+      //
       auto tmp = get_score(b_a, b_b, b_c, b_d) / 20;
+
       TINY_CAD_INFO("{0}", tmp);
-      auto current_score = std::clamp(tmp, 3, 100);
+      auto current_score = std::clamp(tmp, 10, 100);
+
       float div = 1.0f / current_score;
       for (float t = 0.0; t < 1.0f; t = t + div) {
         const auto b_e = (1.f - t) * b_a + t * b_b + current_score * 0.0f;

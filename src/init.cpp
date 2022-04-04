@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <frame_state.h>
 #include <init.h>
 #include <log.h>
 
@@ -55,6 +56,7 @@ void glfw_window_hints() {
   glfwWindowHint(GLFW_STENCIL_BITS, 8);
   glfwWindowHint(GLFW_SAMPLES, 8);
 
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
@@ -110,6 +112,12 @@ void ogl_print_info() {
                 reinterpret_cast<const char *>(glGetString(GL_VERSION)));
 }
 
+void common_ubo_setup(std::shared_ptr<GLFWwindow> w) {
+  glCreateBuffers(1, &frame_state::common_ubo);
+  glNamedBufferData(frame_state::common_ubo, 2 * 16 * sizeof(float), NULL,
+                    GL_DYNAMIC_DRAW);
+}
+
 void ogl_setup(std::shared_ptr<GLFWwindow> w) {
 #ifndef RELEASE_MODE
   glEnable(GL_DEBUG_OUTPUT);
@@ -144,6 +152,7 @@ std::shared_ptr<GLFWwindow> init_all(const char *caption) {
   // OPENGL STATE
   ogl_print_info();
   ogl_setup(w);
+  common_ubo_setup(w);
 
   return w;
 }

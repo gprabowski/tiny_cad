@@ -3,9 +3,13 @@
 layout(location = 0) in vec4 pos;
 layout(location = 1) in vec4 col;
 
+layout (std140) uniform common_block {
+    mat4 proj;
+    mat4 view;
+};
+
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 proj;
+
 
 out vec4 color;
 

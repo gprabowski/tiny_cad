@@ -5,6 +5,7 @@
 
 #include <glad/glad.h>
 
+#include <frame_state.h>
 #include <log.h>
 #include <shader.h>
 
@@ -24,6 +25,13 @@ shader::read_shader_file(const std::filesystem::path::value_type *shader_file) {
   ifs.seekg(0, std::ios_base::beg);
 
   return std::string{std::istreambuf_iterator<char>{ifs}, {}};
+}
+
+void shader::bind_common_ubo(GLuint program) {
+  frame_state::common_block_loc = 0;
+  frame_state::common_idx = glGetUniformBlockIndex(program, "common_block");
+  glUniformBlockBinding(program, frame_state::common_idx,
+                        frame_state::common_block_loc);
 }
 
 GLuint shader::LoadProgram(const std::string &name) {
@@ -76,6 +84,7 @@ GLuint shader::LoadProgram(const std::string &name) {
 
   glDeleteShader(vertex_shader);
   glDeleteShader(frag_shader);
+  bind_common_ubo(program);
 
   return program;
 }

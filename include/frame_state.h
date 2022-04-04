@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <glad/glad.h>
+
 #include <glm/glm.hpp>
 
 #include <ecs.h>
@@ -13,4 +15,8 @@ struct frame_state {
   static glm::mat4 proj;
   static int window_w;
   static int window_h;
+
+  static GLuint common_ubo;
+  static GLuint common_idx;
+  static int common_block_loc;
 };

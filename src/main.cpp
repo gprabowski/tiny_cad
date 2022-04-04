@@ -68,6 +68,20 @@ void regenererate_adaptive_geometry(ecs::component_manager &cm) {
   }
 }
 
+void refresh_ubos() {
+  glBindBufferBase(GL_UNIFORM_BUFFER, frame_state::common_block_loc,
+                   frame_state::common_ubo);
+  float *common_ubo_ptr = (float *)glMapNamedBufferRange(
+      frame_state::common_ubo, 0, sizeof(float) * 32,
+      GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+  memcpy(&common_ubo_ptr[0], glm::value_ptr(frame_state::proj),
+         sizeof(float) * 16);
+  memcpy(&common_ubo_ptr[16], glm::value_ptr(frame_state::view),
+         sizeof(float) * 16);
+  glUnmapNamedBuffer(frame_state::common_ubo);
+  glBindBuffer(GL_UNIFORM_BUFFER, frame_state::common_ubo);
+}
+
 void main_loop(ecs::component_manager &cm, std::shared_ptr<app_state> state,
                std::shared_ptr<GLFWwindow> w) {
   std::vector<ecs::EntityType> sel, unsel, del, parents, changed;
@@ -79,6 +93,7 @@ void main_loop(ecs::component_manager &cm, std::shared_ptr<app_state> state,
       state->moved = false;
     }
     setup_globals(state, w);
+    refresh_ubos();
 
     gui::start_frame(state);
 
