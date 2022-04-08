@@ -16,9 +16,6 @@ namespace systems {
 
 void render_points(const gl_object &g);
 
-void add_sel_points_to_parent(ecs::EntityType idx, ecs::component_manager &cm,
-                              std::shared_ptr<app_state> &s);
-
 void render_figures(
     const std::vector<ecs::EntityType> &selected_parents,
     const std::vector<ecs::EntityType> &selected_primitives,
@@ -28,17 +25,20 @@ void render_figures(
     std::shared_ptr<GLFWwindow> w, std::shared_ptr<app_state> s,
     glm::vec3 &center_out);
 
-void render_app(ecs::component_manager &cm, std::shared_ptr<GLFWwindow> &w,
-                std::shared_ptr<app_state> s, std::vector<ecs::EntityType> &sel,
+void render_app(ecs::component_manager &cm, std::shared_ptr<app_state> s,
+                std::vector<ecs::EntityType> &sel,
                 std::vector<ecs::EntityType> &unsel,
                 std::vector<ecs::EntityType> &changed);
 
-bool render_and_apply_gizmo(
-    std::vector<ecs::EntityType> &indices,
-    std::vector<ecs::EntityType> &changed,
+void get_gizmo_transform(
+    glm::mat4 &gtrans, std::vector<ecs::EntityType> &indices,
     ecs::ComponentStorage<transformation> &transformation_component,
-    std::shared_ptr<GLFWwindow> &w, std::shared_ptr<app_state> &s,
-    const glm::vec3 &center);
+    std::shared_ptr<app_state> &s, const glm::vec3 &center);
+
+void apply_group_transform(
+    glm::mat4 &gtrans, std::vector<ecs::EntityType> &indices,
+    ecs::ComponentStorage<transformation> &transformation_component,
+    std::vector<ecs::EntityType> &changed, const glm::vec3 &center);
 
 void render_cursors(
     const std::vector<ecs::EntityType> indices,
@@ -50,33 +50,8 @@ void refresh_common_uniforms(GLuint program);
 
 glm::vec4 sample_torus(const torus_params &tp, const float u, const float v);
 
-template <typename ParamsType>
-inline glm::vec4 sample(const ParamsType &p, const float u, const float v) {
-  if constexpr (std::is_same_v<ParamsType, torus_params>) {
-    return sample_torus(p, u, v);
-  }
-  return glm::vec4();
-}
-
-template <typename ParamsType>
-bool generate_points(const ParamsType &s, const parametric &p,
-                     std::vector<glm::vec4> &out_vertices) {
-
-  const auto u_diff = p.u_max - p.u_min;
-  const auto v_diff = p.v_max - p.v_min;
-
-  const auto u_inv_div = 1.0f / static_cast<float>(p.samples[0]);
-  const auto v_inv_div = 1.0f / static_cast<float>(p.samples[1]);
-
-  for (int i = 0u; i < p.samples[0]; ++i) {
-    for (int j = 0u; j < p.samples[1]; ++j) {
-      out_vertices.emplace_back(
-          sample<ParamsType>(s, p.u_min + u_diff * i * u_inv_div,
-                             p.v_min + v_diff * j * v_inv_div));
-    }
-  }
-  return true;
-}
+bool generate_torus_points(const torus_params &s, const parametric &p,
+                           std::vector<glm::vec4> &out_vertices);
 
 bool regenerate_bezier(const relationship &r, adaptive &a,
                        ecs::ComponentStorage<transformation> transformations,
@@ -86,8 +61,11 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
                        std::vector<glm::vec4> &out_vertices_polygon,
                        std::vector<unsigned int> &out_indices_polygon);
 
-void generate_lines(const parametric &p, const std::vector<glm::vec4> &points,
-                    std::vector<unsigned int> &indices);
+void add_sel_points_to_parent(ecs::EntityType idx, ecs::component_manager &cm);
+
+void generate_torus_lines(const parametric &p,
+                          const std::vector<glm::vec4> &points,
+                          std::vector<unsigned int> &indices);
 
 void reset_gl_objects(gl_object &g);
 void set_model_uniform(const transformation &t);

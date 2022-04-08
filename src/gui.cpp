@@ -204,7 +204,7 @@ void render_bezier_gui(ecs::component_manager &cm,
     }
 
     if (ImGui::Button("Add selected points")) {
-      systems::add_sel_points_to_parent(idx, cm, s);
+      systems::add_sel_points_to_parent(idx, cm);
     }
 
     if (ImGui::Button("Delete")) {
@@ -241,16 +241,16 @@ void render_torus_gui(ecs::component_manager &cm, ecs::EntityType idx,
       }
       g.points.clear();
       g.indices.clear();
-      systems::generate_points(tp, p, g.points);
-      systems::generate_lines(p, g.points, g.indices);
+      systems::generate_torus_points(tp, p, g.points);
+      systems::generate_torus_lines(p, g.points, g.indices);
       systems::reset_gl_objects(g);
     }
 
     if (ImGui::SliderInt2("samples", p.samples, 3u, 100u)) {
       g.points.clear();
       g.indices.clear();
-      systems::generate_points(tp, p, g.points);
-      systems::generate_lines(p, g.points, g.indices);
+      systems::generate_torus_points(tp, p, g.points);
+      systems::generate_torus_lines(p, g.points, g.indices);
       systems::reset_gl_objects(g);
     }
 
@@ -342,7 +342,7 @@ point_action render_figure_select_gui(ecs::component_manager &cm,
     if (ImGui::Selectable(tree_id.c_str(), sel)) {
       if (!ImGui::GetIO().KeyCtrl) { // Clear selection when CTRL is not held
         for (auto &[idx, c] : cm.selected_component) {
-          cm.entities[idx] &= ~ecs::ct::TAG_SELECTED;
+          cm.remove_component<selected>(idx);
         }
         cm.selected_component.clear();
       }

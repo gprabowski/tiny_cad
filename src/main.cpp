@@ -38,10 +38,10 @@ void get_selected_figure_indices(ecs::component_manager &cm,
 
 void refresh_adaptive(ecs::component_manager &cm) {}
 
-void setup_globals(std::shared_ptr<app_state> &state,
-                   std::shared_ptr<GLFWwindow> &w) {
+void setup_globals(std::shared_ptr<app_state> &state) {
   int width, height;
-  glfwGetWindowSize(w.get(), &width, &height);
+  auto w = glfwGetCurrentContext();
+  glfwGetFramebufferSize(w, &width, &height);
   auto view = (glm::lookAt(state->cam_pos, state->cam_pos + state->cam_front,
                            state->cam_up));
   auto proj = (glm::perspective(45.f, static_cast<float>(width) / height, 0.1f,
@@ -82,25 +82,23 @@ void refresh_ubos() {
   glBindBuffer(GL_UNIFORM_BUFFER, frame_state::common_ubo);
 }
 
-void main_loop(ecs::component_manager &cm, std::shared_ptr<app_state> state,
-               std::shared_ptr<GLFWwindow> w) {
+void main_loop(ecs::component_manager &cm, std::shared_ptr<app_state> state) {
+  auto w = glfwGetCurrentContext();
   std::vector<ecs::EntityType> sel, unsel, del, parents, changed;
-  while (!glfwWindowShouldClose(w.get())) {
+  while (!glfwWindowShouldClose(w)) {
 
-    hnd::process_input(state, w, cm);
+    hnd::process_input(state, cm);
     if (state->moved) {
       regenererate_adaptive_geometry(cm);
       state->moved = false;
     }
-    setup_globals(state, w);
+    setup_globals(state);
     refresh_ubos();
-
     gui::start_frame(state);
-
     get_selected_figure_indices(cm, sel, unsel);
 
     // also renders gizmo
-    sys::render_app(cm, w, state, sel, unsel, changed);
+    sys::render_app(cm, state, sel, unsel, changed);
 
     gui::render_general_settings(state);
     gui::render_figure_select_gui(cm, del);
@@ -112,7 +110,7 @@ void main_loop(ecs::component_manager &cm, std::shared_ptr<app_state> state,
     sys::update_changed_relationships(cm, state, changed, del);
     sys::delete_entities(cm, del);
 
-    glfwSwapBuffers(w.get());
+    glfwSwapBuffers(w);
     glfwPollEvents();
 
     sel.clear();
@@ -139,6 +137,6 @@ int main() {
   cst::setup_initial_geometry(cm, state->default_program);
 
   gui::setup_gui(window);
-  main_loop(cm, state, window);
+  main_loop(cm, state);
   gui::cleanup_gui();
 }

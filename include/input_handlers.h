@@ -9,5 +9,5 @@
 
 namespace handlers {
 void process_input(std::shared_ptr<app_state> state,
-                   std::shared_ptr<GLFWwindow> w, ecs::component_manager &cm);
+                   ecs::component_manager &cm);
 }

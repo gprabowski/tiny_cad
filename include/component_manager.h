@@ -18,14 +18,69 @@
 #include <secondary.h>
 #include <tags.h>
 #include <transformation.h>
+#include <type_traits>
 
 namespace ecs {
 
+constexpr int num_components = 13;
+
 template <typename C> using ComponentStorage = std::map<EntityType, C>;
+
+template <unsigned int N, typename... Cases> struct select;
+
+template <unsigned int N, typename T, typename... Cases>
+struct select<N, T, Cases...> : select<N - 1, Cases...> {};
+
+template <typename T, typename... Cases> struct select<0u, T, Cases...> {
+  typedef T type;
+};
+
+struct null_component;
+
+template <unsigned int ID> struct com_id_impl {
+  static constexpr unsigned int value = ID;
+};
+
+template <typename T> struct com_id : com_id_impl<63> {};
+
+template <> struct com_id<parametric> : com_id_impl<0> {};
+template <> struct com_id<transformation> : com_id_impl<1> {};
+template <> struct com_id<gl_object> : com_id_impl<2> {};
+template <> struct com_id<torus_params> : com_id_impl<3> {};
+template <> struct com_id<tag_figure> : com_id_impl<4> {};
+template <> struct com_id<cursor_params> : com_id_impl<5> {};
+template <> struct com_id<tag_point> : com_id_impl<6> {};
+template <> struct com_id<selected> : com_id_impl<7> {};
+template <> struct com_id<tag_bezierc> : com_id_impl<8> {};
+template <> struct com_id<relationship> : com_id_impl<9> {};
+template <> struct com_id<tag_parent> : com_id_impl<10> {};
+template <> struct com_id<secondary_object> : com_id_impl<11> {};
+template <> struct com_id<adaptive> : com_id_impl<12> {};
+
+template <typename T> constexpr component_bitset get_com_bit() {
+  return 1ull << com_id<T>::value;
+};
+
+template <int ID> struct type_from_id {
+  using type = typename select<ID, parametric, transformation, gl_object,
+                               torus_params, tag_figure, cursor_params,
+                               tag_point, selected, tag_bezierc, relationship,
+                               tag_parent, secondary_object, adaptive>::type;
+};
+
+template <int ID> using type_from_id_t = typename type_from_id<ID>::type;
+
+template <typename T> struct component_owner {
+  ComponentStorage<T> component;
+  template <typename C = T> ComponentStorage<T> &get_component() {
+    return component;
+  }
+};
 
 struct component_manager {
   std::unordered_map<EntityType, component_bitset> entities;
 
+  std::array<void *, num_components> components;
   ComponentStorage<parametric> parametric_components;
   ComponentStorage<transformation> transformation_components;
   ComponentStorage<gl_object> ogl_components;
@@ -73,7 +128,32 @@ struct component_manager {
   inline bool exists(EntityType e) const { return entities.count(e) > 0; }
 
   template <typename C> inline constexpr bool component_exists() {
-    return get_com_bit<C>() != ct::OTHER;
+    return get_com_bit<C>() != get_com_bit<null_component>();
+  }
+
+  template <typename First> void remove_components(EntityType idx) {
+    remove_component<First>(idx);
+  }
+
+  template <typename First, typename... T>
+  void remove_components(EntityType idx) {
+    remove_component<First>(idx);
+    remove_components<T...>(idx);
+  }
+
+  template <component_bitset N = num_components - 1>
+  std::enable_if_t<N != 0, void> remove_all_components(EntityType idx) {
+    if (has_component<typename type_from_id<N>::type>(idx)) {
+      remove_component<typename type_from_id<N>::type>(idx);
+    }
+    remove_all_components<N - 1>(idx);
+  }
+
+  template <component_bitset N = num_components - 1>
+  std::enable_if_t<N == 0, void> remove_all_components(EntityType idx) {
+    if (has_component<typename type_from_id<0>::type>(idx)) {
+      remove_component<typename type_from_id<0>::type>(idx);
+    }
   }
 
   template <typename T>
@@ -110,8 +190,8 @@ struct component_manager {
       }
     } else if (rel.children.size()) {
       for (auto c : rel.children) {
-        if(!has_component<relationship>(c)) {
-            continue;
+        if (!has_component<relationship>(c)) {
+          continue;
         }
         auto &crel = get_component<relationship>(c);
         crel.parents.erase(std::remove_if(crel.parents.begin(),
@@ -136,40 +216,7 @@ struct component_manager {
     m.clear();
   }
 
-  void remove_component(EntityType idx, ecs::ct cp);
-
 private:
-  template <typename C> constexpr ecs::ct get_com_bit() const {
-    if constexpr (std::is_same_v<C, parametric>) {
-      return ct::PARAMETRIC_COM;
-    } else if constexpr (std::is_same_v<C, transformation>) {
-      return ct::TRANSFORMATION_COM;
-    } else if constexpr (std::is_same_v<C, gl_object>) {
-      return ct::OGL_COM;
-    } else if constexpr (std::is_same_v<C, torus_params>) {
-      return ct::TORUS_COM;
-    } else if constexpr (std::is_same_v<C, tag_figure>) {
-      return ct::TAG_FIGURE;
-    } else if constexpr (std::is_same_v<C, cursor_params>) {
-      return ct::TAG_CURSOR;
-    } else if constexpr (std::is_same_v<C, tag_point>) {
-      return ct::TAG_POINT;
-    } else if constexpr (std::is_same_v<C, tag_bezierc>) {
-      return ct::TAG_BEZIERC;
-    } else if constexpr (std::is_same_v<C, selected>) {
-      return ct::TAG_SELECTED;
-    } else if constexpr (std::is_same_v<C, relationship>) {
-      return ct::RELATIONSHIP;
-    } else if constexpr (std::is_same_v<C, tag_parent>) {
-      return ct::TAG_PARENT;
-    } else if constexpr (std::is_same_v<C, secondary_object>) {
-      return ct::SECONDARY;
-    } else if constexpr (std::is_same_v<C, adaptive>) {
-      return ct::ADAPTIVE;
-    }
-    return ct::OTHER;
-  }
-
   template <typename T> constexpr ComponentStorage<T> &get_map() {
     using ret_t = ComponentStorage<T>;
     ret_t ret;

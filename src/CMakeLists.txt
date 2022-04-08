@@ -4,12 +4,17 @@ set(SOURCES
     callbacks.cpp
     init.cpp
     shader.cpp
-    systems.cpp
     component_manager.cpp
     constructors.cpp
     input_handlers.cpp
     log.cpp
     frame_state.cpp
+    systems/bezier.cpp  
+    systems/gizmo.cpp  
+    systems/gl_systems.cpp 
+    systems/points.cpp 
+    systems/systems.cpp	
+    systems/torus.cpp
     )
 
 add_executable(tiny_cad)

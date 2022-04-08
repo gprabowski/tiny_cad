@@ -50,7 +50,6 @@ inline void add_current_shape_at_cursor(ecs::component_manager &cm,
 }
 
 void handle_keyboard(std::shared_ptr<app_state> state,
-                     std::shared_ptr<GLFWwindow> w,
                      ecs::component_manager &cm) {
   static float delta_time = 0.0f;
   static float last_frame = 0.0f;
@@ -126,19 +125,19 @@ inline bool intersect(const glm::vec3 &ray_orig, const glm::vec3 &dir,
 }
 
 void handle_mouse(std::shared_ptr<app_state> state,
-                  std::shared_ptr<GLFWwindow> w, ecs::component_manager &cm) {
+                  ecs::component_manager &cm) {
   if (state->mouse_just_pressed[app_state::mouse_button::left] &&
       state->pressed[GLFW_KEY_LEFT_CONTROL]) {
 
     state->mouse_just_pressed.reset(app_state::mouse_button::left);
 
-    int width, height;
-    glfwGetWindowSize(w.get(), &width, &height);
-
     const auto ndc_x =
-        2 * (((state->last_mouse.x) / static_cast<float>(width)) - 0.5f);
-    const auto ndc_y =
-        (-2) * ((state->last_mouse.y) / static_cast<float>(height) - 0.5f);
+        2 *
+        (((state->last_mouse.x) / static_cast<float>(frame_state::window_w)) -
+         0.5f);
+    const auto ndc_y = (-2) * ((state->last_mouse.y) /
+                                   static_cast<float>(frame_state::window_h) -
+                               0.5f);
 
     glm::vec4 ndc_dir{ndc_x, ndc_y, -1, 1};
 
@@ -166,11 +165,11 @@ void handle_mouse(std::shared_ptr<app_state> state,
 }
 
 void process_input(std::shared_ptr<app_state> state,
-                   std::shared_ptr<GLFWwindow> w, ecs::component_manager &cm) {
+                   ecs::component_manager &cm) {
   if (ImGui::IsAnyItemActive())
     return;
-  handle_keyboard(state, w, cm);
-  handle_mouse(state, w, cm);
+  handle_keyboard(state, cm);
+  handle_mouse(state, cm);
 }
 
 } // namespace handlers

@@ -124,8 +124,8 @@ ecs::EntityType add_torus(ecs::component_manager &cm, parametric &&_p,
   auto &tp = cm.get_component<torus_params>(t);
   auto &p = cm.get_component<parametric>(t);
 
-  systems::generate_points(tp, p, g.points);
-  systems::generate_lines(p, g.points, g.indices);
+  systems::generate_torus_points(tp, p, g.points);
+  systems::generate_torus_lines(p, g.points, g.indices);
   systems::reset_gl_objects(g);
 
   return t;
