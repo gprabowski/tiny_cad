@@ -300,7 +300,7 @@ void render_selected_edit_gui(ecs::component_manager &cm,
                               std::vector<ecs::EntityType> &changed,
                               std::vector<ecs::EntityType> &deleted) {
   ImGui::Begin("Selected figures:");
-  for (auto &[idx, fc] : cm.selected_component) {
+  for (auto &[idx, fc] : cm.get_map<selected>()) {
     if (cm.has_component<torus_params>(idx)) {
       auto &tp = cm.get_component<torus_params>(idx);
       auto &t = cm.get_component<transformation>(idx);
@@ -336,15 +336,15 @@ point_action render_figure_select_gui(ecs::component_manager &cm,
   point_action ret{point_action::none};
   bool sel{false};
   ImGui::Begin("Select figures:");
-  for (auto &[idx, fc] : cm.figure_component) {
+  for (auto &[idx, fc] : cm.get_map<tag_figure>()) {
     sel = cm.has_component<selected>(idx);
     std::string tree_id = fc.name + ("##") + std::to_string(idx);
     if (ImGui::Selectable(tree_id.c_str(), sel)) {
       if (!ImGui::GetIO().KeyCtrl) { // Clear selection when CTRL is not held
-        for (auto &[idx, c] : cm.selected_component) {
+        for (auto &[idx, c] : cm.get_map<selected>()) {
           cm.remove_component<selected>(idx);
         }
-        cm.selected_component.clear();
+        cm.get_map<selected>().clear();
       }
       sel = !sel;
       if (sel) {
@@ -358,7 +358,7 @@ point_action render_figure_select_gui(ecs::component_manager &cm,
   ImGui::End();
   ImGui::Begin("Group Actions");
   if (ImGui::Button("Delete Selected")) {
-    for (auto &[idx, s] : cm.selected_component) {
+    for (auto &[idx, s] : cm.get_map<selected>()) {
       deleted.push_back(idx);
     }
   }
@@ -370,7 +370,7 @@ void render_cursor_gui(ecs::component_manager &cm) {
   static int dmode = 1;
   static std::vector<std::string> combovalues{"torus", "point", "bezier curve"};
 
-  for (auto &[idx, p] : cm.cursor_component) {
+  for (auto &[idx, p] : cm.get_map<cursor_params>()) {
     auto &t = cm.get_component<transformation>(idx);
     std::string title = "cursor";
     ImGui::Begin(title.c_str());

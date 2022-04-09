@@ -77,23 +77,21 @@ template <typename T> struct component_owner {
   }
 };
 
-struct component_manager {
-  std::unordered_map<EntityType, component_bitset> entities;
+struct component_manager : component_owner<parametric>,
+                           component_owner<transformation>,
+                           component_owner<gl_object>,
+                           component_owner<secondary_object>,
+                           component_owner<torus_params>,
+                           component_owner<tag_figure>,
+                           component_owner<tag_point>,
+                           component_owner<tag_bezierc>,
+                           component_owner<cursor_params>,
+                           component_owner<selected>,
+                           component_owner<relationship>,
+                           component_owner<tag_parent>,
+                           component_owner<adaptive> {
 
-  std::array<void *, num_components> components;
-  ComponentStorage<parametric> parametric_components;
-  ComponentStorage<transformation> transformation_components;
-  ComponentStorage<gl_object> ogl_components;
-  ComponentStorage<secondary_object> secondary_component;
-  ComponentStorage<torus_params> torus_components;
-  ComponentStorage<tag_figure> figure_component;
-  ComponentStorage<tag_point> point_component;
-  ComponentStorage<tag_bezierc> bezierc_component;
-  ComponentStorage<cursor_params> cursor_component;
-  ComponentStorage<selected> selected_component;
-  ComponentStorage<relationship> relationship_component;
-  ComponentStorage<tag_parent> parent_component;
-  ComponentStorage<adaptive> adaptive_component;
+  std::unordered_map<EntityType, component_bitset> entities;
 
   EntityType add_entity();
   void delete_entity(EntityType idx);
@@ -171,7 +169,7 @@ struct component_manager {
   remove_component(EntityType idx) {
     const auto s = get_component<secondary_object>(idx);
     delete_entity(s.val);
-    secondary_component.erase(idx);
+    get_map<secondary_object>().erase(idx);
     entities[idx] &= ~get_com_bit<secondary_object>();
   }
 
@@ -199,12 +197,12 @@ struct component_manager {
                                           [=](auto cp) { return cp == id; }),
                            crel.parents.end());
         if (0 == crel.parents.size()) {
-          relationship_component.erase(c);
+          get_map<relationship>().erase(c);
           entities[c] &= ~get_com_bit<relationship>();
         }
       }
     }
-    relationship_component.erase(id);
+    get_map<relationship>().erase(id);
     entities[id] &= ~get_com_bit<relationship>();
   }
 
@@ -216,39 +214,8 @@ struct component_manager {
     m.clear();
   }
 
-private:
   template <typename T> constexpr ComponentStorage<T> &get_map() {
-    using ret_t = ComponentStorage<T>;
-    ret_t ret;
-    if constexpr (std::is_same_v<T, parametric>) {
-      return (parametric_components);
-    } else if constexpr (std::is_same_v<T, transformation>) {
-      return (transformation_components);
-    } else if constexpr (std::is_same_v<T, gl_object>) {
-      return (ogl_components);
-    } else if constexpr (std::is_same_v<T, torus_params>) {
-      return (torus_components);
-    } else if constexpr (std::is_same_v<T, tag_figure>) {
-      return (figure_component);
-    } else if constexpr (std::is_same_v<T, tag_point>) {
-      return (point_component);
-    } else if constexpr (std::is_same_v<T, tag_bezierc>) {
-      return (bezierc_component);
-    } else if constexpr (std::is_same_v<T, cursor_params>) {
-      return (cursor_component);
-    } else if constexpr (std::is_same_v<T, selected>) {
-      return (selected_component);
-    } else if constexpr (std::is_same_v<T, relationship>) {
-      return (relationship_component);
-    } else if constexpr (std::is_same_v<T, tag_parent>) {
-      return (parent_component);
-    } else if constexpr (std::is_same_v<T, secondary_object>) {
-      return (secondary_component);
-    } else if constexpr (std::is_same_v<T, adaptive>) {
-      return (adaptive_component);
-    }
-
-    throw std::runtime_error("Couldn't find map for this type");
+    return static_cast<component_owner<T> *>(this)->get_component();
   }
 };
 

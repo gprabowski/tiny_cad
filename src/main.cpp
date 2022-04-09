@@ -27,7 +27,7 @@ namespace sys = systems;
 void get_selected_figure_indices(ecs::component_manager &cm,
                                  std::vector<ecs::EntityType> &sel,
                                  std::vector<ecs::EntityType> &unsel) {
-  for (auto &[idx, _] : cm.figure_component) {
+  for (auto &[idx, _] : cm.get_map<tag_figure>()) {
     if (cm.has_component<selected>(idx))
       sel.push_back(idx);
     else {
@@ -54,14 +54,14 @@ void setup_globals(std::shared_ptr<app_state> &state) {
 
 void regenererate_adaptive_geometry(ecs::component_manager &cm) {
 
-  for (auto &[idx, _] : cm.bezierc_component) {
+  for (auto &[idx, _] : cm.get_map<tag_bezierc>()) {
     auto &g = cm.get_component<gl_object>(idx);
     auto &a = cm.get_component<adaptive>(idx);
     auto &sgl = cm.get_component<gl_object>(
         cm.get_component<secondary_object>(idx).val);
     auto &rel = cm.get_component<relationship>(idx);
-    systems::regenerate_bezier(rel, a, cm.transformation_components,
-                               cm.relationship_component, g.points, g.indices,
+    systems::regenerate_bezier(rel, a, cm.get_map<transformation>(),
+                               cm.get_map<relationship>(), g.points, g.indices,
                                sgl.points, sgl.indices);
     systems::reset_gl_objects(g);
     systems::reset_gl_objects(sgl);

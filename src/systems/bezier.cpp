@@ -90,7 +90,6 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
       const auto b_g = transformations[third_child].translation;
 
       auto tmp = get_pixel_score(b_e, b_f, b_g) / 20;
-      TINY_CAD_INFO("{0}", tmp);
       auto current_score = std::clamp(tmp, 3.f, 100.f);
       float div = 1.0f / current_score;
       for (float t = 0.0; t <= 1.0f; t = t + div) {

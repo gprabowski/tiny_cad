@@ -210,7 +210,7 @@ void render_app(ecs::component_manager &cm, std::shared_ptr<app_state> s,
   glm::vec3 center;
   std::vector<ecs::EntityType> cursors;
 
-  for (auto &[idx, _] : cm.cursor_component) {
+  for (auto &[idx, _] : cm.get_map<cursor_params>()) {
     cursors.push_back(idx);
   }
 
@@ -226,17 +226,20 @@ void render_app(ecs::component_manager &cm, std::shared_ptr<app_state> s,
   }
 
   render_figures(sel_parents, sel_primitives, unsel,
-                 cm.transformation_components, cm.ogl_components, s, center);
+                 cm.get_map<transformation>(), cm.get_map<gl_object>(), s,
+                 center);
 
-  render_secondary_geometry(cm.secondary_component, cm.ogl_components, s);
+  render_secondary_geometry(cm.get_map<secondary_object>(),
+                            cm.get_map<gl_object>(), s);
 
   glm::mat4 gizmo_trans(1.0f);
-  get_gizmo_transform(gizmo_trans, sel_primitives, cm.transformation_components,
+  get_gizmo_transform(gizmo_trans, sel_primitives, cm.get_map<transformation>(),
                       s, center);
   apply_group_transform(gizmo_trans, sel_primitives,
-                        cm.transformation_components, changed, center);
+                        cm.get_map<transformation>(), changed, center);
 
-  render_cursors(cursors, cm.ogl_components, cm.transformation_components, s);
+  render_cursors(cursors, cm.get_map<gl_object>(), cm.get_map<transformation>(),
+                 s);
 }
 
 void update_changed_relationships(ecs::component_manager &cm,
@@ -273,8 +276,8 @@ void update_changed_relationships(ecs::component_manager &cm,
       auto &a = cm.get_component<adaptive>(p);
       auto &sgl = cm.get_component<gl_object>(
           cm.get_component<secondary_object>(p).val);
-      regenerate_bezier(rel, a, cm.transformation_components,
-                        cm.relationship_component, gl.points, gl.indices,
+      regenerate_bezier(rel, a, cm.get_map<transformation>(),
+                        cm.get_map<relationship>(), gl.points, gl.indices,
                         sgl.points, sgl.indices);
       reset_gl_objects(gl);
       reset_gl_objects(sgl);

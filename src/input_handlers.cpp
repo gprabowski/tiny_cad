@@ -8,7 +8,7 @@ namespace handlers {
 
 inline void add_current_shape_at_cursor(ecs::component_manager &cm,
                                         std::shared_ptr<app_state> &state) {
-  auto idx = cm.cursor_component.begin()->first;
+  auto idx = cm.get_map<cursor_params>().begin()->first;
   ecs::EntityType new_shape;
 
   auto t = cm.get_component<transformation>(idx);
@@ -27,8 +27,8 @@ inline void add_current_shape_at_cursor(ecs::component_manager &cm,
     new_shape = constructors::add_bezier(cm, state, state->default_program);
   }
 
-  if (cm.selected_component.size() == 1) {
-    auto s = cm.selected_component.begin()->first;
+  if (cm.get_map<selected>().size() == 1) {
+    auto s = cm.get_map<selected>().begin()->first;
     if (cm.has_component<tag_parent>(s) &&
         cp.current_shape == cursor_params::cursor_shape::point) {
       cm.add_component<relationship>(new_shape, {{s}, {}});
@@ -39,8 +39,8 @@ inline void add_current_shape_at_cursor(ecs::component_manager &cm,
         auto &sgl = cm.get_component<gl_object>(
             cm.get_component<secondary_object>(s).val);
         auto &a = cm.get_component<adaptive>(s);
-        systems::regenerate_bezier(srel, a, cm.transformation_components,
-                                   cm.relationship_component, g.points,
+        systems::regenerate_bezier(srel, a, cm.get_map<transformation>(),
+                                   cm.get_map<relationship>(), g.points,
                                    g.indices, sgl.points, sgl.indices);
         systems::reset_gl_objects(g);
         systems::reset_gl_objects(sgl);
@@ -83,8 +83,8 @@ void handle_keyboard(std::shared_ptr<app_state> state,
   }
   if (state->imode == app_state::wasd_mode::cursor) {
     const float cursor_speed = 10.f * delta_time; // adjust accordingly
-    auto &cursor_transform =
-        cm.get_component<transformation>(cm.cursor_component.begin()->first);
+    auto &cursor_transform = cm.get_component<transformation>(
+        cm.get_map<cursor_params>().begin()->first);
     if (state->pressed[GLFW_KEY_Q])
       cursor_transform.translation -=
           cursor_speed * glm::vec3(0.0f, 0.0f, 1.0f);
@@ -148,7 +148,7 @@ void handle_mouse(std::shared_ptr<app_state> state,
 
     auto dir = glm::normalize(glm::vec3(world_p) - state->cam_pos);
 
-    for (auto &[idx, t] : cm.transformation_components) {
+    for (auto &[idx, t] : cm.get_map<transformation>()) {
       if (cm.has_component<tag_figure>(idx) &&
           intersect(state->cam_pos, dir, t.translation, 1.f)) {
         if (cm.has_component<selected>(idx)) {

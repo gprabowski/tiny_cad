@@ -40,7 +40,7 @@ ecs::EntityType add_bezier(ecs::component_manager &cm,
                            std::shared_ptr<app_state> &s,
                            const GLuint program) {
   std::vector<ecs::EntityType> sel_points;
-  for (auto &[idx, _] : cm.selected_component) {
+  for (auto &[idx, _] : cm.get_map<selected>()) {
     if (cm.has_component<tag_point>(idx)) {
       sel_points.push_back(idx);
     }
@@ -80,8 +80,8 @@ ecs::EntityType add_bezier(ecs::component_manager &cm,
   auto &r = cm.get_component<relationship>(b);
   auto &a = cm.get_component<adaptive>(b);
 
-  systems::regenerate_bezier(r, a, cm.transformation_components,
-                             cm.relationship_component, g.points, g.indices,
+  systems::regenerate_bezier(r, a, cm.get_map<transformation>(),
+                             cm.get_map<relationship>(), g.points, g.indices,
                              sec_g.points, sec_g.indices);
 
   g.dmode = gl_object::draw_mode::line_strip;
