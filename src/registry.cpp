@@ -1,9 +1,9 @@
-#include <component_manager.h>
+#include <registry.h>
 
 namespace ecs {
-using cm = component_manager;
+using r = registry;
 
-ecs::EntityType cm::add_entity() {
+ecs::EntityType r::add_entity() {
   static EntityType counter = 0;
   const auto ret = counter++;
   if (counter > 1024)
@@ -12,7 +12,7 @@ ecs::EntityType cm::add_entity() {
   return ret;
 }
 
-void cm::delete_entity(ecs::EntityType idx) {
+void r::delete_entity(ecs::EntityType idx) {
   if (!exists(idx)) {
     return;
   }

@@ -9,13 +9,13 @@
 
 #include <app_state.h>
 #include <callbacks.h>
-#include <component_manager.h>
 #include <constructors.h>
 #include <frame_state.h>
 #include <gui.h>
 #include <init.h>
 #include <input_handlers.h>
 #include <log.h>
+#include <registry.h>
 #include <shader.h>
 #include <systems.h>
 
@@ -24,11 +24,11 @@ namespace clb = callbacks;
 namespace hnd = handlers;
 namespace sys = systems;
 
-void get_selected_figure_indices(ecs::component_manager &cm,
+void get_selected_figure_indices(ecs::registry &reg,
                                  std::vector<ecs::EntityType> &sel,
                                  std::vector<ecs::EntityType> &unsel) {
-  for (auto &[idx, _] : cm.get_map<tag_figure>()) {
-    if (cm.has_component<selected>(idx))
+  for (auto &[idx, _] : reg.get_map<tag_figure>()) {
+    if (reg.has_component<selected>(idx))
       sel.push_back(idx);
     else {
       unsel.push_back(idx);
@@ -36,7 +36,7 @@ void get_selected_figure_indices(ecs::component_manager &cm,
   }
 }
 
-void refresh_adaptive(ecs::component_manager &cm) {}
+void refresh_adaptive(ecs::registry &reg) {}
 
 void setup_globals(std::shared_ptr<app_state> &state) {
   int width, height;
@@ -52,16 +52,16 @@ void setup_globals(std::shared_ptr<app_state> &state) {
   frame_state::window_w = width;
 }
 
-void regenererate_adaptive_geometry(ecs::component_manager &cm) {
+void regenererate_adaptive_geometry(ecs::registry &reg) {
 
-  for (auto &[idx, _] : cm.get_map<tag_bezierc>()) {
-    auto &g = cm.get_component<gl_object>(idx);
-    auto &a = cm.get_component<adaptive>(idx);
-    auto &sgl = cm.get_component<gl_object>(
-        cm.get_component<secondary_object>(idx).val);
-    auto &rel = cm.get_component<relationship>(idx);
-    systems::regenerate_bezier(rel, a, cm.get_map<transformation>(),
-                               cm.get_map<relationship>(), g.points, g.indices,
+  for (auto &[idx, _] : reg.get_map<tag_bezierc>()) {
+    auto &g = reg.get_component<gl_object>(idx);
+    auto &a = reg.get_component<adaptive>(idx);
+    auto &sgl = reg.get_component<gl_object>(
+        reg.get_component<secondary_object>(idx).val);
+    auto &rel = reg.get_component<relationship>(idx);
+    systems::regenerate_bezier(rel, a, reg.get_map<transformation>(),
+                               reg.get_map<relationship>(), g.points, g.indices,
                                sgl.points, sgl.indices);
     systems::reset_gl_objects(g);
     systems::reset_gl_objects(sgl);
@@ -82,33 +82,33 @@ void refresh_ubos() {
   glBindBuffer(GL_UNIFORM_BUFFER, frame_state::common_ubo);
 }
 
-void main_loop(ecs::component_manager &cm, std::shared_ptr<app_state> state) {
+void main_loop(ecs::registry &reg, std::shared_ptr<app_state> state) {
   auto w = glfwGetCurrentContext();
   std::vector<ecs::EntityType> sel, unsel, del, parents, changed;
   while (!glfwWindowShouldClose(w)) {
 
-    hnd::process_input(state, cm);
+    hnd::process_input(state, reg);
     if (state->moved) {
-      regenererate_adaptive_geometry(cm);
+      regenererate_adaptive_geometry(reg);
       state->moved = false;
     }
     setup_globals(state);
     refresh_ubos();
     gui::start_frame(state);
-    get_selected_figure_indices(cm, sel, unsel);
+    get_selected_figure_indices(reg, sel, unsel);
 
     // also renders gizmo
-    sys::render_app(cm, state, sel, unsel, changed);
+    sys::render_app(reg, state, sel, unsel, changed);
 
     gui::render_general_settings(state);
-    gui::render_figure_select_gui(cm, del);
-    gui::render_selected_edit_gui(cm, state, changed, del);
+    gui::render_figure_select_gui(reg, del);
+    gui::render_selected_edit_gui(reg, state, changed, del);
 
-    gui::render_cursor_gui(cm);
+    gui::render_cursor_gui(reg);
     gui::end_frame();
 
-    sys::update_changed_relationships(cm, state, changed, del);
-    sys::delete_entities(cm, del);
+    sys::update_changed_relationships(reg, state, changed, del);
+    sys::delete_entities(reg, del);
 
     glfwSwapBuffers(w);
     glfwPollEvents();
@@ -133,10 +133,10 @@ int main() {
   glfwSetWindowUserPointer(window.get(), static_cast<void *>(state.get()));
   glUseProgram(state->default_program);
 
-  ecs::component_manager cm;
-  cst::setup_initial_geometry(cm, state->default_program);
+  ecs::registry reg;
+  cst::setup_initial_geometry(reg, state->default_program);
 
   gui::setup_gui(window);
-  main_loop(cm, state);
+  main_loop(reg, state);
   gui::cleanup_gui();
 }

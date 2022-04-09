@@ -2,11 +2,11 @@
 
 #include "torus.h"
 #include <app_state.h>
-#include <component_manager.h>
 #include <ecs.h>
 #include <gl_object.h>
 #include <memory>
 #include <parametric.h>
+#include <registry.h>
 #include <vector>
 
 #define GLFW_INCLUDE_NONE
@@ -25,7 +25,7 @@ void render_figures(
     std::shared_ptr<GLFWwindow> w, std::shared_ptr<app_state> s,
     glm::vec3 &center_out);
 
-void render_app(ecs::component_manager &cm, std::shared_ptr<app_state> s,
+void render_app(ecs::registry &reg, std::shared_ptr<app_state> s,
                 std::vector<ecs::EntityType> &sel,
                 std::vector<ecs::EntityType> &unsel,
                 std::vector<ecs::EntityType> &changed);
@@ -61,7 +61,15 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
                        std::vector<glm::vec4> &out_vertices_polygon,
                        std::vector<unsigned int> &out_indices_polygon);
 
-void add_sel_points_to_parent(ecs::EntityType idx, ecs::component_manager &cm);
+bool regenerate_bspline(relationship &r, adaptive &a,
+                        ecs::ComponentStorage<transformation> transformations,
+                        ecs::ComponentStorage<relationship> relationships,
+                        std::vector<glm::vec4> &out_vertices,
+                        std::vector<unsigned int> &out_indices,
+                        std::vector<glm::vec4> &out_vertices_polygon,
+                        std::vector<unsigned int> &out_indices_polygon);
+
+void add_sel_points_to_parent(ecs::EntityType idx, ecs::registry &reg);
 
 void generate_torus_lines(const parametric &p,
                           const std::vector<glm::vec4> &points,
@@ -69,11 +77,11 @@ void generate_torus_lines(const parametric &p,
 
 void reset_gl_objects(gl_object &g);
 void set_model_uniform(const transformation &t);
-void update_changed_relationships(ecs::component_manager &cm,
+void update_changed_relationships(ecs::registry &reg,
                                   std::shared_ptr<app_state> &s,
                                   const std::vector<ecs::EntityType> &changed,
                                   const std::vector<ecs::EntityType> &del);
-void delete_entities(ecs::component_manager &cm,
+void delete_entities(ecs::registry &reg,
                      const std::vector<ecs::EntityType> &del);
 
 } // namespace systems

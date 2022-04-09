@@ -4,12 +4,13 @@ set(SOURCES
     callbacks.cpp
     init.cpp
     shader.cpp
-    component_manager.cpp
+    registry.cpp
     constructors.cpp
     input_handlers.cpp
     log.cpp
     frame_state.cpp
     systems/bezier.cpp  
+    systems/bspline.cpp  
     systems/gizmo.cpp  
     systems/gl_systems.cpp 
     systems/points.cpp 

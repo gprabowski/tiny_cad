@@ -6,41 +6,43 @@
 
 namespace handlers {
 
-inline void add_current_shape_at_cursor(ecs::component_manager &cm,
+inline void add_current_shape_at_cursor(ecs::registry &reg,
                                         std::shared_ptr<app_state> &state) {
-  auto idx = cm.get_map<cursor_params>().begin()->first;
+  auto idx = reg.get_map<cursor_params>().begin()->first;
   ecs::EntityType new_shape;
 
-  auto t = cm.get_component<transformation>(idx);
-  const auto &cp = cm.get_component<cursor_params>(idx);
+  auto t = reg.get_component<transformation>(idx);
+  const auto &cp = reg.get_component<cursor_params>(idx);
   t.scale = glm::vec3{1.0f, 1.0f, 1.0f};
   if (cp.current_shape == cursor_params::cursor_shape::torus) {
     new_shape = constructors::add_torus(
-        cm,
+        reg,
         parametric{
             0.0f, 2 * glm::pi<float>(), 0.0f, 2 * glm::pi<float>(), {20u, 50u}},
         std::move(t), torus_params{1.f, 2.f}, state->default_program);
   } else if (cp.current_shape == cursor_params::cursor_shape::point) {
     new_shape =
-        constructors::add_point(cm, std::move(t), state->default_program);
+        constructors::add_point(reg, std::move(t), state->default_program);
   } else if (cp.current_shape == cursor_params::cursor_shape::bezierc) {
-    new_shape = constructors::add_bezier(cm, state, state->default_program);
+    new_shape = constructors::add_bezier(reg, state, state->default_program);
+  } else if (cp.current_shape == cursor_params::cursor_shape::bspline) {
+    new_shape = constructors::add_bspline(reg, state, state->default_program);
   }
 
-  if (cm.get_map<selected>().size() == 1) {
-    auto s = cm.get_map<selected>().begin()->first;
-    if (cm.has_component<tag_parent>(s) &&
+  if (reg.get_map<selected>().size() == 1) {
+    auto s = reg.get_map<selected>().begin()->first;
+    if (reg.has_component<tag_parent>(s) &&
         cp.current_shape == cursor_params::cursor_shape::point) {
-      cm.add_component<relationship>(new_shape, {{s}, {}});
-      auto &srel = cm.get_component<relationship>(s);
+      reg.add_component<relationship>(new_shape, {{s}, {}});
+      auto &srel = reg.get_component<relationship>(s);
       srel.children.push_back(new_shape);
-      if (cm.has_component<tag_bezierc>(s)) {
-        auto &g = cm.get_component<gl_object>(s);
-        auto &sgl = cm.get_component<gl_object>(
-            cm.get_component<secondary_object>(s).val);
-        auto &a = cm.get_component<adaptive>(s);
-        systems::regenerate_bezier(srel, a, cm.get_map<transformation>(),
-                                   cm.get_map<relationship>(), g.points,
+      if (reg.has_component<tag_bezierc>(s)) {
+        auto &g = reg.get_component<gl_object>(s);
+        auto &sgl = reg.get_component<gl_object>(
+            reg.get_component<secondary_object>(s).val);
+        auto &a = reg.get_component<adaptive>(s);
+        systems::regenerate_bezier(srel, a, reg.get_map<transformation>(),
+                                   reg.get_map<relationship>(), g.points,
                                    g.indices, sgl.points, sgl.indices);
         systems::reset_gl_objects(g);
         systems::reset_gl_objects(sgl);
@@ -49,8 +51,7 @@ inline void add_current_shape_at_cursor(ecs::component_manager &cm,
   }
 }
 
-void handle_keyboard(std::shared_ptr<app_state> state,
-                     ecs::component_manager &cm) {
+void handle_keyboard(std::shared_ptr<app_state> state, ecs::registry &reg) {
   static float delta_time = 0.0f;
   static float last_frame = 0.0f;
 
@@ -83,8 +84,8 @@ void handle_keyboard(std::shared_ptr<app_state> state,
   }
   if (state->imode == app_state::wasd_mode::cursor) {
     const float cursor_speed = 10.f * delta_time; // adjust accordingly
-    auto &cursor_transform = cm.get_component<transformation>(
-        cm.get_map<cursor_params>().begin()->first);
+    auto &cursor_transform = reg.get_component<transformation>(
+        reg.get_map<cursor_params>().begin()->first);
     if (state->pressed[GLFW_KEY_Q])
       cursor_transform.translation -=
           cursor_speed * glm::vec3(0.0f, 0.0f, 1.0f);
@@ -106,7 +107,7 @@ void handle_keyboard(std::shared_ptr<app_state> state,
   }
   if (state->just_pressed[GLFW_KEY_SPACE]) {
     state->just_pressed.reset(GLFW_KEY_SPACE);
-    add_current_shape_at_cursor(cm, state);
+    add_current_shape_at_cursor(reg, state);
   }
 }
 
@@ -124,8 +125,7 @@ inline bool intersect(const glm::vec3 &ray_orig, const glm::vec3 &dir,
   return d2 <= radius2;
 }
 
-void handle_mouse(std::shared_ptr<app_state> state,
-                  ecs::component_manager &cm) {
+void handle_mouse(std::shared_ptr<app_state> state, ecs::registry &reg) {
   if (state->mouse_just_pressed[app_state::mouse_button::left] &&
       state->pressed[GLFW_KEY_LEFT_CONTROL]) {
 
@@ -148,28 +148,27 @@ void handle_mouse(std::shared_ptr<app_state> state,
 
     auto dir = glm::normalize(glm::vec3(world_p) - state->cam_pos);
 
-    for (auto &[idx, t] : cm.get_map<transformation>()) {
-      if (cm.has_component<tag_figure>(idx) &&
+    for (auto &[idx, t] : reg.get_map<transformation>()) {
+      if (reg.has_component<tag_figure>(idx) &&
           intersect(state->cam_pos, dir, t.translation, 1.f)) {
-        if (cm.has_component<selected>(idx)) {
-          cm.remove_component<selected>(idx);
+        if (reg.has_component<selected>(idx)) {
+          reg.remove_component<selected>(idx);
           return;
         }
-        cm.add_component<selected>(idx, {});
+        reg.add_component<selected>(idx, {});
         return;
       }
     }
 
-    cm.remove_all<selected>();
+    reg.remove_all<selected>();
   }
 }
 
-void process_input(std::shared_ptr<app_state> state,
-                   ecs::component_manager &cm) {
+void process_input(std::shared_ptr<app_state> state, ecs::registry &reg) {
   if (ImGui::IsAnyItemActive())
     return;
-  handle_keyboard(state, cm);
-  handle_mouse(state, cm);
+  handle_keyboard(state, reg);
+  handle_mouse(state, reg);
 }
 
 } // namespace handlers

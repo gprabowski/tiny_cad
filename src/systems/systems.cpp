@@ -196,7 +196,7 @@ void render_cursors(
   glLineWidth(1.0f);
 }
 
-void render_app(ecs::component_manager &cm, std::shared_ptr<app_state> s,
+void render_app(ecs::registry &reg, std::shared_ptr<app_state> s,
                 std::vector<ecs::EntityType> &sel,
                 std::vector<ecs::EntityType> &unsel,
                 std::vector<ecs::EntityType> &changed) {
@@ -210,7 +210,7 @@ void render_app(ecs::component_manager &cm, std::shared_ptr<app_state> s,
   glm::vec3 center;
   std::vector<ecs::EntityType> cursors;
 
-  for (auto &[idx, _] : cm.get_map<cursor_params>()) {
+  for (auto &[idx, _] : reg.get_map<cursor_params>()) {
     cursors.push_back(idx);
   }
 
@@ -218,7 +218,7 @@ void render_app(ecs::component_manager &cm, std::shared_ptr<app_state> s,
   std::vector<ecs::EntityType> sel_parents;
 
   for (const auto idx : sel) {
-    if (!cm.has_component<tag_parent>(idx)) {
+    if (!reg.has_component<tag_parent>(idx)) {
       sel_primitives.push_back(idx);
     } else {
       sel_parents.push_back(idx);
@@ -226,30 +226,30 @@ void render_app(ecs::component_manager &cm, std::shared_ptr<app_state> s,
   }
 
   render_figures(sel_parents, sel_primitives, unsel,
-                 cm.get_map<transformation>(), cm.get_map<gl_object>(), s,
+                 reg.get_map<transformation>(), reg.get_map<gl_object>(), s,
                  center);
 
-  render_secondary_geometry(cm.get_map<secondary_object>(),
-                            cm.get_map<gl_object>(), s);
+  render_secondary_geometry(reg.get_map<secondary_object>(),
+                            reg.get_map<gl_object>(), s);
 
   glm::mat4 gizmo_trans(1.0f);
-  get_gizmo_transform(gizmo_trans, sel_primitives, cm.get_map<transformation>(),
-                      s, center);
+  get_gizmo_transform(gizmo_trans, sel_primitives,
+                      reg.get_map<transformation>(), s, center);
   apply_group_transform(gizmo_trans, sel_primitives,
-                        cm.get_map<transformation>(), changed, center);
+                        reg.get_map<transformation>(), changed, center);
 
-  render_cursors(cursors, cm.get_map<gl_object>(), cm.get_map<transformation>(),
-                 s);
+  render_cursors(cursors, reg.get_map<gl_object>(),
+                 reg.get_map<transformation>(), s);
 }
 
-void update_changed_relationships(ecs::component_manager &cm,
+void update_changed_relationships(ecs::registry &reg,
                                   std::shared_ptr<app_state> &s,
                                   const std::vector<ecs::EntityType> &changed,
                                   const std::vector<ecs::EntityType> &del) {
   std::set<ecs::EntityType> changed_rel;
   for (const auto id : changed) {
-    if (cm.has_component<relationship>(id)) {
-      auto &rel = cm.get_component<relationship>(id);
+    if (reg.has_component<relationship>(id)) {
+      auto &rel = reg.get_component<relationship>(id);
       if (rel.parents.size())
         for (auto p : rel.parents) {
           changed_rel.insert(p);
@@ -258,37 +258,50 @@ void update_changed_relationships(ecs::component_manager &cm,
   }
 
   for (const auto id : del) {
-    if (cm.has_component<relationship>(id)) {
-      auto &rel = cm.get_component<relationship>(id);
+    if (reg.has_component<relationship>(id)) {
+      auto &rel = reg.get_component<relationship>(id);
       if (rel.parents.size()) {
         for (auto p : rel.parents) {
           changed_rel.insert(p);
         }
       }
-      cm.remove_component<relationship>(id);
+      reg.remove_component<relationship>(id);
     }
   }
 
   for (const auto p : changed_rel) {
-    if (cm.has_component<tag_bezierc>(p) && cm.has_component<relationship>(p)) {
-      auto &rel = cm.get_component<relationship>(p);
-      auto &gl = cm.get_component<gl_object>(p);
-      auto &a = cm.get_component<adaptive>(p);
-      auto &sgl = cm.get_component<gl_object>(
-          cm.get_component<secondary_object>(p).val);
-      regenerate_bezier(rel, a, cm.get_map<transformation>(),
-                        cm.get_map<relationship>(), gl.points, gl.indices,
+    if (reg.has_component<tag_bezierc>(p) &&
+        reg.has_component<relationship>(p)) {
+      auto &rel = reg.get_component<relationship>(p);
+      auto &gl = reg.get_component<gl_object>(p);
+      auto &a = reg.get_component<adaptive>(p);
+      auto &sgl = reg.get_component<gl_object>(
+          reg.get_component<secondary_object>(p).val);
+      regenerate_bezier(rel, a, reg.get_map<transformation>(),
+                        reg.get_map<relationship>(), gl.points, gl.indices,
                         sgl.points, sgl.indices);
+      reset_gl_objects(gl);
+      reset_gl_objects(sgl);
+    } else if (reg.has_component<tag_bspline>(p) &&
+               reg.has_component<relationship>(p)) {
+      auto &rel = reg.get_component<relationship>(p);
+      auto &gl = reg.get_component<gl_object>(p);
+      auto &a = reg.get_component<adaptive>(p);
+      auto &sgl = reg.get_component<gl_object>(
+          reg.get_component<secondary_object>(p).val);
+      regenerate_bspline(rel, a, reg.get_map<transformation>(),
+                         reg.get_map<relationship>(), gl.points, gl.indices,
+                         sgl.points, sgl.indices);
       reset_gl_objects(gl);
       reset_gl_objects(sgl);
     }
   }
 }
 
-void delete_entities(ecs::component_manager &cm,
+void delete_entities(ecs::registry &reg,
                      const std::vector<ecs::EntityType> &del) {
   for (const auto idx : del)
-    cm.delete_entity(idx);
+    reg.delete_entity(idx);
 }
 
 } // namespace systems

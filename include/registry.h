@@ -22,7 +22,7 @@
 
 namespace ecs {
 
-constexpr int num_components = 13;
+constexpr int num_components = 14;
 
 template <typename C> using ComponentStorage = std::map<EntityType, C>;
 
@@ -56,16 +56,18 @@ template <> struct com_id<relationship> : com_id_impl<9> {};
 template <> struct com_id<tag_parent> : com_id_impl<10> {};
 template <> struct com_id<secondary_object> : com_id_impl<11> {};
 template <> struct com_id<adaptive> : com_id_impl<12> {};
+template <> struct com_id<tag_bspline> : com_id_impl<13> {};
 
 template <typename T> constexpr component_bitset get_com_bit() {
   return 1ull << com_id<T>::value;
 };
 
 template <int ID> struct type_from_id {
-  using type = typename select<ID, parametric, transformation, gl_object,
-                               torus_params, tag_figure, cursor_params,
-                               tag_point, selected, tag_bezierc, relationship,
-                               tag_parent, secondary_object, adaptive>::type;
+  using type =
+      typename select<ID, parametric, transformation, gl_object, torus_params,
+                      tag_figure, cursor_params, tag_point, selected,
+                      tag_bezierc, relationship, tag_parent, secondary_object,
+                      adaptive, tag_bspline>::type;
 };
 
 template <int ID> using type_from_id_t = typename type_from_id<ID>::type;
@@ -77,19 +79,20 @@ template <typename T> struct component_owner {
   }
 };
 
-struct component_manager : component_owner<parametric>,
-                           component_owner<transformation>,
-                           component_owner<gl_object>,
-                           component_owner<secondary_object>,
-                           component_owner<torus_params>,
-                           component_owner<tag_figure>,
-                           component_owner<tag_point>,
-                           component_owner<tag_bezierc>,
-                           component_owner<cursor_params>,
-                           component_owner<selected>,
-                           component_owner<relationship>,
-                           component_owner<tag_parent>,
-                           component_owner<adaptive> {
+struct registry : component_owner<parametric>,
+                  component_owner<transformation>,
+                  component_owner<gl_object>,
+                  component_owner<secondary_object>,
+                  component_owner<torus_params>,
+                  component_owner<tag_figure>,
+                  component_owner<tag_point>,
+                  component_owner<tag_bezierc>,
+                  component_owner<cursor_params>,
+                  component_owner<selected>,
+                  component_owner<relationship>,
+                  component_owner<tag_parent>,
+                  component_owner<adaptive>,
+                  component_owner<tag_bspline> {
 
   std::unordered_map<EntityType, component_bitset> entities;
 
@@ -101,9 +104,9 @@ struct component_manager : component_owner<parametric>,
       return false;
     }
 
-    auto &cm = get_map<C>();
+    auto &reg = get_map<C>();
 
-    cm[e] = std::move(c);
+    reg[e] = std::move(c);
     entities[e] |= get_com_bit<C>();
 
     return true;
@@ -114,9 +117,9 @@ struct component_manager : component_owner<parametric>,
       throw;
     }
 
-    auto &cm = get_map<C>();
+    auto &reg = get_map<C>();
 
-    return cm[e];
+    return reg[e];
   }
 
   template <typename T> inline bool has_component(EntityType e) const {
