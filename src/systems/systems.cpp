@@ -63,143 +63,47 @@ void render_points(const gl_object &g) {
   glPointSize(1.0f);
 }
 
-glm::vec4 sample_torus(const torus_params &tp, const float u, const float v) {
-  const auto sin_u = sinf(u);
-  const auto cos_u = cosf(u);
+void render_visible_entities() {
+  auto &reg = ecs::registry::get_registry();
 
-  const auto sin_v = sinf(v);
-  const auto cos_v = cosf(v);
-
-  return {tp.radii[1] * cos_u + tp.radii[0] * cos_u * cos_v,
-          tp.radii[1] * sin_u + tp.radii[0] * sin_u * cos_v,
-          tp.radii[0] * sin_v, 1.0f};
+  for (const auto &[idx, _] : reg.get_map<tag_visible>()) {
+    auto &t = reg.get_component<transformation>(idx);
+    auto &gl = reg.get_component<gl_object>(idx);
+    glUseProgram(gl.program);
+    systems::set_model_uniform(t);
+    glVertexAttrib4f(1, gl.color.r, gl.color.g, gl.color.b, gl.color.a);
+    systems::render_points(gl);
+  }
 }
 
-void generate_torus_lines(const parametric &p,
-                          const std::vector<glm::vec4> &points,
-                          std::vector<unsigned int> &indices) {
-  for (int i = 0u; i < p.samples[0]; ++i) {
-    for (int j = 0u; j < p.samples[1]; ++j) {
-      // add quad as two triangles
-      const auto imod = (i + 1) % p.samples[0];
-      const auto jmod = (j + 1) % p.samples[1];
-
-      const auto i1 = i * p.samples[1] + j;
-      const auto i2 = imod * p.samples[1] + j;
-      const auto i3 = imod * p.samples[1] + jmod;
-      const auto i4 = i * p.samples[1] + jmod;
-
-      indices.push_back(i1);
-      indices.push_back(i2);
-
-      indices.push_back(i2);
-      indices.push_back(i3);
-
-      indices.push_back(i3);
-      indices.push_back(i4);
-
-      indices.push_back(i4);
-      indices.push_back(i1);
+void update_center_of_weight() {
+  auto &reg = ecs::registry::get_registry();
+  auto cen = reg.get_map<tag_center_of_weight>().begin()->first;
+  auto &t = reg.get_component<transformation>(cen);
+  t.translation = glm::vec3(0.0f);
+  auto counter = 0;
+  for (auto &[idx, _] : reg.get_map<selected>()) {
+    if (!reg.has_component<tag_parent>(idx)) {
+      t.translation += reg.get_component<transformation>(idx).translation;
+      ++counter;
     }
   }
-}
-
-inline dummy_point get_initial_dummy(GLuint program) {
-  transformation t;
-  gl_object g;
-
-  g.points = {{0.0f, 0.0f, 0.0f, 1.0f}};
-  g.indices = {0u};
-  g.dmode = gl_object::draw_mode::points;
-
-  systems::reset_gl_objects(g);
-
-  return dummy_point{std::move(t), std::move(g)};
-}
-
-void render_figures(
-    const std::vector<ecs::EntityType> &selected_parents,
-    const std::vector<ecs::EntityType> &selected_primitives,
-    const std::vector<ecs::EntityType> &unselected_indices,
-    ecs::ComponentStorage<transformation> &transformation_component,
-    ecs::ComponentStorage<gl_object> &ogl_component,
-    std::shared_ptr<app_state> s, glm::vec3 &center_out) {
-  static dummy_point center_of_weight{get_initial_dummy(s->default_program)};
-
-  for (const auto idx : unselected_indices) {
-    auto &t = transformation_component[idx];
-    auto &gl = ogl_component[idx];
-    glUseProgram(gl.program);
-    systems::set_model_uniform(t);
-    glVertexAttrib4f(1, 0.0f, 0.0f, 1.0f, 1.0f);
-    systems::render_points(gl);
-  }
-
-  for (const auto idx : selected_primitives) {
-    auto &t = transformation_component[idx];
-    auto &gl = ogl_component[idx];
-    systems::set_model_uniform(t);
-    glVertexAttrib4f(1, 1.0f, 0.0f, 0.0f, 1.0f);
-    center_of_weight.t.translation += t.translation;
-    systems::render_points(gl);
-  }
-
-  for (const auto idx : selected_parents) {
-    auto &t = transformation_component[idx];
-    auto &gl = ogl_component[idx];
-    systems::set_model_uniform(t);
-    glVertexAttrib4f(1, 1.0f, 0.0f, 0.0f, 1.0f);
-    systems::render_points(gl);
-  }
-
-  center_of_weight.t.translation *= (1.f / selected_primitives.size());
-
-  glVertexAttrib4f(1, 1.0f, 1.0f, 1.0f, 1.0f);
-  systems::set_model_uniform(center_of_weight.t);
-  systems::render_points(center_of_weight.g);
-
-  center_out = center_of_weight.t.translation;
-  center_of_weight.t.translation = {0.0f, 0.0f, 0.0f};
-}
-void render_secondary_geometry(ecs::ComponentStorage<secondary_object> &sec,
-                               ecs::ComponentStorage<gl_object> &ogl_component,
-                               std::shared_ptr<app_state> s) {
-  for (const auto &[idx, v] : sec) {
-    if (!v.enabled) {
-      continue;
-    }
-    auto &gl = ogl_component[v.val];
-    glUseProgram(gl.program);
-    systems::set_vanilla_model_uniform();
-    glVertexAttrib4f(1, 0.0f, 1.0f, 0.0f, 1.0f);
-    systems::render_points(gl);
+  t.translation *= (1.f / counter);
+  if (counter > 0 && !reg.has_component<tag_visible>(cen)) {
+    reg.add_component<tag_visible>(cen, {});
   }
 }
 
-void render_cursors(
-    const std::vector<ecs::EntityType> indices,
-    const ecs::ComponentStorage<gl_object> &ogl_components,
-    ecs::ComponentStorage<transformation> &transformation_component,
-    std::shared_ptr<app_state> s) {
-
-  for (auto idx : indices) {
-    const auto &gl = ogl_components.at(idx);
-    glUseProgram(gl.program);
-    glVertexAttrib4f(1, 1.0f, 1.0f, 0.0f, 1.0f);
-    auto &t = transformation_component[idx];
-    const auto val =
-        std::abs((frame_state::view * glm::vec4(t.translation, 1)).z);
-    t.scale = glm::vec3(val, val, val);
-    systems::set_model_uniform(t);
-    systems::render_points(gl);
-  }
-  glLineWidth(1.0f);
+void update_cursor() {
+  auto &reg = ecs::registry::get_registry();
+  auto cur = reg.get_map<cursor_params>().begin()->first;
+  auto &t = reg.get_component<transformation>(cur);
+  const auto val =
+      std::abs((frame_state::view * glm::vec4(t.translation, 1)).z);
+  t.scale = glm::vec3(val, val, val);
 }
 
-void render_app(ecs::registry &reg, std::shared_ptr<app_state> s,
-                std::vector<ecs::EntityType> &sel,
-                std::vector<ecs::EntityType> &unsel,
-                std::vector<ecs::EntityType> &changed) {
+void render_app(std::vector<ecs::EntityType> &changed) {
   static ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
   glViewport(0, 0, frame_state::window_w, frame_state::window_h);
   glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
@@ -207,53 +111,68 @@ void render_app(ecs::registry &reg, std::shared_ptr<app_state> s,
   glClearDepth(1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  glm::vec3 center;
-  std::vector<ecs::EntityType> cursors;
-
-  for (auto &[idx, _] : reg.get_map<cursor_params>()) {
-    cursors.push_back(idx);
-  }
-
-  std::vector<ecs::EntityType> sel_primitives;
-  std::vector<ecs::EntityType> sel_parents;
-
-  for (const auto idx : sel) {
-    if (!reg.has_component<tag_parent>(idx)) {
-      sel_primitives.push_back(idx);
-    } else {
-      sel_parents.push_back(idx);
-    }
-  }
-
-  render_figures(sel_parents, sel_primitives, unsel,
-                 reg.get_map<transformation>(), reg.get_map<gl_object>(), s,
-                 center);
-
-  render_secondary_geometry(reg.get_map<secondary_object>(),
-                            reg.get_map<gl_object>(), s);
+  update_center_of_weight();
+  update_cursor();
+  render_visible_entities();
 
   glm::mat4 gizmo_trans(1.0f);
-  get_gizmo_transform(gizmo_trans, sel_primitives,
-                      reg.get_map<transformation>(), s, center);
-  apply_group_transform(gizmo_trans, sel_primitives,
-                        reg.get_map<transformation>(), changed, center);
-
-  render_cursors(cursors, reg.get_map<gl_object>(),
-                 reg.get_map<transformation>(), s);
+  get_gizmo_transform(gizmo_trans);
+  apply_group_transform(gizmo_trans, changed);
 }
 
-void update_changed_relationships(ecs::registry &reg,
-                                  std::shared_ptr<app_state> &s,
-                                  const std::vector<ecs::EntityType> &changed,
+void update_changed_relationships(const std::vector<ecs::EntityType> &changed,
                                   const std::vector<ecs::EntityType> &del) {
+  auto &reg = ecs::registry::get_registry();
+
   std::set<ecs::EntityType> changed_rel;
+
   for (const auto id : changed) {
     if (reg.has_component<relationship>(id)) {
       auto &rel = reg.get_component<relationship>(id);
-      if (rel.parents.size())
+      // virtual
+      if (reg.has_component<tag_virtual>(id)) {
+        auto vparent = rel.parents[0];
+        if (reg.has_component<tag_bspline>(vparent)) {
+          // 1. find index of virtual point
+          auto &prel = reg.get_component<relationship>(vparent);
+          const auto vidx =
+              std::distance(begin(prel.virtual_children),
+                            std::find(begin(prel.virtual_children),
+                                      end(prel.virtual_children), id));
+          const auto Aidx = prel.children[vidx / 3];
+          const auto Bidx = prel.children[vidx / 3 + 1];
+          const auto Cidx = prel.children[vidx / 3 + 2];
+
+          auto &a = reg.get_component<transformation>(id);
+          auto &A = reg.get_component<transformation>(Aidx);
+          auto &B = reg.get_component<transformation>(Bidx);
+          auto &C = reg.get_component<transformation>(Cidx);
+          auto S = (A.translation + C.translation) / 2.0f;
+
+          switch (vidx % 3) {
+          case 0: {
+            B.translation = S + 3.f / 2.f * (a.translation - S);
+          } break;
+          case 1: {
+            B.translation =
+                C.translation + 3.f / 2.f * (a.translation - C.translation);
+          } break;
+          case 2: {
+            B.translation =
+                C.translation + 3.f * (a.translation - C.translation);
+          } break;
+          }
+        }
+      }
+      // regular
+      if (rel.parents.size()) {
         for (auto p : rel.parents) {
           changed_rel.insert(p);
         }
+      }
+      if (rel.children.size()) {
+        changed_rel.insert(id);
+      }
     }
   }
 
@@ -277,9 +196,7 @@ void update_changed_relationships(ecs::registry &reg,
       auto &a = reg.get_component<adaptive>(p);
       auto &sgl = reg.get_component<gl_object>(
           reg.get_component<secondary_object>(p).val);
-      regenerate_bezier(rel, a, reg.get_map<transformation>(),
-                        reg.get_map<relationship>(), gl.points, gl.indices,
-                        sgl.points, sgl.indices);
+      regenerate_bezier(rel, a, gl.points, gl.indices, sgl.points, sgl.indices);
       reset_gl_objects(gl);
       reset_gl_objects(sgl);
     } else if (reg.has_component<tag_bspline>(p) &&
@@ -289,17 +206,17 @@ void update_changed_relationships(ecs::registry &reg,
       auto &a = reg.get_component<adaptive>(p);
       auto &sgl = reg.get_component<gl_object>(
           reg.get_component<secondary_object>(p).val);
-      regenerate_bspline(rel, a, reg.get_map<transformation>(),
-                         reg.get_map<relationship>(), gl.points, gl.indices,
-                         sgl.points, sgl.indices);
+      regenerate_bspline(p, rel, a, gl.points, gl.indices, sgl.points,
+                         sgl.indices);
       reset_gl_objects(gl);
       reset_gl_objects(sgl);
     }
   }
 }
 
-void delete_entities(ecs::registry &reg,
-                     const std::vector<ecs::EntityType> &del) {
+void delete_entities(const std::vector<ecs::EntityType> &del) {
+  auto &reg = ecs::registry::get_registry();
+
   for (const auto idx : del)
     reg.delete_entity(idx);
 }

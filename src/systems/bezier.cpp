@@ -38,12 +38,12 @@ template <typename... T> float get_pixel_score(T &&...args) {
 }
 
 bool regenerate_bezier(const relationship &r, adaptive &a,
-                       ecs::ComponentStorage<transformation> transformations,
-                       ecs::ComponentStorage<relationship> relationships,
                        std::vector<glm::vec4> &out_vertices,
                        std::vector<unsigned int> &out_indices,
                        std::vector<glm::vec4> &out_vertices_polygon,
                        std::vector<unsigned int> &out_indices_polygon) {
+  auto &reg = ecs::registry::get_registry();
+  auto &transformations = reg.get_map<transformation>();
   out_vertices_polygon.clear();
   out_indices_polygon.clear();
   out_vertices.clear();

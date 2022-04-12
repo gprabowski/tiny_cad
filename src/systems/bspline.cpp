@@ -1,20 +1,25 @@
+#include "constructors.h"
+#include <frame_state.h>
 #include <systems.h>
 
 bool systems::regenerate_bspline(
-    relationship &r, adaptive &a,
-    ecs::ComponentStorage<transformation> transformations,
-    ecs::ComponentStorage<relationship> relationships,
+    ecs::EntityType idx, relationship &r, adaptive &a,
     std::vector<glm::vec4> &out_vertices,
     std::vector<unsigned int> &out_indices,
     std::vector<glm::vec4> &out_vertices_polygon,
     std::vector<unsigned int> &out_indices_polygon) {
+
+  auto &reg = ecs::registry::get_registry();
+  auto &transformations = reg.get_map<transformation>();
 
   out_vertices_polygon.clear();
   out_indices_polygon.clear();
   out_vertices.clear();
   out_indices.clear();
 
-  for (std::size_t i = 0; i < r.children.size() - 3; ++i) {
+  const auto iter_top = r.children.size() >= 4 ? r.children.size() - 3 : 0;
+
+  for (std::size_t i = 0; i < iter_top; ++i) {
     const auto first_child = r.children[i];
     const auto P10 = transformations[first_child].translation;
 
@@ -57,6 +62,82 @@ bool systems::regenerate_bspline(
       const auto P43 = a43 * P42 + b43 * P32;
 
       out_vertices.push_back(glm::vec4(P43, 1.0f));
+    }
+  }
+
+  const auto goal_number =
+      r.children.size() >= 4 ? (3 * (r.children.size() - 3) + 1) : 0;
+
+  if (r.virtual_children.size() > goal_number) {
+    // too many
+    const auto diff = r.virtual_children.size() - goal_number;
+    for (std::size_t i = 0; i < diff; ++i) {
+      const auto cp = r.virtual_children.back();
+      reg.remove_component<tag_visible>(cp);
+    }
+  } else if (r.virtual_children.size() < goal_number) {
+    // not enough
+    const auto diff = goal_number - r.virtual_children.size();
+    for (std::size_t i = 0; i < diff; ++i) {
+      const auto cp =
+          constructors::add_virtual_point({}, frame_state::default_program);
+      auto &crel = reg.get_component<relationship>(cp);
+      crel.parents.push_back(idx);
+      r.virtual_children.push_back(cp);
+    }
+  }
+  int counter = 0;
+  if (goal_number) {
+    bool are_visible = reg.has_component<tag_visible>(r.virtual_children[0]);
+    for (std::size_t i = 0; i < r.children.size() - 2; ++i) {
+      if (i == 0) {
+        // add only the connector
+        auto &bt1 =
+            reg.get_component<transformation>(r.children[i]).translation;
+        auto &bt2 =
+            reg.get_component<transformation>(r.children[i + 1]).translation;
+        auto &bt3 =
+            reg.get_component<transformation>(r.children[i + 2]).translation;
+
+        const glm::vec3 pos1 = (1.f / 3.f) * bt1 + (2.f / 3.f) * bt2;
+        const glm::vec3 pos2 = (2.f / 3.f) * bt2 + (1.f / 3.f) * bt3;
+        auto &t =
+            reg.get_component<transformation>(r.virtual_children[counter]);
+        t.translation = (pos1 + pos2) / 2.0f;
+        if (are_visible) {
+          reg.add_component<tag_visible>(r.virtual_children[counter], {});
+        }
+        ++counter;
+      } else {
+        auto &bt1 =
+            reg.get_component<transformation>(r.children[i]).translation;
+        auto &bt2 =
+            reg.get_component<transformation>(r.children[i + 1]).translation;
+        auto &bt3 =
+            reg.get_component<transformation>(r.children[i + 2]).translation;
+        // add only the connector
+        const glm::vec3 pos1 = (2.f / 3.f) * bt1 + (1.f / 3.f) * bt2;
+        const glm::vec3 pos2 = (1.f / 3.f) * bt1 + (2.f / 3.f) * bt2;
+        const glm::vec3 pos3 = (2.f / 3.f) * bt2 + (1.f / 3.f) * bt3;
+        auto &t1 =
+            reg.get_component<transformation>(r.virtual_children[counter]);
+        ++counter;
+        auto &t2 =
+            reg.get_component<transformation>(r.virtual_children[counter]);
+        ++counter;
+        auto &t3 =
+            reg.get_component<transformation>(r.virtual_children[counter]);
+        ++counter;
+
+        if (are_visible) {
+          reg.add_component<tag_visible>(r.virtual_children[counter - 3], {});
+          reg.add_component<tag_visible>(r.virtual_children[counter - 2], {});
+          reg.add_component<tag_visible>(r.virtual_children[counter - 1], {});
+        }
+        t1.translation = pos1;
+        t2.translation = pos2;
+        t3.translation = (pos2 + pos3) / 2.0f;
+      }
     }
   }
 

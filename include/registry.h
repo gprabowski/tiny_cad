@@ -22,7 +22,7 @@
 
 namespace ecs {
 
-constexpr int num_components = 14;
+constexpr int num_components = 18;
 
 template <typename C> using ComponentStorage = std::map<EntityType, C>;
 
@@ -57,6 +57,10 @@ template <> struct com_id<tag_parent> : com_id_impl<10> {};
 template <> struct com_id<secondary_object> : com_id_impl<11> {};
 template <> struct com_id<adaptive> : com_id_impl<12> {};
 template <> struct com_id<tag_bspline> : com_id_impl<13> {};
+template <> struct com_id<tag_virtual> : com_id_impl<14> {};
+template <> struct com_id<tag_visible> : com_id_impl<15> {};
+template <> struct com_id<tag_clickable> : com_id_impl<16> {};
+template <> struct com_id<tag_center_of_weight> : com_id_impl<17> {};
 
 template <typename T> constexpr component_bitset get_com_bit() {
   return 1ull << com_id<T>::value;
@@ -67,7 +71,8 @@ template <int ID> struct type_from_id {
       typename select<ID, parametric, transformation, gl_object, torus_params,
                       tag_figure, cursor_params, tag_point, selected,
                       tag_bezierc, relationship, tag_parent, secondary_object,
-                      adaptive, tag_bspline>::type;
+                      adaptive, tag_bspline, tag_virtual, tag_visible,
+                      tag_clickable, tag_center_of_weight>::type;
 };
 
 template <int ID> using type_from_id_t = typename type_from_id<ID>::type;
@@ -92,14 +97,20 @@ struct registry : component_owner<parametric>,
                   component_owner<relationship>,
                   component_owner<tag_parent>,
                   component_owner<adaptive>,
-                  component_owner<tag_bspline> {
+                  component_owner<tag_bspline>,
+                  component_owner<tag_virtual>,
+                  component_owner<tag_visible>,
+                  component_owner<tag_clickable>,
+                  component_owner<tag_center_of_weight> {
 
   std::unordered_map<EntityType, component_bitset> entities;
 
   EntityType add_entity();
   void delete_entity(EntityType idx);
 
-  template <typename C> bool add_component(EntityType e, C &&c) {
+  template <typename C>
+  std::enable_if_t<!std::is_same_v<C, selected>, bool>
+  add_component(EntityType e, C &&c) {
     if (!exists(e) || !component_exists<C>() || has_component<C>(e)) {
       return false;
     }
@@ -108,6 +119,26 @@ struct registry : component_owner<parametric>,
 
     reg[e] = std::move(c);
     entities[e] |= get_com_bit<C>();
+
+    return true;
+  }
+
+  template <typename C>
+  std::enable_if_t<std::is_same_v<C, selected>, bool>
+  add_component(EntityType e, selected &&c) {
+    if (!exists(e) || !component_exists<C>() || has_component<C>(e)) {
+      return false;
+    }
+
+    auto &reg = get_map<C>();
+
+    reg[e] = std::move(c);
+    entities[e] |= get_com_bit<C>();
+
+    if (has_component<gl_object>(e)) {
+      auto &g = get_component<gl_object>(e);
+      g.color = g.selected;
+    }
 
     return true;
   }
@@ -158,10 +189,45 @@ struct registry : component_owner<parametric>,
   }
 
   template <typename T>
+  std::enable_if_t<!std::is_same_v<T, selected>, void>
+  clear_component() {
+    auto &m = get_map<T>();
+    for(const auto&[idx, _] : m) {
+       entities[idx] &= ~get_com_bit<T>();
+    }
+    m.clear();
+  }
+
+  template <typename T>
+  std::enable_if_t<std::is_same_v<T, selected>, void>
+  clear_component() {
+    auto &m = get_map<T>();
+    for(const auto&[idx, _] : m) {
+       entities[idx] &= ~get_com_bit<T>();
+       auto& g = get_component<gl_object>(idx);
+       g.color = g.primary;
+    }
+    m.clear();
+  }
+
+  template <typename T>
   std::enable_if_t<!std::is_same_v<T, relationship> &&
-                       !std::is_same_v<T, secondary_object>,
+                       !std::is_same_v<T, secondary_object> &&
+                       !std::is_same_v<T, selected>,
                    void>
   remove_component(EntityType idx) {
+    auto &m = get_map<T>();
+    m.erase(idx);
+    entities[idx] &= ~get_com_bit<T>();
+  }
+
+  template <typename T>
+  std::enable_if_t<std::is_same_v<T, selected>, void>
+  remove_component(EntityType idx) {
+    if (has_component<gl_object>(idx)) {
+      auto &g = get_component<gl_object>(idx);
+      g.color = g.primary;
+    }
     auto &m = get_map<T>();
     m.erase(idx);
     entities[idx] &= ~get_com_bit<T>();
@@ -209,9 +275,23 @@ struct registry : component_owner<parametric>,
     entities[id] &= ~get_com_bit<relationship>();
   }
 
-  template <typename T> void remove_all() {
+  template <typename T>
+  std::enable_if_t<!std::is_same_v<T, selected>, void> remove_all() {
     auto &m = get_map<T>();
     for (auto &[idx, c] : m) {
+      entities[idx] &= ~get_com_bit<T>();
+    }
+    m.clear();
+  }
+
+  template <typename T>
+  std::enable_if_t<std::is_same_v<T, selected>, void> remove_all() {
+    auto &m = get_map<T>();
+    for (auto &[idx, c] : m) {
+      if (has_component<gl_object>(idx)) {
+        auto &g = get_component<gl_object>(idx);
+        g.color = g.primary;
+      }
       entities[idx] &= ~get_com_bit<T>();
     }
     m.clear();
@@ -220,6 +300,19 @@ struct registry : component_owner<parametric>,
   template <typename T> constexpr ComponentStorage<T> &get_map() {
     return static_cast<component_owner<T> *>(this)->get_component();
   }
+
+  static registry &get_registry() {
+    static registry reg;
+    return reg;
+  }
+
+  registry &operator=(const registry &r) = delete;
+  registry &operator=(const registry &&r) = delete;
+  registry(const registry &) = delete;
+  registry(const registry &&) = delete;
+
+private:
+  registry(){};
 };
 
 } // namespace ecs

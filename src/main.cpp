@@ -7,13 +7,13 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include <app_state.h>
 #include <callbacks.h>
 #include <constructors.h>
 #include <frame_state.h>
 #include <gui.h>
 #include <init.h>
 #include <input_handlers.h>
+#include <input_state.h>
 #include <log.h>
 #include <registry.h>
 #include <shader.h>
@@ -24,9 +24,10 @@ namespace clb = callbacks;
 namespace hnd = handlers;
 namespace sys = systems;
 
-void get_selected_figure_indices(ecs::registry &reg,
-                                 std::vector<ecs::EntityType> &sel,
+void get_selected_figure_indices(std::vector<ecs::EntityType> &sel,
                                  std::vector<ecs::EntityType> &unsel) {
+  auto &reg = ecs::registry::get_registry();
+
   for (auto &[idx, _] : reg.get_map<tag_figure>()) {
     if (reg.has_component<selected>(idx))
       sel.push_back(idx);
@@ -38,12 +39,14 @@ void get_selected_figure_indices(ecs::registry &reg,
 
 void refresh_adaptive(ecs::registry &reg) {}
 
-void setup_globals(std::shared_ptr<app_state> &state) {
+void setup_globals() {
+  auto &state = input_state::get_input_state();
+
   int width, height;
   auto w = glfwGetCurrentContext();
   glfwGetFramebufferSize(w, &width, &height);
-  auto view = (glm::lookAt(state->cam_pos, state->cam_pos + state->cam_front,
-                           state->cam_up));
+  auto view = (glm::lookAt(state.cam_pos, state.cam_pos + state.cam_front,
+                           state.cam_up));
   auto proj = (glm::perspective(45.f, static_cast<float>(width) / height, 0.1f,
                                 1000.f));
   frame_state::view = view;
@@ -52,7 +55,8 @@ void setup_globals(std::shared_ptr<app_state> &state) {
   frame_state::window_w = width;
 }
 
-void regenererate_adaptive_geometry(ecs::registry &reg) {
+void regenererate_adaptive_geometry() {
+  auto &reg = ecs::registry::get_registry();
 
   for (auto &[idx, _] : reg.get_map<tag_bezierc>()) {
     auto &g = reg.get_component<gl_object>(idx);
@@ -60,9 +64,8 @@ void regenererate_adaptive_geometry(ecs::registry &reg) {
     auto &sgl = reg.get_component<gl_object>(
         reg.get_component<secondary_object>(idx).val);
     auto &rel = reg.get_component<relationship>(idx);
-    systems::regenerate_bezier(rel, a, reg.get_map<transformation>(),
-                               reg.get_map<relationship>(), g.points, g.indices,
-                               sgl.points, sgl.indices);
+    systems::regenerate_bezier(rel, a, g.points, g.indices, sgl.points,
+                               sgl.indices);
     systems::reset_gl_objects(g);
     systems::reset_gl_objects(sgl);
   }
@@ -82,33 +85,35 @@ void refresh_ubos() {
   glBindBuffer(GL_UNIFORM_BUFFER, frame_state::common_ubo);
 }
 
-void main_loop(ecs::registry &reg, std::shared_ptr<app_state> state) {
+void main_loop() {
+  auto &state = input_state::get_input_state();
+
   auto w = glfwGetCurrentContext();
   std::vector<ecs::EntityType> sel, unsel, del, parents, changed;
   while (!glfwWindowShouldClose(w)) {
 
-    hnd::process_input(state, reg);
-    if (state->moved) {
-      regenererate_adaptive_geometry(reg);
-      state->moved = false;
+    hnd::process_input();
+    if (state.moved) {
+      regenererate_adaptive_geometry();
+      state.moved = false;
     }
-    setup_globals(state);
+    setup_globals();
     refresh_ubos();
-    gui::start_frame(state);
-    get_selected_figure_indices(reg, sel, unsel);
+    gui::start_frame();
+    get_selected_figure_indices(sel, unsel);
 
     // also renders gizmo
-    sys::render_app(reg, state, sel, unsel, changed);
+    sys::render_app(changed);
 
-    gui::render_general_settings(state);
-    gui::render_figure_select_gui(reg, del);
-    gui::render_selected_edit_gui(reg, state, changed, del);
+    gui::render_general_settings();
+    gui::render_figure_select_gui(del);
+    gui::render_selected_edit_gui(changed, del);
 
-    gui::render_cursor_gui(reg);
+    gui::render_cursor_gui();
     gui::end_frame();
 
-    sys::update_changed_relationships(reg, state, changed, del);
-    sys::delete_entities(reg, del);
+    sys::update_changed_relationships(changed, del);
+    sys::delete_entities(del);
 
     glfwSwapBuffers(w);
     glfwPollEvents();
@@ -128,15 +133,15 @@ int main() {
   clb::set_keyboard_callback(window);
   clb::set_mouse_callback(window);
 
-  auto state = std::make_shared<app_state>();
-  state->default_program = shader::LoadProgram("resources/general");
-  glfwSetWindowUserPointer(window.get(), static_cast<void *>(state.get()));
-  glUseProgram(state->default_program);
+  auto &state = input_state::get_input_state();
 
-  ecs::registry reg;
-  cst::setup_initial_geometry(reg, state->default_program);
+  state.default_program = shader::LoadProgram("resources/general");
+  frame_state::default_program = state.default_program;
+  glUseProgram(state.default_program);
+
+  cst::setup_initial_geometry(state.default_program);
 
   gui::setup_gui(window);
-  main_loop(reg, state);
+  main_loop();
   gui::cleanup_gui();
 }

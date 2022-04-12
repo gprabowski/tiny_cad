@@ -5,6 +5,7 @@
 #include <misc/cpp/imgui_stdlib.h>
 
 #include <algorithm>
+#include <optional>
 #include <string>
 
 #define GLM_FORCE_RADIANS
@@ -65,8 +66,8 @@ void cleanup_gui() {
   ImGui::DestroyContext();
 }
 
-void start_frame(std::shared_ptr<app_state> &s) {
-  static bool show_demo = true;
+void start_frame() {
+  static bool show_demo = false;
   ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
   ImGuiWindowFlags host_window_flags = 0;
   host_window_flags |= ImGuiWindowFlags_NoTitleBar |
@@ -89,8 +90,10 @@ void start_frame(std::shared_ptr<app_state> &s) {
   }
 }
 
-void render_general_settings(std::shared_ptr<app_state> &s) {
+void render_general_settings() {
   // show general settings window
+  auto &s = input_state::get_input_state();
+
   static std::vector<std::string> wasd_values{"Camera Movement",
                                               "Cursor Movement"};
 
@@ -98,8 +101,8 @@ void render_general_settings(std::shared_ptr<app_state> &s) {
                                                "Scaling", "Universal"};
   ImGui::Begin("General Settings");
 
-  static app_state::gizmo_mode gmode{app_state::gizmo_mode::universal};
-  if (ImGui::Combo("wasd mode", reinterpret_cast<int *>(&s->imode),
+  static input_state::gizmo_mode gmode{input_state::gizmo_mode::universal};
+  if (ImGui::Combo("wasd mode", reinterpret_cast<int *>(&s.imode),
                    vector_getter, static_cast<void *>(&wasd_values),
                    wasd_values.size())) {
     // reaction for input mode change
@@ -109,17 +112,17 @@ void render_general_settings(std::shared_ptr<app_state> &s) {
                    static_cast<void *>(&gizmo_values), gizmo_values.size())) {
     // reaction for input mode change
     switch (gmode) {
-    case app_state::gizmo_mode::translation: {
-      s->gizmo_op = ImGuizmo::OPERATION::TRANSLATE;
+    case input_state::gizmo_mode::translation: {
+      s.gizmo_op = ImGuizmo::OPERATION::TRANSLATE;
     } break;
-    case app_state::gizmo_mode::rotation: {
-      s->gizmo_op = ImGuizmo::OPERATION::ROTATE;
+    case input_state::gizmo_mode::rotation: {
+      s.gizmo_op = ImGuizmo::OPERATION::ROTATE;
     } break;
-    case app_state::gizmo_mode::scaling: {
-      s->gizmo_op = ImGuizmo::OPERATION::SCALE;
+    case input_state::gizmo_mode::scaling: {
+      s.gizmo_op = ImGuizmo::OPERATION::SCALE;
     } break;
-    case app_state::gizmo_mode::universal: {
-      s->gizmo_op = ImGuizmo::OPERATION::UNIVERSAL;
+    case input_state::gizmo_mode::universal: {
+      s.gizmo_op = ImGuizmo::OPERATION::UNIVERSAL;
     }
     }
   }
@@ -129,13 +132,16 @@ void render_general_settings(std::shared_ptr<app_state> &s) {
   ImGui::End();
 }
 
-point_action render_point_gui(ecs::registry &reg, ecs::EntityType idx,
-                              transformation &t, tag_figure &fc) {
+point_action render_point_gui(ecs::EntityType idx, transformation &t,
+                              tag_figure &fc) {
+  auto &reg = ecs::registry::get_registry();
+
   point_action ret{point_action::none};
   std::string tree_id = fc.name + ("##") + std::to_string(idx);
 
   ImGui::Text("%s", fc.name.c_str());
   std::string desc = ("Show more##") + std::to_string(idx);
+  ImGui::SameLine(200.f);
   if (ImGui::TreeNode(desc.c_str())) {
     if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
                             100.f)) {
@@ -167,16 +173,20 @@ point_action render_point_gui(ecs::registry &reg, ecs::EntityType idx,
   return ret;
 }
 
-void render_bspline_gui(ecs::registry &reg, std::shared_ptr<app_state> &s,
-                        tag_figure &fc, gl_object &g, relationship &rel,
-                        ecs::EntityType idx) {
+void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
+                        ecs::EntityType idx,
+                        std::vector<ecs::EntityType> &changed) {
+
   using gldm = gl_object::draw_mode;
 
   static int dmode = 1;
   static std::vector<std::string> combovalues{"points", "lines"};
 
+  auto &reg = ecs::registry::get_registry();
+
   ImGui::Text("%s", fc.name.c_str());
   std::string desc = ("Show more##") + std::to_string(idx);
+  ImGui::SameLine(200.f);
   if (ImGui::TreeNode(desc.c_str())) {
     if (ImGui::Combo("draw mode", &dmode, vector_getter,
                      static_cast<void *>(&combovalues), combovalues.size())) {
@@ -194,18 +204,49 @@ void render_bspline_gui(ecs::registry &reg, std::shared_ptr<app_state> &s,
 
     auto &sec = reg.get_component<secondary_object>(idx);
     if (ImGui::Checkbox("Bounding polygon", &sec.enabled)) {
+      if (sec.enabled) {
+        reg.add_component<tag_visible>(sec.val, {});
+      } else {
+        reg.remove_component<tag_visible>(sec.val);
+      }
+    }
+    bool bern = rel.virtual_children.size() > 0 &&
+                reg.has_component<tag_visible>(rel.virtual_children[0]);
+    if (ImGui::Checkbox("Bezier points", &bern)) {
+      if (bern) {
+        for (const auto vc : rel.virtual_children) {
+          reg.add_component<tag_visible>(vc, {});
+        }
+      } else {
+        for (const auto vc : rel.virtual_children) {
+          reg.remove_component<tag_visible>(vc);
+        }
+      }
     }
 
     if (ImGui::TreeNode("Children")) {
+      std::optional<ecs::EntityType> del;
       for (const auto c : rel.children) {
-        ImGui::Text("%s##%ld", reg.get_component<tag_figure>(c).name.c_str(),
-                    c);
+        ImGui::Text("%s", reg.get_component<tag_figure>(c).name.c_str());
+        ImGui::SameLine(200.f);
+        if (ImGui::Button(
+                (std::string("Detach##") + std::to_string(c)).c_str())) {
+          del = c;
+        }
+      }
+      if (del.has_value()) {
+        rel.children.erase(
+            std::find(begin(rel.children), end(rel.children), del.value()));
+        auto &crel = reg.get_component<relationship>(del.value());
+        crel.parents.erase(
+            std::find(begin(crel.parents), end(crel.parents), idx));
+        changed.push_back(idx);
       }
       ImGui::TreePop();
     }
 
     if (ImGui::Button("Add selected points")) {
-      systems::add_sel_points_to_parent(idx, reg);
+      systems::add_sel_points_to_parent(idx);
     }
 
     if (ImGui::Button("Delete")) {
@@ -214,16 +255,19 @@ void render_bspline_gui(ecs::registry &reg, std::shared_ptr<app_state> &s,
     ImGui::TreePop();
   }
 }
-void render_bezier_gui(ecs::registry &reg, std::shared_ptr<app_state> &s,
-                       tag_figure &fc, gl_object &g, relationship &rel,
-                       ecs::EntityType idx) {
+void render_bezier_gui(tag_figure &fc, gl_object &g, relationship &rel,
+                       ecs::EntityType idx,
+                       std::vector<ecs::EntityType> &changed) {
   using gldm = gl_object::draw_mode;
 
   static int dmode = 1;
   static std::vector<std::string> combovalues{"points", "lines"};
 
+  auto &reg = ecs::registry::get_registry();
+
   ImGui::Text("%s", fc.name.c_str());
   std::string desc = ("Show more##") + std::to_string(idx);
+  ImGui::SameLine(200.f);
   if (ImGui::TreeNode(desc.c_str())) {
     if (ImGui::Combo("draw mode", &dmode, vector_getter,
                      static_cast<void *>(&combovalues), combovalues.size())) {
@@ -241,18 +285,36 @@ void render_bezier_gui(ecs::registry &reg, std::shared_ptr<app_state> &s,
 
     auto &sec = reg.get_component<secondary_object>(idx);
     if (ImGui::Checkbox("Bounding polygon", &sec.enabled)) {
+      if (sec.enabled) {
+        reg.add_component<tag_visible>(idx, {});
+      } else {
+        reg.remove_component<tag_visible>(idx);
+      }
     }
 
     if (ImGui::TreeNode("Children")) {
+      std::optional<ecs::EntityType> del;
       for (const auto c : rel.children) {
-        ImGui::Text("%s##%ld", reg.get_component<tag_figure>(c).name.c_str(),
-                    c);
+        ImGui::Text("%s", reg.get_component<tag_figure>(c).name.c_str());
+        ImGui::SameLine(300.f);
+        if (ImGui::Button(
+                (std::string("Detach##") + std::to_string(c)).c_str())) {
+          del = c;
+        }
+      }
+      if (del.has_value()) {
+        rel.children.erase(
+            std::find(begin(rel.children), end(rel.children), del.value()));
+        auto &crel = reg.get_component<relationship>(del.value());
+        crel.parents.erase(
+            std::find(begin(crel.parents), end(crel.parents), idx));
+        changed.push_back(idx);
       }
       ImGui::TreePop();
     }
 
     if (ImGui::Button("Add selected points")) {
-      systems::add_sel_points_to_parent(idx, reg);
+      systems::add_sel_points_to_parent(idx);
     }
 
     if (ImGui::Button("Delete")) {
@@ -262,16 +324,18 @@ void render_bezier_gui(ecs::registry &reg, std::shared_ptr<app_state> &s,
   }
 }
 
-void render_torus_gui(ecs::registry &reg, ecs::EntityType idx, torus_params &tp,
-                      parametric &p, gl_object &g, transformation &t,
-                      tag_figure &fc) {
+void render_torus_gui(ecs::EntityType idx, torus_params &tp, parametric &p,
+                      gl_object &g, transformation &t, tag_figure &fc) {
   using gldm = gl_object::draw_mode;
 
   static int dmode = 1;
   static std::vector<std::string> combovalues{"points", "lines"};
 
+  auto &reg = ecs::registry::get_registry();
+
   ImGui::Text("%s", fc.name.c_str());
   std::string desc = ("Show more##") + std::to_string(idx);
+  ImGui::SameLine(200.f);
   if (ImGui::TreeNode(desc.c_str())) {
     if (ImGui::Combo("draw mode", &dmode, vector_getter,
                      static_cast<void *>(&combovalues), combovalues.size())) {
@@ -343,9 +407,10 @@ void end_frame() {
   }
 }
 
-void render_selected_edit_gui(ecs::registry &reg, std::shared_ptr<app_state> &s,
-                              std::vector<ecs::EntityType> &changed,
+void render_selected_edit_gui(std::vector<ecs::EntityType> &changed,
                               std::vector<ecs::EntityType> &deleted) {
+  auto &reg = ecs::registry::get_registry();
+
   ImGui::Begin("Selected figures:");
   for (auto &[idx, fc] : reg.get_map<selected>()) {
     if (reg.has_component<torus_params>(idx)) {
@@ -354,21 +419,22 @@ void render_selected_edit_gui(ecs::registry &reg, std::shared_ptr<app_state> &s,
       auto &g = reg.get_component<gl_object>(idx);
       auto &p = reg.get_component<parametric>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
-      render_torus_gui(reg, idx, tp, p, g, t, fc);
+      render_torus_gui(idx, tp, p, g, t, fc);
     } else if (reg.has_component<tag_bezierc>(idx)) {
       auto &g = reg.get_component<gl_object>(idx);
       auto &rel = reg.get_component<relationship>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
-      render_bezier_gui(reg, s, fc, g, rel, idx);
+      render_bezier_gui(fc, g, rel, idx, changed);
     } else if (reg.has_component<tag_bspline>(idx)) {
       auto &g = reg.get_component<gl_object>(idx);
       auto &rel = reg.get_component<relationship>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
-      render_bspline_gui(reg, s, fc, g, rel, idx);
-    } else if (reg.has_component<tag_point>(idx)) {
+      render_bspline_gui(fc, g, rel, idx, changed);
+    } else if (reg.has_component<tag_point>(idx) &&
+               !reg.has_component<tag_virtual>(idx)) {
       auto &t = reg.get_component<transformation>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
-      switch (render_point_gui(reg, idx, t, fc)) {
+      switch (render_point_gui(idx, t, fc)) {
       case point_action::none: {
       } break;
       case point_action::edit: {
@@ -383,8 +449,9 @@ void render_selected_edit_gui(ecs::registry &reg, std::shared_ptr<app_state> &s,
   ImGui::End();
 }
 
-point_action render_figure_select_gui(ecs::registry &reg,
-                                      std::vector<ecs::EntityType> &deleted) {
+point_action render_figure_select_gui(std::vector<ecs::EntityType> &deleted) {
+  auto &reg = ecs::registry::get_registry();
+
   point_action ret{point_action::none};
   bool sel{false};
   ImGui::Begin("Select figures:");
@@ -393,13 +460,15 @@ point_action render_figure_select_gui(ecs::registry &reg,
     std::string tree_id = fc.name + ("##") + std::to_string(idx);
     if (ImGui::Selectable(tree_id.c_str(), sel)) {
       if (!ImGui::GetIO().KeyCtrl) { // Clear selection when CTRL is not held
-        for (auto &[idx, c] : reg.get_map<selected>()) {
-          reg.remove_component<selected>(idx);
-        }
-        reg.get_map<selected>().clear();
+        reg.clear_component<selected>();
       }
       sel = !sel;
       if (sel) {
+        if ((reg.get_map<selected>().size() &&
+             reg.has_component<tag_virtual>(
+                 reg.get_map<selected>().begin()->first))) {
+          reg.remove_all<selected>();
+        }
         reg.add_component<selected>(idx, {});
       } else {
         reg.remove_component<selected>(idx);
@@ -418,10 +487,12 @@ point_action render_figure_select_gui(ecs::registry &reg,
   return ret;
 }
 
-void render_cursor_gui(ecs::registry &reg) {
+void render_cursor_gui() {
   static int dmode = 1;
   static std::vector<std::string> combovalues{"Torus", "Point",
                                               "Bezier Curve C0", "B-Spline"};
+
+  auto &reg = ecs::registry::get_registry();
 
   for (auto &[idx, p] : reg.get_map<cursor_params>()) {
     auto &t = reg.get_component<transformation>(idx);

@@ -19,4 +19,6 @@ struct frame_state {
   static GLuint common_ubo;
   static GLuint common_idx;
   static int common_block_loc;
+
+  static GLuint default_program;
 };

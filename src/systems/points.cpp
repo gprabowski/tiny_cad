@@ -1,7 +1,8 @@
 #include <systems.h>
 
 namespace systems {
-void add_sel_points_to_parent(ecs::EntityType idx, ecs::registry &reg) {
+void add_sel_points_to_parent(ecs::EntityType idx) {
+  auto &reg = ecs::registry::get_registry();
   if (!reg.has_component<tag_parent>(idx)) {
     return;
   }
@@ -23,14 +24,11 @@ void add_sel_points_to_parent(ecs::EntityType idx, ecs::registry &reg) {
   auto &sgl = reg.get_component<gl_object>(
       reg.get_component<secondary_object>(idx).val);
   if (reg.has_component<tag_bspline>(idx)) {
-    regenerate_bspline(rel, a, reg.get_map<transformation>(),
-                       reg.get_map<relationship>(), g.points, g.indices,
-                       sgl.points, sgl.indices);
+    regenerate_bspline(idx, rel, a, g.points, g.indices, sgl.points,
+                       sgl.indices);
 
   } else if (reg.has_component<tag_bezierc>(idx)) {
-    regenerate_bezier(rel, a, reg.get_map<transformation>(),
-                      reg.get_map<relationship>(), g.points, g.indices,
-                      sgl.points, sgl.indices);
+    regenerate_bezier(rel, a, g.points, g.indices, sgl.points, sgl.indices);
   }
   reset_gl_objects(g);
   reset_gl_objects(sgl);
