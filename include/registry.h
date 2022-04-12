@@ -189,23 +189,21 @@ struct registry : component_owner<parametric>,
   }
 
   template <typename T>
-  std::enable_if_t<!std::is_same_v<T, selected>, void>
-  clear_component() {
+  std::enable_if_t<!std::is_same_v<T, selected>, void> clear_component() {
     auto &m = get_map<T>();
-    for(const auto&[idx, _] : m) {
-       entities[idx] &= ~get_com_bit<T>();
+    for (const auto &[idx, _] : m) {
+      entities[idx] &= ~get_com_bit<T>();
     }
     m.clear();
   }
 
   template <typename T>
-  std::enable_if_t<std::is_same_v<T, selected>, void>
-  clear_component() {
+  std::enable_if_t<std::is_same_v<T, selected>, void> clear_component() {
     auto &m = get_map<T>();
-    for(const auto&[idx, _] : m) {
-       entities[idx] &= ~get_com_bit<T>();
-       auto& g = get_component<gl_object>(idx);
-       g.color = g.primary;
+    for (const auto &[idx, _] : m) {
+      entities[idx] &= ~get_com_bit<T>();
+      auto &g = get_component<gl_object>(idx);
+      g.color = g.primary;
     }
     m.clear();
   }

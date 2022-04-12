@@ -87,11 +87,13 @@ void refresh_ubos() {
 
 void main_loop() {
   auto &state = input_state::get_input_state();
+  frame_state::freq = glfwGetTimerFrequency();
 
   auto w = glfwGetCurrentContext();
   std::vector<ecs::EntityType> sel, unsel, del, parents, changed;
   while (!glfwWindowShouldClose(w)) {
 
+    uint64_t begin_time = glfwGetTimerValue();
     hnd::process_input();
     if (state.moved) {
       regenererate_adaptive_geometry();
@@ -114,6 +116,10 @@ void main_loop() {
 
     sys::update_changed_relationships(changed, del);
     sys::delete_entities(del);
+
+    uint64_t end_time = glfwGetTimerValue();
+    frame_state::last_cpu_frame =
+        static_cast<double>(end_time - begin_time) * 1000.f / frame_state::freq;
 
     glfwSwapBuffers(w);
     glfwPollEvents();

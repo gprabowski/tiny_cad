@@ -29,11 +29,23 @@ add_library(imguizmo
     ImGuizmo/ImZoomSlider.h 
 )
 
+message("ADDING IMPLOT")
+add_library(implot
+    implot/implot.h
+    implot/implot_internal.h
+    implot/implot.cpp
+    implot/implot_demo.cpp
+    implot/implot_items.cpp
+)
+
+
 target_include_directories(imgui PUBLIC imgui imgui/backends glfw/include)
 
 target_include_directories(imguizmo PUBLIC imgui imgui/backends glfw/include)
 
 target_include_directories(glad PUBLIC glfw/include/)
+
+target_include_directories(implot PUBLIC imgui imgui/backends implot)
 
 #GLFW
 message("GLFW DOCS BUILD TURNED OFF")

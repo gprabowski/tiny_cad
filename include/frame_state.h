@@ -21,4 +21,7 @@ struct frame_state {
   static int common_block_loc;
 
   static GLuint default_program;
+
+  static uint64_t freq;
+  static double last_cpu_frame;
 };

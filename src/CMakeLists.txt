@@ -44,6 +44,7 @@ target_include_directories(tiny_cad
     PUBLIC 
     ${CMAKE_SOURCE_DIR}/thirdparty/glm/glm
     ${CMAKE_SOURCE_DIR}/thirdparty
+    ${CMAKE_SOURCE_DIR}/thirdparty/implot
     ${CMAKE_SOURCE_DIR}/thirdparty/glfw/include/
     ${CMAKE_SOURCE_DIR}/thirdparty/ImGuizmo/
     ${CMAKE_SOURCE_DIR}/thirdparty/spdlog/include/
@@ -59,8 +60,13 @@ target_link_libraries(tiny_cad
         glm
         imgui
         imguizmo
+        implot
 )
 
 add_custom_command(TARGET tiny_cad PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E create_symlink
                        ${CMAKE_SOURCE_DIR}/resources/ $<TARGET_FILE_DIR:tiny_cad>/resources)
+
+add_custom_command(TARGET tiny_cad PRE_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E create_symlink
+                       ${CMAKE_SOURCE_DIR}/fonts/ $<TARGET_FILE_DIR:tiny_cad>/fonts)

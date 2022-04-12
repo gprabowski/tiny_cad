@@ -1,8 +1,10 @@
-#include "registry.h"
+#include <registry.h>
 
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <misc/cpp/imgui_stdlib.h>
+
+#include <implot/implot.h>
 
 #include <algorithm>
 #include <optional>
@@ -14,6 +16,7 @@
 
 #include <ImGuizmo.h>
 
+#include <frame_state.h>
 #include <gl_object.h>
 #include <gui.h>
 #include <systems.h>
@@ -33,6 +36,7 @@ static auto vector_getter = [](void *vec, int idx, const char **out_text) {
 void setup_gui(std::shared_ptr<GLFWwindow> &w) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
+  ImPlot::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
   (void)io;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -57,13 +61,92 @@ void setup_gui(std::shared_ptr<GLFWwindow> &w) {
   ImGui_ImplOpenGL3_Init("#version 460");
 
   // fonts
-  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+  io.FontDefault = io.Fonts->AddFontFromFileTTF(
+      //"fonts/opensans/static/OpenSans/OpenSans-Regular.ttf",
+      "fonts/jbmono/fonts/ttf/JetBrainsMono-Regular.ttf", 18.0f);
 }
 
 void cleanup_gui() {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
+  ImPlot::DestroyContext();
   ImGui::DestroyContext();
+}
+
+// utility structure for realtime plot
+struct ScrollingBuffer {
+  int MaxSize;
+  int Offset;
+  ImVector<ImVec2> Data;
+  ScrollingBuffer(int max_size = 2000) {
+    MaxSize = max_size;
+    Offset = 0;
+    Data.reserve(MaxSize);
+  }
+  void AddPoint(float x, float y) {
+    if (Data.size() < MaxSize)
+      Data.push_back(ImVec2(x, y));
+    else {
+      Data[Offset] = ImVec2(x, y);
+      Offset = (Offset + 1) % MaxSize;
+    }
+  }
+  void Erase() {
+    if (Data.size() > 0) {
+      Data.shrink(0);
+      Offset = 0;
+    }
+  }
+};
+
+// utility structure for realtime plot
+struct RollingBuffer {
+  float Span;
+  ImVector<ImVec2> Data;
+  RollingBuffer() {
+    Span = 10.0f;
+    Data.reserve(2000);
+  }
+  void AddPoint(float x, float y) {
+    float xmod = fmodf(x, Span);
+    if (!Data.empty() && xmod < Data.back().x)
+      Data.shrink(0);
+    Data.push_back(ImVec2(xmod, y));
+  }
+};
+
+void ShowDemo_RealtimePlots() {
+  static ScrollingBuffer sdata1;
+  static RollingBuffer rdata1;
+  static float t = 0;
+  t += ImGui::GetIO().DeltaTime;
+  sdata1.AddPoint(t, frame_state::last_cpu_frame);
+  rdata1.AddPoint(t, ImGui::GetIO().Framerate);
+
+  static float history = 10.0f;
+  ImGui::SliderFloat("History", &history, 1, 30, "%.1f s");
+  rdata1.Span = history;
+
+  static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
+
+  if (ImPlot::BeginPlot("##Scrolling", ImVec2(-1, 150))) {
+    ImPlot::SetupAxes(NULL, NULL, flags, flags);
+    ImPlot::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+    ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 16.f);
+    ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
+    ImPlot::PlotShaded("Frame time in ms", &sdata1.Data[0].x, &sdata1.Data[0].y,
+                       sdata1.Data.size(), -INFINITY, sdata1.Offset,
+                       2 * sizeof(float));
+    ImPlot::EndPlot();
+  }
+  if (ImPlot::BeginPlot("##Rolling", ImVec2(-1, 150))) {
+    ImPlot::SetupAxes(NULL, NULL, flags, flags);
+    ImPlot::SetupAxisLimits(ImAxis_X1, 0, history, ImGuiCond_Always);
+    ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 100);
+    ImPlot::PlotLine("FPS", &rdata1.Data[0].x, &rdata1.Data[0].y,
+                     rdata1.Data.size(), 0, 2 * sizeof(float));
+    ImPlot::EndPlot();
+  }
 }
 
 void start_frame() {
@@ -87,7 +170,15 @@ void start_frame() {
 
   if (show_demo) {
     ImGui::ShowDemoWindow(&show_demo);
+    ImPlot::ShowDemoWindow();
   }
+
+  ImGui::Begin("Frame Statistics");
+  ShowDemo_RealtimePlots();
+  ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+              1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+  ImGui::Text("Last CPU frame %.3lf ms", frame_state::last_cpu_frame);
+  ImGui::End();
 }
 
 void render_general_settings() {
@@ -127,8 +218,6 @@ void render_general_settings() {
     }
   }
   ImGui::Text(" ");
-  ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-              1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
   ImGui::End();
 }
 
@@ -151,6 +240,14 @@ point_action render_point_gui(ecs::EntityType idx, transformation &t,
     auto &name = reg.get_component<tag_figure>(idx).name;
 
     if (ImGui::InputText("name", &name)) {
+    }
+
+    auto &g = reg.get_component<gl_object>(idx);
+
+    if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
+    }
+
+    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.primary))) {
     }
 
     if (reg.has_component<relationship>(idx)) {
@@ -200,6 +297,14 @@ void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
     auto &name = fc.name;
 
     if (ImGui::InputText("name", &name)) {
+    }
+
+    auto &g = reg.get_component<gl_object>(idx);
+
+    if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
+    }
+
+    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.primary))) {
     }
 
     auto &sec = reg.get_component<secondary_object>(idx);
@@ -281,6 +386,14 @@ void render_bezier_gui(tag_figure &fc, gl_object &g, relationship &rel,
     auto &name = fc.name;
 
     if (ImGui::InputText("name", &name)) {
+    }
+
+    auto &g = reg.get_component<gl_object>(idx);
+
+    if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
+    }
+
+    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.primary))) {
     }
 
     auto &sec = reg.get_component<secondary_object>(idx);
@@ -369,6 +482,14 @@ void render_torus_gui(ecs::EntityType idx, torus_params &tp, parametric &p,
     auto &name = fc.name;
 
     if (ImGui::InputText("name", &name)) {
+    }
+
+    auto &g = reg.get_component<gl_object>(idx);
+
+    if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
+    }
+
+    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.primary))) {
     }
 
     if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
