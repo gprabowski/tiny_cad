@@ -172,7 +172,9 @@ void start_frame() {
     ImGui::ShowDemoWindow(&show_demo);
     ImPlot::ShowDemoWindow();
   }
+}
 
+void render_performance_window() {
   ImGui::Begin("Frame Statistics");
   ShowDemo_RealtimePlots();
   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",

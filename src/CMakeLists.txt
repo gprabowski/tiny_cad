@@ -16,6 +16,7 @@ set(SOURCES
     systems/points.cpp 
     systems/systems.cpp	
     systems/torus.cpp
+    framebuffer.cpp
     )
 
 add_executable(tiny_cad)

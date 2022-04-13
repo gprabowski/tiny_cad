@@ -26,6 +26,7 @@ void render_bezier_gui(tag_figure &fc, gl_object &g, relationship &rel,
 void render_torus_gui(torus_params &tp, parametric &p, gl_object &g,
                       transformation &t);
 
+void render_performance_window();
 void render_general_settings();
 point_action render_figure_select_gui();
 void render_selected_edit_gui();

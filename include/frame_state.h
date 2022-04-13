@@ -6,6 +6,8 @@
 
 #include <glm/glm.hpp>
 
+#include <imgui.h>
+
 #include <ecs.h>
 
 struct frame_state {
@@ -27,4 +29,6 @@ struct frame_state {
 
   static std::vector<ecs::EntityType> changed;
   static std::vector<ecs::EntityType> deleted;
+
+  static ImVec2 content_area;
 };
