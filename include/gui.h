@@ -27,9 +27,8 @@ void render_torus_gui(torus_params &tp, parametric &p, gl_object &g,
                       transformation &t);
 
 void render_general_settings();
-point_action render_figure_select_gui(std::vector<ecs::EntityType> &deleted);
-void render_selected_edit_gui(std::vector<ecs::EntityType> &changed,
-                              std::vector<ecs::EntityType> &deleted);
+point_action render_figure_select_gui();
+void render_selected_edit_gui();
 
 void render_cursor_gui();
 

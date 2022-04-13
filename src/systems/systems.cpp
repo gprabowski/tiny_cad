@@ -103,7 +103,7 @@ void update_cursor() {
   t.scale = glm::vec3(val, val, val);
 }
 
-void render_app(std::vector<ecs::EntityType> &changed) {
+void render_app() {
   static ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
   glViewport(0, 0, frame_state::window_w, frame_state::window_h);
   glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
@@ -117,16 +117,15 @@ void render_app(std::vector<ecs::EntityType> &changed) {
 
   glm::mat4 gizmo_trans(1.0f);
   get_gizmo_transform(gizmo_trans);
-  apply_group_transform(gizmo_trans, changed);
+  apply_group_transform(gizmo_trans);
 }
 
-void update_changed_relationships(const std::vector<ecs::EntityType> &changed,
-                                  const std::vector<ecs::EntityType> &del) {
+void update_changed_relationships() {
   auto &reg = ecs::registry::get_registry();
 
   std::set<ecs::EntityType> changed_rel;
 
-  for (const auto id : changed) {
+  for (const auto id : frame_state::changed) {
     if (reg.has_component<relationship>(id)) {
       auto &rel = reg.get_component<relationship>(id);
       // virtual
@@ -176,7 +175,7 @@ void update_changed_relationships(const std::vector<ecs::EntityType> &changed,
     }
   }
 
-  for (const auto id : del) {
+  for (const auto id : frame_state::deleted) {
     if (reg.has_component<relationship>(id)) {
       auto &rel = reg.get_component<relationship>(id);
       if (rel.parents.size()) {
@@ -198,10 +197,10 @@ void update_changed_relationships(const std::vector<ecs::EntityType> &changed,
   }
 }
 
-void delete_entities(const std::vector<ecs::EntityType> &del) {
+void delete_entities() {
   auto &reg = ecs::registry::get_registry();
 
-  for (const auto idx : del)
+  for (const auto idx : frame_state::deleted)
     reg.delete_entity(idx);
 }
 

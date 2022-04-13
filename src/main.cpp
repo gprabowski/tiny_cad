@@ -61,6 +61,10 @@ void regenererate_adaptive_geometry() {
   for (auto &[idx, bez] : reg.get_map<bezierc>()) {
     systems::regenerate_bezier(idx);
   }
+
+  for (auto &[idx, bez] : reg.get_map<bspline>()) {
+    systems::regenerate_bspline(idx);
+  }
 }
 
 void refresh_ubos() {
@@ -82,8 +86,12 @@ void main_loop() {
   frame_state::freq = glfwGetTimerFrequency();
 
   auto w = glfwGetCurrentContext();
-  std::vector<ecs::EntityType> sel, unsel, del, parents, changed;
+  std::vector<ecs::EntityType> sel, unsel, parents;
   while (!glfwWindowShouldClose(w)) {
+    frame_state::changed.clear();
+    frame_state::deleted.clear();
+    sel.clear();
+    unsel.clear();
 
     uint64_t begin_time = glfwGetTimerValue();
     hnd::process_input();
@@ -97,17 +105,17 @@ void main_loop() {
     get_selected_figure_indices(sel, unsel);
 
     // also renders gizmo
-    sys::render_app(changed);
+    sys::render_app();
 
     gui::render_general_settings();
-    gui::render_figure_select_gui(del);
-    gui::render_selected_edit_gui(changed, del);
+    gui::render_figure_select_gui();
+    gui::render_selected_edit_gui();
 
     gui::render_cursor_gui();
     gui::end_frame();
 
-    sys::update_changed_relationships(changed, del);
-    sys::delete_entities(del);
+    sys::update_changed_relationships();
+    sys::delete_entities();
 
     uint64_t end_time = glfwGetTimerValue();
     frame_state::last_cpu_frame =
@@ -115,11 +123,6 @@ void main_loop() {
 
     glfwSwapBuffers(w);
     glfwPollEvents();
-
-    sel.clear();
-    unsel.clear();
-    del.clear();
-    changed.clear();
   }
 }
 

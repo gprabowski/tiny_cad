@@ -271,8 +271,7 @@ point_action render_point_gui(ecs::EntityType idx, transformation &t,
 }
 
 void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
-                        ecs::EntityType idx,
-                        std::vector<ecs::EntityType> &changed) {
+                        ecs::EntityType idx) {
 
   using gldm = gl_object::draw_mode;
 
@@ -356,7 +355,7 @@ void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
         auto &crel = reg.get_component<relationship>(del.value());
         crel.parents.erase(
             std::find(begin(crel.parents), end(crel.parents), idx));
-        changed.push_back(idx);
+        frame_state::changed.push_back(idx);
       }
       ImGui::TreePop();
     }
@@ -372,8 +371,7 @@ void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
   }
 }
 void render_bezier_gui(tag_figure &fc, gl_object &g, relationship &rel,
-                       ecs::EntityType idx,
-                       std::vector<ecs::EntityType> &changed) {
+                       ecs::EntityType idx) {
   using gldm = gl_object::draw_mode;
 
   static int dmode = 1;
@@ -434,7 +432,7 @@ void render_bezier_gui(tag_figure &fc, gl_object &g, relationship &rel,
         auto &crel = reg.get_component<relationship>(del.value());
         crel.parents.erase(
             std::find(begin(crel.parents), end(crel.parents), idx));
-        changed.push_back(idx);
+        frame_state::changed.push_back(idx);
       }
       ImGui::TreePop();
     }
@@ -541,8 +539,7 @@ void end_frame() {
   }
 }
 
-void render_selected_edit_gui(std::vector<ecs::EntityType> &changed,
-                              std::vector<ecs::EntityType> &deleted) {
+void render_selected_edit_gui() {
   auto &reg = ecs::registry::get_registry();
 
   ImGui::Begin("Selected figures:");
@@ -558,12 +555,12 @@ void render_selected_edit_gui(std::vector<ecs::EntityType> &changed,
       auto &g = reg.get_component<gl_object>(idx);
       auto &rel = reg.get_component<relationship>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
-      render_bezier_gui(fc, g, rel, idx, changed);
+      render_bezier_gui(fc, g, rel, idx);
     } else if (reg.has_component<bspline>(idx)) {
       auto &g = reg.get_component<gl_object>(idx);
       auto &rel = reg.get_component<relationship>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
-      render_bspline_gui(fc, g, rel, idx, changed);
+      render_bspline_gui(fc, g, rel, idx);
     } else if (reg.has_component<tag_point>(idx) &&
                !reg.has_component<tag_virtual>(idx)) {
       auto &t = reg.get_component<transformation>(idx);
@@ -572,10 +569,10 @@ void render_selected_edit_gui(std::vector<ecs::EntityType> &changed,
       case point_action::none: {
       } break;
       case point_action::edit: {
-        changed.push_back(idx);
+        frame_state::changed.push_back(idx);
       } break;
       case point_action::del: {
-        deleted.push_back(idx);
+        frame_state::deleted.push_back(idx);
       } break;
       }
     }
@@ -583,7 +580,7 @@ void render_selected_edit_gui(std::vector<ecs::EntityType> &changed,
   ImGui::End();
 }
 
-point_action render_figure_select_gui(std::vector<ecs::EntityType> &deleted) {
+point_action render_figure_select_gui() {
   auto &reg = ecs::registry::get_registry();
 
   point_action ret{point_action::none};
@@ -614,7 +611,7 @@ point_action render_figure_select_gui(std::vector<ecs::EntityType> &deleted) {
   ImGui::Begin("Group Actions");
   if (ImGui::Button("Delete Selected")) {
     for (auto &[idx, s] : reg.get_map<selected>()) {
-      deleted.push_back(idx);
+      frame_state::deleted.push_back(idx);
     }
   }
   ImGui::End();

@@ -38,8 +38,7 @@ void get_gizmo_transform(glm::mat4 &gtrans) {
   ImGui::End();
 }
 
-void apply_group_transform(glm::mat4 &gtrans,
-                           std::vector<ecs::EntityType> &changed) {
+void apply_group_transform(glm::mat4 &gtrans) {
   static glm::vec3 prev_scale = {1.0f, 1.0f, 1.0f};
   static bool gizmo_changed = false;
 
@@ -53,7 +52,7 @@ void apply_group_transform(glm::mat4 &gtrans,
     glm::vec3 scale;
     for (auto &[idx, _] : reg.get_map<selected>()) {
       if (!reg.has_component<tag_parent>(idx)) {
-        changed.push_back(idx);
+        frame_state::changed.push_back(idx);
         iter.push_back(idx);
       }
     }

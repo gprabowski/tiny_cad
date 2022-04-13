@@ -18,12 +18,11 @@ void render_points(const gl_object &g);
 
 void render_visible_entities();
 
-void render_app(std::vector<ecs::EntityType> &changed);
+void render_app();
 
 void get_gizmo_transform(glm::mat4 &gtrans);
 
-void apply_group_transform(glm::mat4 &gtrans,
-                           std::vector<ecs::EntityType> &changed);
+void apply_group_transform(glm::mat4 &gtrans);
 
 void refresh_common_uniforms(GLuint program);
 
@@ -44,8 +43,7 @@ void generate_torus_lines(const parametric &p,
 
 void reset_gl_objects(gl_object &g);
 void set_model_uniform(const transformation &t);
-void update_changed_relationships(const std::vector<ecs::EntityType> &changed,
-                                  const std::vector<ecs::EntityType> &del);
-void delete_entities(const std::vector<ecs::EntityType> &del);
+void update_changed_relationships();
+void delete_entities();
 
 } // namespace systems

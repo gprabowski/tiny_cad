@@ -24,4 +24,7 @@ struct frame_state {
 
   static uint64_t freq;
   static double last_cpu_frame;
+
+  static std::vector<ecs::EntityType> changed;
+  static std::vector<ecs::EntityType> deleted;
 };

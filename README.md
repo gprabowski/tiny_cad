@@ -3,6 +3,7 @@
 ## todo
 
 ### compulsory
+- [ ] cleanup GUI code -> most is the same
 - [ ] add a color log
 - [ ] is_tag type trait specialization for add/remove component
 - [ ] picking by colour in framebuffer
