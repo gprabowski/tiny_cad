@@ -23,9 +23,11 @@ inline void add_current_shape_at_cursor() {
         std::move(t), torus_params{1.f, 2.f}, state.default_program);
   } else if (cp.current_shape == cursor_params::cursor_shape::point) {
     new_shape = constructors::add_point(std::move(t), state.default_program);
-  } else if (cp.current_shape == cursor_params::cursor_shape::bezierc) {
+  } else if (cp.current_shape == cursor_params::cursor_shape::bezierc &&
+             reg.get_map<selected>().size() >= 2) {
     new_shape = constructors::add_bezier(state.default_program);
-  } else if (cp.current_shape == cursor_params::cursor_shape::bspline) {
+  } else if (cp.current_shape == cursor_params::cursor_shape::bspline &&
+             reg.get_map<selected>().size() >= 2) {
     new_shape = constructors::add_bspline(state.default_program);
   }
 
