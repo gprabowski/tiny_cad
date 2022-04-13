@@ -132,7 +132,7 @@ void update_changed_relationships(const std::vector<ecs::EntityType> &changed,
       // virtual
       if (reg.has_component<tag_virtual>(id)) {
         auto vparent = rel.parents[0];
-        if (reg.has_component<tag_bspline>(vparent)) {
+        if (reg.has_component<bspline>(vparent)) {
           // 1. find index of virtual point
           auto &prel = reg.get_component<relationship>(vparent);
           const auto vidx =
@@ -189,27 +189,11 @@ void update_changed_relationships(const std::vector<ecs::EntityType> &changed,
   }
 
   for (const auto p : changed_rel) {
-    if (reg.has_component<tag_bezierc>(p) &&
-        reg.has_component<relationship>(p)) {
-      auto &rel = reg.get_component<relationship>(p);
-      auto &gl = reg.get_component<gl_object>(p);
-      auto &a = reg.get_component<adaptive>(p);
-      auto &sgl = reg.get_component<gl_object>(
-          reg.get_component<secondary_object>(p).val);
-      regenerate_bezier(rel, a, gl.points, gl.indices, sgl.points, sgl.indices);
-      reset_gl_objects(gl);
-      reset_gl_objects(sgl);
-    } else if (reg.has_component<tag_bspline>(p) &&
+    if (reg.has_component<bezierc>(p) && reg.has_component<relationship>(p)) {
+      regenerate_bezier(p);
+    } else if (reg.has_component<bspline>(p) &&
                reg.has_component<relationship>(p)) {
-      auto &rel = reg.get_component<relationship>(p);
-      auto &gl = reg.get_component<gl_object>(p);
-      auto &a = reg.get_component<adaptive>(p);
-      auto &sgl = reg.get_component<gl_object>(
-          reg.get_component<secondary_object>(p).val);
-      regenerate_bspline(p, rel, a, gl.points, gl.indices, sgl.points,
-                         sgl.indices);
-      reset_gl_objects(gl);
-      reset_gl_objects(sgl);
+      regenerate_bspline(p);
     }
   }
 }

@@ -36,19 +36,11 @@ inline void add_current_shape_at_cursor() {
       reg.add_component<relationship>(new_shape, {{s}, {}});
       auto &srel = reg.get_component<relationship>(s);
       srel.children.push_back(new_shape);
-      auto &g = reg.get_component<gl_object>(s);
-      auto &sgl = reg.get_component<gl_object>(
-          reg.get_component<secondary_object>(s).val);
-      auto &a = reg.get_component<adaptive>(s);
-      if (reg.has_component<tag_bezierc>(s)) {
-        systems::regenerate_bezier(srel, a, g.points, g.indices, sgl.points,
-                                   sgl.indices);
-      } else if (reg.has_component<tag_bspline>(s)) {
-        systems::regenerate_bspline(s, srel, a, g.points, g.indices, sgl.points,
-                                    sgl.indices);
+      if (reg.has_component<bezierc>(s)) {
+        systems::regenerate_bezier(s);
+      } else if (reg.has_component<bspline>(s)) {
+        systems::regenerate_bspline(s);
       }
-      systems::reset_gl_objects(g);
-      systems::reset_gl_objects(sgl);
     }
   }
 }

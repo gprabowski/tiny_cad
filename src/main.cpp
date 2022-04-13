@@ -58,16 +58,8 @@ void setup_globals() {
 void regenererate_adaptive_geometry() {
   auto &reg = ecs::registry::get_registry();
 
-  for (auto &[idx, _] : reg.get_map<tag_bezierc>()) {
-    auto &g = reg.get_component<gl_object>(idx);
-    auto &a = reg.get_component<adaptive>(idx);
-    auto &sgl = reg.get_component<gl_object>(
-        reg.get_component<secondary_object>(idx).val);
-    auto &rel = reg.get_component<relationship>(idx);
-    systems::regenerate_bezier(rel, a, g.points, g.indices, sgl.points,
-                               sgl.indices);
-    systems::reset_gl_objects(g);
-    systems::reset_gl_objects(sgl);
+  for (auto &[idx, bez] : reg.get_map<bezierc>()) {
+    systems::regenerate_bezier(idx);
   }
 }
 

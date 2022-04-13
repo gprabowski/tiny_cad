@@ -19,18 +19,10 @@ void add_sel_points_to_parent(ecs::EntityType idx) {
     prel.parents.push_back(idx);
   }
 
-  auto &g = reg.get_component<gl_object>(idx);
-  auto &a = reg.get_component<adaptive>(idx);
-  auto &sgl = reg.get_component<gl_object>(
-      reg.get_component<secondary_object>(idx).val);
-  if (reg.has_component<tag_bspline>(idx)) {
-    regenerate_bspline(idx, rel, a, g.points, g.indices, sgl.points,
-                       sgl.indices);
-
-  } else if (reg.has_component<tag_bezierc>(idx)) {
-    regenerate_bezier(rel, a, g.points, g.indices, sgl.points, sgl.indices);
+  if (reg.has_component<bspline>(idx)) {
+    regenerate_bspline(idx);
+  } else if (reg.has_component<bezierc>(idx)) {
+    regenerate_bezier(idx);
   }
-  reset_gl_objects(g);
-  reset_gl_objects(sgl);
 }
 } // namespace systems

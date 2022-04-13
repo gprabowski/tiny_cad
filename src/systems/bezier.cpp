@@ -37,15 +37,21 @@ template <typename... T> float get_pixel_score(T &&...args) {
   return res.score * 0.5 * (frame_state::window_w + frame_state::window_h);
 }
 
-bool regenerate_bezier(const relationship &r, adaptive &a,
-                       std::vector<glm::vec4> &out_vertices,
-                       std::vector<unsigned int> &out_indices,
-                       std::vector<glm::vec4> &out_vertices_polygon,
-                       std::vector<unsigned int> &out_indices_polygon) {
+bool regenerate_bezier(ecs::EntityType idx) {
   auto &reg = ecs::registry::get_registry();
+
+  relationship &r = reg.get_component<relationship>(idx);
+  gl_object &g = reg.get_component<gl_object>(idx);
+  std::vector<glm::vec4> &out_vertices = g.points;
+  std::vector<unsigned int> &out_indices = g.indices;
+  auto &bez = reg.get_component<bezierc>(idx);
+  gl_object &bgl = reg.get_component<gl_object>(bez.bezier_polygon);
+  std::vector<glm::vec4> &bezier_polygon_vertices = bgl.points;
+  std::vector<unsigned int> &bezier_polygon_indices = bgl.indices;
+
   auto &transformations = reg.get_map<transformation>();
-  out_vertices_polygon.clear();
-  out_indices_polygon.clear();
+  bezier_polygon_vertices.clear();
+  bezier_polygon_indices.clear();
   out_vertices.clear();
   out_indices.clear();
   for (int remaining = r.children.size(); remaining > 0; remaining -= 3) {
@@ -74,10 +80,10 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
         const auto b_i = (1.f - t) * b_f + t * b_g;
         out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
       }
-      out_vertices_polygon.push_back(glm::vec4(b_a, 1.0f));
-      out_vertices_polygon.push_back(glm::vec4(b_b, 1.0f));
-      out_vertices_polygon.push_back(glm::vec4(b_c, 1.0f));
-      out_vertices_polygon.push_back(glm::vec4(b_d, 1.0f));
+      bezier_polygon_vertices.push_back(glm::vec4(b_a, 1.0f));
+      bezier_polygon_vertices.push_back(glm::vec4(b_b, 1.0f));
+      bezier_polygon_vertices.push_back(glm::vec4(b_c, 1.0f));
+      bezier_polygon_vertices.push_back(glm::vec4(b_d, 1.0f));
     } else if (remaining == 3) {
 
       const auto first_child = r.children[remaining - 1];
@@ -98,9 +104,9 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
         out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
       }
 
-      out_vertices_polygon.push_back(glm::vec4(b_e, 1.0f));
-      out_vertices_polygon.push_back(glm::vec4(b_f, 1.0f));
-      out_vertices_polygon.push_back(glm::vec4(b_g, 1.0f));
+      bezier_polygon_vertices.push_back(glm::vec4(b_e, 1.0f));
+      bezier_polygon_vertices.push_back(glm::vec4(b_f, 1.0f));
+      bezier_polygon_vertices.push_back(glm::vec4(b_g, 1.0f));
     } else if (remaining == 2) {
       const auto first_child = r.children[remaining - 1];
       const auto b_h = transformations[first_child].translation;
@@ -110,13 +116,13 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
       for (float t = 0.0; t <= 1.0f; t = t + 1.0f) {
         out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
       }
-      out_vertices_polygon.push_back(glm::vec4(b_h, 1.0f));
-      out_vertices_polygon.push_back(glm::vec4(b_i, 1.0f));
+      bezier_polygon_vertices.push_back(glm::vec4(b_h, 1.0f));
+      bezier_polygon_vertices.push_back(glm::vec4(b_i, 1.0f));
     } else if (remaining == 1) {
       const auto first_child = r.children[remaining - 1];
       const auto first_t = transformations[first_child];
       out_vertices.push_back({first_t.translation, 1.0f});
-      out_vertices_polygon.push_back(glm::vec4(first_t.translation, 1.0f));
+      bezier_polygon_vertices.push_back(glm::vec4(first_t.translation, 1.0f));
     }
   }
 
@@ -124,9 +130,12 @@ bool regenerate_bezier(const relationship &r, adaptive &a,
     out_indices.push_back(i);
   }
 
-  for (std::size_t i = 0; i < out_vertices_polygon.size(); ++i) {
-    out_indices_polygon.push_back(i);
+  for (std::size_t i = 0; i < bezier_polygon_vertices.size(); ++i) {
+    bezier_polygon_indices.push_back(i);
   }
+
+  systems::reset_gl_objects(g);
+  systems::reset_gl_objects(bgl);
 
   return true;
 }

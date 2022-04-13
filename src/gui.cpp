@@ -247,7 +247,7 @@ point_action render_point_gui(ecs::EntityType idx, transformation &t,
     if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
     }
 
-    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.primary))) {
+    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.selected))) {
     }
 
     if (reg.has_component<relationship>(idx)) {
@@ -304,15 +304,26 @@ void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
     if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
     }
 
-    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.primary))) {
+    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.selected))) {
     }
 
-    auto &sec = reg.get_component<secondary_object>(idx);
-    if (ImGui::Checkbox("Bounding polygon", &sec.enabled)) {
-      if (sec.enabled) {
-        reg.add_component<tag_visible>(sec.val, {});
+    auto &bsp = reg.get_component<bspline>(idx);
+    bool visible_bezier = reg.has_component<tag_visible>(bsp.bezier_polygon);
+    bool visible_deboor = reg.has_component<tag_visible>(bsp.deboor_polygon);
+
+    if (ImGui::Checkbox("Bezier polygon", &visible_bezier)) {
+      if (visible_bezier) {
+        reg.add_component<tag_visible>(bsp.bezier_polygon, {});
       } else {
-        reg.remove_component<tag_visible>(sec.val);
+        reg.remove_component<tag_visible>(bsp.bezier_polygon);
+      }
+    }
+
+    if (ImGui::Checkbox("de Boor polygon", &visible_deboor)) {
+      if (visible_deboor) {
+        reg.add_component<tag_visible>(bsp.deboor_polygon, {});
+      } else {
+        reg.remove_component<tag_visible>(bsp.deboor_polygon);
       }
     }
     bool bern = rel.virtual_children.size() > 0 &&
@@ -393,15 +404,17 @@ void render_bezier_gui(tag_figure &fc, gl_object &g, relationship &rel,
     if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
     }
 
-    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.primary))) {
+    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.selected))) {
     }
 
-    auto &sec = reg.get_component<secondary_object>(idx);
-    if (ImGui::Checkbox("Bounding polygon", &sec.enabled)) {
-      if (sec.enabled) {
-        reg.add_component<tag_visible>(idx, {});
+    auto &bez = reg.get_component<bezierc>(idx);
+    bool visible_bezier = reg.has_component<tag_visible>(bez.bezier_polygon);
+
+    if (ImGui::Checkbox("Bezier polygon", &visible_bezier)) {
+      if (visible_bezier) {
+        reg.add_component<tag_visible>(bez.bezier_polygon, {});
       } else {
-        reg.remove_component<tag_visible>(idx);
+        reg.remove_component<tag_visible>(bez.bezier_polygon);
       }
     }
 
@@ -489,7 +502,7 @@ void render_torus_gui(ecs::EntityType idx, torus_params &tp, parametric &p,
     if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
     }
 
-    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.primary))) {
+    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.selected))) {
     }
 
     if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
@@ -541,12 +554,12 @@ void render_selected_edit_gui(std::vector<ecs::EntityType> &changed,
       auto &p = reg.get_component<parametric>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
       render_torus_gui(idx, tp, p, g, t, fc);
-    } else if (reg.has_component<tag_bezierc>(idx)) {
+    } else if (reg.has_component<bezierc>(idx)) {
       auto &g = reg.get_component<gl_object>(idx);
       auto &rel = reg.get_component<relationship>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
       render_bezier_gui(fc, g, rel, idx, changed);
-    } else if (reg.has_component<tag_bspline>(idx)) {
+    } else if (reg.has_component<bspline>(idx)) {
       auto &g = reg.get_component<gl_object>(idx);
       auto &rel = reg.get_component<relationship>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);

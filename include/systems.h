@@ -32,17 +32,9 @@ glm::vec4 sample_torus(const torus_params &tp, const float u, const float v);
 bool generate_torus_points(const torus_params &s, const parametric &p,
                            std::vector<glm::vec4> &out_vertices);
 
-bool regenerate_bezier(const relationship &r, adaptive &a,
-                       std::vector<glm::vec4> &out_vertices,
-                       std::vector<unsigned int> &out_indices,
-                       std::vector<glm::vec4> &out_vertices_polygon,
-                       std::vector<unsigned int> &out_indices_polygon);
+bool regenerate_bezier(ecs::EntityType idx);
 
-bool regenerate_bspline(ecs::EntityType idx, relationship &r, adaptive &a,
-                        std::vector<glm::vec4> &out_vertices,
-                        std::vector<unsigned int> &out_indices,
-                        std::vector<glm::vec4> &out_vertices_polygon,
-                        std::vector<unsigned int> &out_indices_polygon);
+bool regenerate_bspline(ecs::EntityType idx);
 
 void add_sel_points_to_parent(ecs::EntityType idx);
 

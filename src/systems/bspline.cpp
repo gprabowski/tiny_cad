@@ -2,18 +2,29 @@
 #include <frame_state.h>
 #include <systems.h>
 
-bool systems::regenerate_bspline(
-    ecs::EntityType idx, relationship &r, adaptive &a,
-    std::vector<glm::vec4> &out_vertices,
-    std::vector<unsigned int> &out_indices,
-    std::vector<glm::vec4> &out_vertices_polygon,
-    std::vector<unsigned int> &out_indices_polygon) {
-
+namespace systems {
+bool regenerate_bspline(ecs::EntityType idx) {
   auto &reg = ecs::registry::get_registry();
+
+  relationship &r = reg.get_component<relationship>(idx);
+  gl_object &g = reg.get_component<gl_object>(idx);
+  std::vector<glm::vec4> &out_vertices = g.points;
+  std::vector<unsigned int> &out_indices = g.indices;
+  auto &bsp = reg.get_component<bspline>(idx);
+  gl_object &bgl = reg.get_component<gl_object>(bsp.bezier_polygon);
+  std::vector<glm::vec4> &bezier_polygon_vertices = bgl.points;
+  std::vector<unsigned int> &bezier_polygon_indices = bgl.indices;
+  gl_object &dbgl = reg.get_component<gl_object>(bsp.deboor_polygon);
+  std::vector<glm::vec4> &deboor_polygon_vertices = dbgl.points;
+  std::vector<unsigned int> &deboor_polygon_indices = dbgl.indices;
+
   auto &transformations = reg.get_map<transformation>();
 
-  out_vertices_polygon.clear();
-  out_indices_polygon.clear();
+  bezier_polygon_vertices.clear();
+  bezier_polygon_indices.clear();
+  deboor_polygon_vertices.clear();
+  deboor_polygon_indices.clear();
+
   out_vertices.clear();
   out_indices.clear();
 
@@ -143,16 +154,30 @@ bool systems::regenerate_bspline(
 
   for (auto &c : r.children) {
     auto &t = transformations[c].translation;
-    out_vertices_polygon.push_back(glm::vec4(t, 1.0f));
+    deboor_polygon_vertices.push_back(glm::vec4(t, 1.0f));
+  }
+
+  for (auto &c : r.virtual_children) {
+    auto &t = transformations[c].translation;
+    bezier_polygon_vertices.push_back(glm::vec4(t, 1.0f));
   }
 
   for (std::size_t i = 0; i < out_vertices.size(); ++i) {
     out_indices.push_back(i);
   }
 
-  for (std::size_t i = 0; i < out_vertices_polygon.size(); ++i) {
-    out_indices_polygon.push_back(i);
+  for (std::size_t i = 0; i < bezier_polygon_vertices.size(); ++i) {
+    bezier_polygon_indices.push_back(i);
   }
+
+  for (std::size_t i = 0; i < deboor_polygon_vertices.size(); ++i) {
+    deboor_polygon_indices.push_back(i);
+  }
+
+  systems::reset_gl_objects(g);
+  systems::reset_gl_objects(bgl);
+  systems::reset_gl_objects(dbgl);
 
   return true;
 }
+} // namespace systems

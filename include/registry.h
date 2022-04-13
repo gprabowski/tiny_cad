@@ -1,28 +1,28 @@
 #pragma once
 
-#include "torus.h"
 #include <algorithm>
 #include <cstdint>
 #include <map>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
 #include <adaptive.h>
 #include <cursor_params.h>
+#include <curves.h>
 #include <ecs.h>
 #include <figure.h>
 #include <gl_object.h>
 #include <parametric.h>
 #include <relationship.h>
-#include <secondary.h>
 #include <tags.h>
+#include <torus.h>
 #include <transformation.h>
-#include <type_traits>
 
 namespace ecs {
 
-constexpr int num_components = 18;
+constexpr int num_components = 17;
 
 template <typename C> using ComponentStorage = std::map<EntityType, C>;
 
@@ -51,16 +51,15 @@ template <> struct com_id<tag_figure> : com_id_impl<4> {};
 template <> struct com_id<cursor_params> : com_id_impl<5> {};
 template <> struct com_id<tag_point> : com_id_impl<6> {};
 template <> struct com_id<selected> : com_id_impl<7> {};
-template <> struct com_id<tag_bezierc> : com_id_impl<8> {};
+template <> struct com_id<bezierc> : com_id_impl<8> {};
 template <> struct com_id<relationship> : com_id_impl<9> {};
 template <> struct com_id<tag_parent> : com_id_impl<10> {};
-template <> struct com_id<secondary_object> : com_id_impl<11> {};
-template <> struct com_id<adaptive> : com_id_impl<12> {};
-template <> struct com_id<tag_bspline> : com_id_impl<13> {};
-template <> struct com_id<tag_virtual> : com_id_impl<14> {};
-template <> struct com_id<tag_visible> : com_id_impl<15> {};
-template <> struct com_id<tag_clickable> : com_id_impl<16> {};
-template <> struct com_id<tag_center_of_weight> : com_id_impl<17> {};
+template <> struct com_id<adaptive> : com_id_impl<11> {};
+template <> struct com_id<bspline> : com_id_impl<12> {};
+template <> struct com_id<tag_virtual> : com_id_impl<13> {};
+template <> struct com_id<tag_visible> : com_id_impl<14> {};
+template <> struct com_id<tag_clickable> : com_id_impl<15> {};
+template <> struct com_id<tag_center_of_weight> : com_id_impl<16> {};
 
 template <typename T> constexpr component_bitset get_com_bit() {
   return 1ull << com_id<T>::value;
@@ -69,10 +68,9 @@ template <typename T> constexpr component_bitset get_com_bit() {
 template <int ID> struct type_from_id {
   using type =
       typename select<ID, parametric, transformation, gl_object, torus_params,
-                      tag_figure, cursor_params, tag_point, selected,
-                      tag_bezierc, relationship, tag_parent, secondary_object,
-                      adaptive, tag_bspline, tag_virtual, tag_visible,
-                      tag_clickable, tag_center_of_weight>::type;
+                      tag_figure, cursor_params, tag_point, selected, bezierc,
+                      relationship, tag_parent, adaptive, bspline, tag_virtual,
+                      tag_visible, tag_clickable, tag_center_of_weight>::type;
 };
 
 template <int ID> using type_from_id_t = typename type_from_id<ID>::type;
@@ -87,17 +85,16 @@ template <typename T> struct component_owner {
 struct registry : component_owner<parametric>,
                   component_owner<transformation>,
                   component_owner<gl_object>,
-                  component_owner<secondary_object>,
                   component_owner<torus_params>,
                   component_owner<tag_figure>,
                   component_owner<tag_point>,
-                  component_owner<tag_bezierc>,
+                  component_owner<bezierc>,
                   component_owner<cursor_params>,
                   component_owner<selected>,
                   component_owner<relationship>,
                   component_owner<tag_parent>,
                   component_owner<adaptive>,
-                  component_owner<tag_bspline>,
+                  component_owner<bspline>,
                   component_owner<tag_virtual>,
                   component_owner<tag_visible>,
                   component_owner<tag_clickable>,
@@ -209,10 +206,10 @@ struct registry : component_owner<parametric>,
   }
 
   template <typename T>
-  std::enable_if_t<!std::is_same_v<T, relationship> &&
-                       !std::is_same_v<T, secondary_object> &&
-                       !std::is_same_v<T, selected>,
-                   void>
+  std::enable_if_t<
+      !std::is_same_v<T, relationship> && !std::is_same_v<T, selected> &&
+          !std::is_same_v<T, bezierc> && !std::is_same_v<T, bspline>,
+      void>
   remove_component(EntityType idx) {
     auto &m = get_map<T>();
     m.erase(idx);
@@ -232,12 +229,16 @@ struct registry : component_owner<parametric>,
   }
 
   template <typename T>
-  std::enable_if_t<std::is_same_v<T, secondary_object>, void>
+  std::enable_if_t<std::is_same_v<T, bezierc> || std::is_same_v<T, bspline>,
+                   void>
   remove_component(EntityType idx) {
-    const auto s = get_component<secondary_object>(idx);
-    delete_entity(s.val);
-    get_map<secondary_object>().erase(idx);
-    entities[idx] &= ~get_com_bit<secondary_object>();
+    const auto s = get_component<T>(idx);
+    delete_entity(s.bezier_polygon);
+    if constexpr (std::is_same_v<T, bspline>) {
+      delete_entity(s.deboor_polygon);
+    }
+    get_map<T>().erase(idx);
+    entities[idx] &= ~get_com_bit<T>();
   }
 
   template <typename T>

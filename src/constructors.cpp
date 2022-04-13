@@ -51,20 +51,25 @@ ecs::EntityType add_bspline(const GLuint program) {
   if (sel_points.size() < 1)
     return ecs::null_entity;
 
-  const auto secondary = reg.add_entity();
-  reg.add_component<gl_object>(secondary, gl_object{program});
-  reg.add_component<transformation>(secondary, {});
-  auto &sec_g = reg.get_component<gl_object>(secondary);
-  sec_g.dmode = gl_object::draw_mode::line_strip;
+  const auto bezier_polygon = reg.add_entity();
+  reg.add_component<gl_object>(bezier_polygon, gl_object{program});
+  reg.add_component<transformation>(bezier_polygon, {});
+  auto &b_g = reg.get_component<gl_object>(bezier_polygon);
+  b_g.dmode = gl_object::draw_mode::line_strip;
+
+  const auto deboor_polygon = reg.add_entity();
+  reg.add_component<gl_object>(deboor_polygon, gl_object{program});
+  reg.add_component<transformation>(deboor_polygon, {});
+  auto &db_g = reg.get_component<gl_object>(deboor_polygon);
+  db_g.dmode = gl_object::draw_mode::line_strip;
 
   const auto b = reg.add_entity();
   reg.add_component<gl_object>(b, gl_object{program});
   reg.add_component<transformation>(b, {});
   reg.add_component<tag_figure>(
       b, tag_figure{"B-Spline curve #" + std::to_string(b)});
-  reg.add_component<tag_bspline>(b, tag_bspline{});
+  reg.add_component<bspline>(b, bspline{bezier_polygon, deboor_polygon});
   reg.add_component<tag_parent>(b, tag_parent{});
-  reg.add_component<secondary_object>(b, {secondary});
   reg.add_component<adaptive>(b, {});
   reg.add_component<tag_visible>(b, {});
 
@@ -81,15 +86,8 @@ ecs::EntityType add_bspline(const GLuint program) {
   }
 
   reg.add_component<relationship>(b, {{}, std::move(sel_points)});
-  auto &r = reg.get_component<relationship>(b);
-  auto &a = reg.get_component<adaptive>(b);
-
-  systems::regenerate_bspline(b, r, a, g.points, g.indices, sec_g.points,
-                              sec_g.indices);
-
+  systems::regenerate_bspline(b);
   g.dmode = gl_object::draw_mode::line_strip;
-  systems::reset_gl_objects(g);
-  systems::reset_gl_objects(sec_g);
 
   return b;
 }
@@ -106,9 +104,10 @@ ecs::EntityType add_bezier(const GLuint program) {
   if (sel_points.size() < 1)
     return ecs::null_entity;
 
-  const auto secondary = reg.add_entity();
-  reg.add_component<gl_object>(secondary, gl_object{program});
-  auto &sec_g = reg.get_component<gl_object>(secondary);
+  const auto bezier_polygon = reg.add_entity();
+  reg.add_component<gl_object>(bezier_polygon, gl_object{program});
+  reg.add_component<transformation>(bezier_polygon, {});
+  auto &sec_g = reg.get_component<gl_object>(bezier_polygon);
   sec_g.dmode = gl_object::draw_mode::line_strip;
 
   const auto b = reg.add_entity();
@@ -116,9 +115,8 @@ ecs::EntityType add_bezier(const GLuint program) {
   reg.add_component<transformation>(b, {});
   reg.add_component<tag_figure>(
       b, tag_figure{"bezier curve #" + std::to_string(b)});
-  reg.add_component<tag_bezierc>(b, tag_bezierc{});
+  reg.add_component<bezierc>(b, bezierc{bezier_polygon});
   reg.add_component<tag_parent>(b, tag_parent{});
-  reg.add_component<secondary_object>(b, {secondary});
   reg.add_component<adaptive>(b, {});
   reg.add_component<tag_visible>(b, {});
 
@@ -135,15 +133,8 @@ ecs::EntityType add_bezier(const GLuint program) {
   }
 
   reg.add_component<relationship>(b, {{}, std::move(sel_points)});
-  auto &r = reg.get_component<relationship>(b);
-  auto &a = reg.get_component<adaptive>(b);
-
-  systems::regenerate_bezier(r, a, g.points, g.indices, sec_g.points,
-                             sec_g.indices);
-
+  systems::regenerate_bezier(b);
   g.dmode = gl_object::draw_mode::line_strip;
-  systems::reset_gl_objects(g);
-  systems::reset_gl_objects(sec_g);
 
   return b;
 }
