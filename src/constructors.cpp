@@ -199,6 +199,8 @@ ecs::EntityType add_center_of_weight(transformation &&_t,
   g.points.push_back({0.0f, 0.0f, 0.0f, 1.0f});
   g.indices.push_back(0u);
   g.dmode = gl_object::draw_mode::points;
+  g.primary = {1.0f, 1.0f, 1.0f, 1.0f};
+  g.color = {1.0f, 1.0f, 1.0f, 1.0f};
 
   systems::reset_gl_objects(g);
 

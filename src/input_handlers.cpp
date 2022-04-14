@@ -38,11 +38,7 @@ inline void add_current_shape_at_cursor() {
       reg.add_component<relationship>(new_shape, {{s}, {}});
       auto &srel = reg.get_component<relationship>(s);
       srel.children.push_back(new_shape);
-      if (reg.has_component<bezierc>(s)) {
-        systems::regenerate_bezier(s);
-      } else if (reg.has_component<bspline>(s)) {
-        systems::regenerate_bspline(s);
-      }
+      systems::regenerate(s);
     }
   }
 }
@@ -133,13 +129,13 @@ void handle_mouse() {
 
     state.mouse_just_pressed.reset(input_state::mouse_button::left);
 
-    const auto ndc_x =
-        2 *
-        (((state.last_mouse.x) / static_cast<float>(frame_state::window_w)) -
-         0.5f);
-    const auto ndc_y = (-2) * ((state.last_mouse.y) /
-                                   static_cast<float>(frame_state::window_h) -
-                               0.5f);
+    const auto ndc_x = 2 * (((state.last_mouse.x - frame_state::content_pos.x) /
+                             static_cast<float>(frame_state::content_area.x)) -
+                            0.5f);
+    const auto ndc_y =
+        (-2) * ((state.last_mouse.y - frame_state::content_pos.y) /
+                    static_cast<float>(frame_state::content_area.y) -
+                0.5f);
 
     glm::vec4 ndc_dir{ndc_x, ndc_y, -1, 1};
 
@@ -175,8 +171,12 @@ void handle_mouse() {
 }
 
 void process_input() {
-  if (ImGui::IsAnyItemActive())
+  using fs = frame_state;
+  if (!ImGui::IsMouseHoveringRect(fs::content_pos,
+                                  {fs::content_pos.x + fs::content_area.x,
+                                   fs::content_pos.y + fs::content_area.y})) {
     return;
+  }
   handle_keyboard();
   handle_mouse();
 }

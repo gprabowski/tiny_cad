@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <vector>
 
 #include <glad/glad.h>
@@ -29,6 +30,8 @@ struct frame_state {
 
   static std::vector<ecs::EntityType> changed;
   static std::vector<ecs::EntityType> deleted;
+  static std::set<ecs::EntityType> changed_parents;
 
   static ImVec2 content_area;
+  static ImVec2 content_pos;
 };

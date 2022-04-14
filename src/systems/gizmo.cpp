@@ -22,12 +22,10 @@ void get_gizmo_transform(glm::mat4 &gtrans) {
   auto &reg = ecs::registry::get_registry();
   auto &is = input_state::get_input_state();
 
-  ImGui::Begin("gizmo");
   ImGuizmo::SetOrthographic(false);
   ImGuizmo::SetDrawlist();
-  auto w_w = ImGui::GetWindowWidth();
-  auto w_h = ImGui::GetWindowHeight();
-  ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, w_w, w_h);
+  ImGuizmo::SetRect(frame_state::content_pos.x, frame_state::content_pos.y,
+                    frame_state::content_area.x, frame_state::content_area.y);
   auto c = reg.get_map<tag_center_of_weight>().begin()->first;
   auto &ct = reg.get_component<transformation>(c);
   gtrans = glm::translate(glm::mat4(1.0f), ct.translation);
@@ -35,7 +33,6 @@ void get_gizmo_transform(glm::mat4 &gtrans) {
   ImGuizmo::Manipulate(glm::value_ptr(frame_state::view),
                        glm::value_ptr(frame_state::proj), is.gizmo_op,
                        ImGuizmo::MODE::WORLD, glm::value_ptr(gtrans));
-  ImGui::End();
 }
 
 void apply_group_transform(glm::mat4 &gtrans) {

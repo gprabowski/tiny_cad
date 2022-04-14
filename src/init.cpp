@@ -3,9 +3,16 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <callbacks.h>
+#include <constructors.h>
 #include <frame_state.h>
+#include <gui.h>
 #include <init.h>
+#include <input_state.h>
 #include <log.h>
+#include <shader.h>
+
+namespace clb = callbacks;
 
 static void framebuffer_size_callback(GLFWwindow *window, int width,
                                       int height) {
@@ -154,6 +161,21 @@ std::shared_ptr<GLFWwindow> init_all(const char *caption) {
   ogl_setup(w);
   common_ubo_setup(w);
 
+  clb::set_keyboard_callback(w);
+  clb::set_mouse_callback(w);
+
+  auto &state = input_state::get_input_state();
+  state.default_program = shader::LoadProgram("resources/general");
+  frame_state::default_program = state.default_program;
+  glUseProgram(state.default_program);
+
+  constructors::setup_initial_geometry(state.default_program);
+  gui::setup_gui(w);
+
+  frame_state::freq = glfwGetTimerFrequency();
+
   return w;
 }
+
+void cleanup() { gui::cleanup_gui(); }
 } // namespace init

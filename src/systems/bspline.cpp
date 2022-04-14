@@ -1,38 +1,10 @@
 #include "constructors.h"
+#include <adaptive_score.h>
 #include <frame_state.h>
 #include <log.h>
 #include <systems.h>
 
 namespace systems {
-
-struct score_helper {
-  glm::vec4 pos;
-  float score;
-};
-
-inline score_helper get_score(glm::vec3 &f) {
-  const auto pv = frame_state::proj * frame_state::view;
-  auto first = pv * glm::vec4(f, 1.0f);
-  first = first / first.w;
-  first = glm::clamp(first, -1.0f, 1.0f);
-  return {first, 0.0f};
-}
-
-template <typename First, typename... T>
-inline score_helper get_score(First &f, T... rest) {
-  const auto pv = frame_state::proj * frame_state::view;
-  auto first = pv * glm::vec4(f, 1.0f);
-  first = first / first.w;
-  first = glm::clamp(first, -1.0f, 1.0f);
-  const auto others = get_score(rest...);
-  const auto len = glm::length(first - others.pos) + others.score;
-  return {first, len};
-}
-
-template <typename... T> inline float get_pixel_score(T &&...args) {
-  const auto res = get_score(std::forward<T>(args)...);
-  return res.score * 0.5 * (frame_state::window_w + frame_state::window_h);
-}
 
 bool regenerate_bspline(ecs::EntityType idx) {
   auto &reg = ecs::registry::get_registry();
@@ -77,7 +49,6 @@ bool regenerate_bspline(ecs::EntityType idx) {
     auto tmp = get_pixel_score(P10, P20, P30, P40) / 100;
     auto current_score = std::clamp(tmp, 10.f, 100.f);
 
-    TINY_CAD_INFO("SCORE IS {0}", current_score);
     float div = 1.0f / current_score;
 
     for (float s = 0; s < 1.f; s += div) {

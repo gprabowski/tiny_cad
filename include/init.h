@@ -7,4 +7,5 @@
 
 namespace init {
 std::shared_ptr<GLFWwindow> init_all(const char *caption);
-}
+void cleanup();
+} // namespace init

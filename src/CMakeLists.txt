@@ -17,7 +17,10 @@ set(SOURCES
     systems/systems.cpp	
     systems/torus.cpp
     framebuffer.cpp
-    )
+    frame_render.cpp
+    frame_update.cpp
+    adaptive_score.cpp
+)
 
 add_executable(tiny_cad)
 find_program( CLANG_TIDY_EXE NAMES "clang-tidy" DOC "Path to clang-tidy executable" ) 

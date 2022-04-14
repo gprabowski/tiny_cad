@@ -1,3 +1,4 @@
+#include <adaptive_score.h>
 #include <algorithm>
 #include <frame_state.h>
 #include <initializer_list>
@@ -7,35 +8,6 @@
 #include <vector>
 
 namespace systems {
-
-struct score_helper {
-  glm::vec4 pos;
-  float score;
-};
-
-score_helper get_score(glm::vec3 &f) {
-  const auto pv = frame_state::proj * frame_state::view;
-  auto first = pv * glm::vec4(f, 1.0f);
-  first = first / first.w;
-  first = glm::clamp(first, -1.0f, 1.0f);
-  return {first, 0.0f};
-}
-
-template <typename First, typename... T>
-score_helper get_score(First &f, T... rest) {
-  const auto pv = frame_state::proj * frame_state::view;
-  auto first = pv * glm::vec4(f, 1.0f);
-  first = first / first.w;
-  first = glm::clamp(first, -1.0f, 1.0f);
-  const auto others = get_score(rest...);
-  const auto len = glm::length(first - others.pos) + others.score;
-  return {first, len};
-}
-
-template <typename... T> float get_pixel_score(T &&...args) {
-  const auto res = get_score(std::forward<T>(args)...);
-  return res.score * 0.5 * (frame_state::window_w + frame_state::window_h);
-}
 
 bool regenerate_bezier(ecs::EntityType idx) {
   auto &reg = ecs::registry::get_registry();

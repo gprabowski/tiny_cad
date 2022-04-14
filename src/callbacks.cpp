@@ -11,8 +11,6 @@
 static void key_callback(GLFWwindow *window, int key, int scancode, int action,
                          int mods) {
   auto &s = input_state::get_input_state();
-  if (ImGui::IsAnyItemHovered() || static_cast<size_t>(key) >= 1024)
-    return;
 
   if (action == GLFW_PRESS) {
     s.just_pressed.set(static_cast<size_t>(key));
@@ -40,9 +38,6 @@ void mouse_button_callback(GLFWwindow *w, int button, int action, int mods) {
   auto &s = input_state::get_input_state();
   double xpos, ypos;
   glfwGetCursorPos(w, &xpos, &ypos);
-
-  if (ImGui::IsAnyItemHovered())
-    return;
 
   if (action == GLFW_PRESS) {
     s.last_mouse = {xpos, ypos};
@@ -83,11 +78,7 @@ void reorient_camera(double xpos, double ypos) {
 void mouse_move_callback(GLFWwindow *w, double xpos, double ypos) {
   auto &s = input_state::get_input_state();
 
-  if (ImGui::IsAnyItemActive())
-    return;
-
-  if (s.mouse_pressed[input_state::mouse_button::left] &&
-      s.pressed[static_cast<size_t>(GLFW_KEY_LEFT_ALT)]) {
+  if (s.mouse_pressed[input_state::mouse_button::right]) {
     s.moved = true;
     reorient_camera(xpos, ypos);
   }

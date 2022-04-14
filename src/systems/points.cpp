@@ -19,10 +19,6 @@ void add_sel_points_to_parent(ecs::EntityType idx) {
     prel.parents.push_back(idx);
   }
 
-  if (reg.has_component<bspline>(idx)) {
-    regenerate_bspline(idx);
-  } else if (reg.has_component<bezierc>(idx)) {
-    regenerate_bezier(idx);
-  }
+  regenerate(idx);
 }
 } // namespace systems

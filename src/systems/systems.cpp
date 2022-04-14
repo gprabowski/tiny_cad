@@ -18,12 +18,13 @@
 
 namespace systems {
 
-void set_vanilla_model_uniform() {
-  GLint program;
-  glGetIntegerv(GL_CURRENT_PROGRAM, &program);
-  const auto model = glm::mat4(1.0f);
-  glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE,
-                     glm::value_ptr(model));
+void regenerate(ecs::EntityType idx) {
+  static ecs::registry &reg = ecs::registry::get_registry();
+  if (reg.has_component<bspline>(idx)) {
+    regenerate_bspline(idx);
+  } else if (reg.has_component<bezierc>(idx)) {
+    regenerate_bezier(idx);
+  }
 }
 
 void set_model_uniform(const transformation &t) {
@@ -40,7 +41,7 @@ void set_model_uniform(const transformation &t) {
                      glm::value_ptr(model));
 }
 
-void render_points(const gl_object &g) {
+void render_gl(const gl_object &g) {
   using gldm = gl_object::draw_mode;
 
   glBindVertexArray(g.vao);
@@ -72,7 +73,7 @@ void render_visible_entities() {
     glUseProgram(gl.program);
     systems::set_model_uniform(t);
     glVertexAttrib4f(1, gl.color.r, gl.color.g, gl.color.b, gl.color.a);
-    systems::render_points(gl);
+    systems::render_gl(gl);
   }
 }
 
@@ -113,16 +114,10 @@ void render_app() {
   update_center_of_weight();
   update_cursor();
   render_visible_entities();
-
-  glm::mat4 gizmo_trans(1.0f);
-  get_gizmo_transform(gizmo_trans);
-  apply_group_transform(gizmo_trans);
 }
 
 void update_changed_relationships() {
   auto &reg = ecs::registry::get_registry();
-
-  std::set<ecs::EntityType> changed_rel;
 
   for (const auto id : frame_state::changed) {
     if (reg.has_component<relationship>(id)) {
@@ -165,11 +160,11 @@ void update_changed_relationships() {
       // regular
       if (rel.parents.size()) {
         for (auto p : rel.parents) {
-          changed_rel.insert(p);
+          frame_state::changed_parents.insert(p);
         }
       }
       if (rel.children.size()) {
-        changed_rel.insert(id);
+        frame_state::changed_parents.insert(id);
       }
     }
   }
@@ -179,20 +174,15 @@ void update_changed_relationships() {
       auto &rel = reg.get_component<relationship>(id);
       if (rel.parents.size()) {
         for (auto p : rel.parents) {
-          changed_rel.insert(p);
+          frame_state::changed_parents.insert(p);
         }
       }
       reg.remove_component<relationship>(id);
     }
   }
 
-  for (const auto p : changed_rel) {
-    if (reg.has_component<bezierc>(p) && reg.has_component<relationship>(p)) {
-      regenerate_bezier(p);
-    } else if (reg.has_component<bspline>(p) &&
-               reg.has_component<relationship>(p)) {
-      regenerate_bspline(p);
-    }
+  for (const auto p : frame_state::changed_parents) {
+    regenerate(p);
   }
 }
 

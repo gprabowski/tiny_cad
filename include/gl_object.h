@@ -32,4 +32,20 @@ struct gl_object {
     point_normal,
     point_color_normal
   } vtype{vertex_t::point};
+
+  ~gl_object() {
+    if (glIsBuffer(vbo)) {
+      glDeleteBuffers(1, &vbo);
+    }
+    if (glIsBuffer(ebo)) {
+      glDeleteBuffers(1, &ebo);
+    }
+    if (glIsVertexArray(vao)) {
+      glDeleteVertexArrays(1, &vao);
+    }
+    if (glIsProgram(program)) {
+      // TODO add shader management
+      //glDeleteProgram(program);
+    }
+  }
 };

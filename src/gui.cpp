@@ -164,9 +164,9 @@ void start_frame() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
+  ImGuizmo::BeginFrame();
 
   ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), dockspace_flags);
-  ImGuizmo::BeginFrame();
 
   if (show_demo) {
     ImGui::ShowDemoWindow(&show_demo);
@@ -593,7 +593,7 @@ point_action render_figure_select_gui() {
     std::string tree_id = fc.name + ("##") + std::to_string(idx);
     if (ImGui::Selectable(tree_id.c_str(), sel)) {
       if (!ImGui::GetIO().KeyCtrl) { // Clear selection when CTRL is not held
-        reg.clear_component<selected>();
+        reg.remove_all<selected>();
       }
       sel = !sel;
       if (sel) {
