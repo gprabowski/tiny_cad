@@ -169,7 +169,7 @@ std::shared_ptr<GLFWwindow> init_all(const char *caption) {
   // read in all shaders
   sm.add(shader_t::TORUS_SHADER, "resources/general");
   sm.add(shader_t::POINT_SHADER, "resources/general");
-  sm.add(shader_t::BEZIER_CURVE_SHADER, "resources/general");
+  sm.add(shader_t::BEZIER_CURVE_SHADER, "resources/bezier");
   sm.add(shader_t::BSPLINE_CURVE_SHADER, "resources/general");
   sm.add(shader_t::CURSOR_SHADER, "resources/general");
   sm.add(shader_t::INTERPOLATION_CURVE_SHADER, "resources/general");

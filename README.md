@@ -31,7 +31,7 @@
 - [ ] add const component getting
 
 ### gui
-- [ ] modality
+- [ ] modality (can be closed and opened via menu)
 - [ ] top menu
 - [ ] fonts
 - [ ] styling

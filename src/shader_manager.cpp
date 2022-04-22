@@ -1,5 +1,6 @@
 #include <fstream>
 #include <log.h>
+#include <optional>
 #include <shader_manager.h>
 
 shader_manager &shader_manager::get_manager() {
@@ -37,48 +38,68 @@ void bind_common_ubo(shader &s) {
   glUniformBlockBinding(s.idx, s.ubo_idx, sm.common_ubo_block_loc);
 }
 
+GLuint compile_shader_from_source(const std::string &source, GLuint type) {
+  GLuint shader = glCreateShader(type);
+  const char *src = source.c_str();
+  glShaderSource(shader, 1, &src, NULL);
+  glCompileShader(shader);
+
+  GLint compiled;
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+  if (compiled != GL_TRUE) {
+    GLsizei log_length = 0;
+    GLchar message[1024];
+    glGetShaderInfoLog(shader, 1024, &log_length, message);
+    TINY_CAD_ERROR("[SHADER {0}] {1}", type, message);
+  }
+
+  return shader;
+}
+
+namespace fs = std::filesystem;
+
 GLuint shader_manager::add(shader_t st, const std::string &name) {
   GLuint ret;
   if (cache.count(name)) {
     programs[st] = cache.at(name);
     ret = programs[st].idx;
   } else {
+    // optional stages
+    std::optional<GLuint> tcs_shader;
+    std::optional<GLuint> tes_shader;
+
     std::string vert_source = read_shader_file((name + ".vert").c_str());
     std::string frag_source = read_shader_file((name + ".frag").c_str());
 
-    const char *vert_src_ptr = vert_source.c_str();
-    const char *frag_src_ptr = frag_source.c_str();
-
-    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vert_src_ptr, NULL);
-    glCompileShader(vertex_shader);
-
-    GLint vcompiled;
-    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &vcompiled);
-    if (vcompiled != GL_TRUE) {
-      GLsizei log_length = 0;
-      GLchar message[1024];
-      glGetShaderInfoLog(vertex_shader, 1024, &log_length, message);
-      TINY_CAD_ERROR("[VERT SHADER] {0}", message);
+    if (fs::exists(name + ".tcs")) {
+      std::string tcs_source = read_shader_file((name + ".tcs").c_str());
+      tcs_shader =
+          compile_shader_from_source(tcs_source, GL_TESS_CONTROL_SHADER);
     }
 
-    GLuint frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(frag_shader, 1, &frag_src_ptr, NULL);
-    glCompileShader(frag_shader);
-
-    GLint fcompiled;
-    glGetShaderiv(frag_shader, GL_COMPILE_STATUS, &fcompiled);
-    if (fcompiled != GL_TRUE) {
-      GLsizei log_length = 0;
-      GLchar message[1024];
-      glGetShaderInfoLog(frag_shader, 1024, &log_length, message);
-      TINY_CAD_ERROR("[FRAG SHADER] {0}", message);
+    if (fs::exists(name + ".tes")) {
+      std::string tes_source = read_shader_file((name + ".tes").c_str());
+      tes_shader =
+          compile_shader_from_source(tes_source, GL_TESS_EVALUATION_SHADER);
     }
+
+    GLuint vertex_shader =
+        compile_shader_from_source(vert_source, GL_VERTEX_SHADER);
+    GLuint frag_shader =
+        compile_shader_from_source(frag_source, GL_FRAGMENT_SHADER);
 
     GLuint program = glCreateProgram();
 
     glAttachShader(program, vertex_shader);
     glAttachShader(program, frag_shader);
+
+    if (tcs_shader.has_value()) {
+      glAttachShader(program, tcs_shader.value());
+    }
+    if (tes_shader.has_value()) {
+      glAttachShader(program, tes_shader.value());
+    }
+
     glLinkProgram(program);
 
     GLint plinked;
@@ -92,6 +113,14 @@ GLuint shader_manager::add(shader_t st, const std::string &name) {
 
     glDeleteShader(vertex_shader);
     glDeleteShader(frag_shader);
+
+    if (tcs_shader.has_value()) {
+      glDeleteShader(tcs_shader.value());
+    }
+
+    if (tes_shader.has_value()) {
+      glDeleteShader(tes_shader.value());
+    }
 
     shader ret_s{program, 0u};
     bind_common_ubo(ret_s);
