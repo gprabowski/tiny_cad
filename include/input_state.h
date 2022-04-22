@@ -25,8 +25,6 @@ struct input_state {
   float pitch{0.0f};
   float roll{0.0f};
 
-  bool moved{false};
-
   glm::vec3 cam_pos{10.0f, 10.0f, 70.0f};
   glm::vec3 cam_front{0.0f, 0.0f, -1.0f};
   glm::vec3 cam_up{0.0f, 1.0f, 0.0f};

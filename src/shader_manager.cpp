@@ -24,7 +24,8 @@ std::string shader_manager::read_shader_file(
 
   ifs.open(shader_file);
   ifs.ignore(std::numeric_limits<std::streamsize>::max());
-  // auto size = ifs.gcount();
+  auto size = ifs.gcount();
+  TINY_CAD_INFO("[SHADER] Read {0} bytes from {1}", size, shader_file);
 
   ifs.clear();
   ifs.seekg(0, std::ios_base::beg);

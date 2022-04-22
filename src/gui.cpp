@@ -390,7 +390,7 @@ void render_bezier_gui(tag_figure &fc, gl_object &g, relationship &rel,
       if (dmode == 0) {
         g.dmode = gldm::points;
       } else if (dmode == 1) {
-        g.dmode = gldm::line_strip;
+        g.dmode = gldm::patches;
       }
     }
 

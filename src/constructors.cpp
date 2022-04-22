@@ -71,7 +71,6 @@ ecs::EntityType add_bspline(const GLuint program) {
       b, tag_figure{"B-Spline curve #" + std::to_string(b)});
   reg.add_component<bspline>(b, bspline{bezier_polygon, deboor_polygon});
   reg.add_component<tag_parent>(b, tag_parent{});
-  reg.add_component<adaptive>(b, {});
   reg.add_component<tag_visible>(b, {});
 
   auto &g = reg.get_component<gl_object>(b);
@@ -118,7 +117,6 @@ ecs::EntityType add_bezier(const GLuint program) {
       b, tag_figure{"bezier curve #" + std::to_string(b)});
   reg.add_component<bezierc>(b, bezierc{bezier_polygon});
   reg.add_component<tag_parent>(b, tag_parent{});
-  reg.add_component<adaptive>(b, {});
   reg.add_component<tag_visible>(b, {});
 
   auto &g = reg.get_component<gl_object>(b);
@@ -135,7 +133,7 @@ ecs::EntityType add_bezier(const GLuint program) {
 
   reg.add_component<relationship>(b, {{}, std::move(sel_points)});
   systems::regenerate_bezier(b);
-  g.dmode = gl_object::draw_mode::line_strip;
+  g.dmode = gl_object::draw_mode::patches;
 
   return b;
 }

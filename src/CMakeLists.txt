@@ -18,7 +18,6 @@ set(SOURCES
     framebuffer.cpp
     frame_render.cpp
     frame_update.cpp
-    adaptive_score.cpp
     shader_manager.cpp
 )
 

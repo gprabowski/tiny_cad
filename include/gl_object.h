@@ -23,7 +23,8 @@ struct gl_object {
     points,
     lines,
     line_strip,
-    triangles
+    triangles,
+    patches
   } dmode{draw_mode::lines};
 
   enum class vertex_t {
@@ -45,7 +46,7 @@ struct gl_object {
     }
     if (glIsProgram(program)) {
       // TODO add shader management
-      //glDeleteProgram(program);
+      // glDeleteProgram(program);
     }
   }
 };

@@ -56,6 +56,10 @@ void render_gl(const gl_object &g) {
   } else if (g.dmode == gldm::line_strip) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glDrawElements(GL_LINE_STRIP, g.indices.size(), GL_UNSIGNED_INT, NULL);
+  } else if (g.dmode == gldm::patches) {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glPatchParameteri(GL_PATCH_VERTICES, 4);
+    glDrawArrays(GL_PATCHES, 0, g.indices.size());
   } else if (g.dmode == gldm::triangles) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDrawElements(GL_TRIANGLES, g.indices.size(), GL_UNSIGNED_INT, NULL);

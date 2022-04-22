@@ -1,5 +1,4 @@
 #include "constructors.h"
-#include <adaptive_score.h>
 #include <frame_state.h>
 #include <log.h>
 #include <shader_manager.h>
@@ -48,7 +47,8 @@ bool regenerate_bspline(ecs::EntityType idx) {
     const auto fourth_child = r.children[i + 3];
     const auto P40 = transformations[fourth_child].translation;
 
-    auto tmp = get_pixel_score(P10, P20, P30, P40) / 100;
+    // auto tmp = get_pixel_score(P10, P20, P30, P40) / 100;
+    auto tmp = 100.f;
     auto current_score = std::clamp(tmp, 10.f, 100.f);
 
     float div = 1.0f / current_score;

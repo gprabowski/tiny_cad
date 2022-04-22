@@ -63,23 +63,19 @@ void handle_keyboard() {
     const float cameraSpeed = 30.f * delta_time; // adjust accordingly
     if (state.pressed[GLFW_KEY_W]) {
       state.cam_pos += cameraSpeed * state.cam_front;
-      state.moved = true;
     }
     if (state.pressed[GLFW_KEY_S]) {
       state.cam_pos -= cameraSpeed * state.cam_front;
-      state.moved = true;
     }
     if (state.pressed[GLFW_KEY_A]) {
       state.cam_pos -=
           glm::normalize(glm::cross(state.cam_front, state.cam_up)) *
           cameraSpeed;
-      state.moved = true;
     }
     if (state.pressed[GLFW_KEY_D]) {
       state.cam_pos +=
           glm::normalize(glm::cross(state.cam_front, state.cam_up)) *
           cameraSpeed;
-      state.moved = true;
     }
   }
   if (state.imode == input_state::wasd_mode::cursor) {

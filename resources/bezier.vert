@@ -10,10 +10,9 @@ layout (std140) uniform common_block {
 
 uniform mat4 model;
 
-
 out vec4 color;
 
 void main() {
-    gl_Position = proj * view * model * pos;
+    gl_Position = model * pos;
     color = col;
 }

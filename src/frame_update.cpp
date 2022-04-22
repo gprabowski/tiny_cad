@@ -41,14 +41,6 @@ void setup_globals(const ImVec2 &s) {
   frame_state::proj = proj;
 }
 
-void regenererate_adaptive_geometry() {
-  auto &reg = ecs::registry::get_registry();
-
-  for (auto &[idx, bez] : reg.get_map<adaptive>()) {
-    frame_state::changed_parents.insert(idx);
-  }
-}
-
 void refresh_ubos() {
   static auto &sm = shader_manager::get_manager();
   glBindBufferBase(GL_UNIFORM_BUFFER, sm.common_ubo_block_loc, sm.common_ubo);
@@ -64,13 +56,6 @@ void refresh_ubos() {
 }
 
 void per_frame_update() {
-  auto &state = input_state::get_input_state();
-
-  if (state.moved) {
-    update::regenererate_adaptive_geometry();
-    state.moved = false;
-  }
-
   systems::update_changed_relationships();
   systems::delete_entities();
 }

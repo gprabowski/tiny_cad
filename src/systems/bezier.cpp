@@ -1,4 +1,3 @@
-#include <adaptive_score.h>
 #include <algorithm>
 #include <frame_state.h>
 #include <initializer_list>
@@ -42,19 +41,12 @@ bool regenerate_bezier(ecs::EntityType idx) {
       const auto fourth_child = r.children[j + 3];
       const auto b_d = transformations[fourth_child].translation;
 
-      auto tmp = get_pixel_score(b_a, b_b, b_c, b_d) / 100;
-      auto current_score = std::clamp(tmp, 10.f, 100.f);
-
-      float div = 1.0f / current_score;
-      for (float t = 0.0; t < 1.0f; t = t + div) {
-        const auto b_e = (1.f - t) * b_a + t * b_b;
-        const auto b_f = (1.f - t) * b_b + t * b_c;
-        const auto b_g = (1.f - t) * b_c + t * b_d;
-        const auto b_h = (1.f - t) * b_e + t * b_f;
-        const auto b_i = (1.f - t) * b_f + t * b_g;
-        out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
-      }
+      // out vertices
+      out_vertices.push_back(glm::vec4(b_a, 1.0f));
+      out_vertices.push_back(glm::vec4(b_b, 1.0f));
+      out_vertices.push_back(glm::vec4(b_c, 1.0f));
       out_vertices.push_back(glm::vec4(b_d, 1.0f));
+
       bezier_polygon_vertices.push_back(glm::vec4(b_a, 1.0f));
       bezier_polygon_vertices.push_back(glm::vec4(b_b, 1.0f));
       bezier_polygon_vertices.push_back(glm::vec4(b_c, 1.0f));
@@ -70,16 +62,16 @@ bool regenerate_bezier(ecs::EntityType idx) {
       const auto third_child = r.children[j + 2];
       const auto b_g = transformations[third_child].translation;
 
-      auto tmp = get_pixel_score(b_e, b_f, b_g) / 20;
-      auto current_score = std::clamp(tmp, 3.f, 100.f);
-      float div = 1.0f / current_score;
-      for (float t = 0.0; t < 1.0f; t = t + div) {
-        const auto b_h = (1.f - t) * b_e + t * b_f;
-        const auto b_i = (1.f - t) * b_f + t * b_g;
-        out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
-      }
+      const auto d0 = b_e;
+      const auto d1 = 1.f / 3.f * b_e + 2.f / 3.f * b_f;
+      const auto d2 = 2.f / 3.f * b_f + 1.f / 3.f * b_g;
+      const auto d3 = b_g;
 
-      out_vertices.push_back(glm::vec4(b_g, 1.0f));
+      // elevating the degree to B3 from B2
+      out_vertices.emplace_back(glm::vec4(d0, 1.f));
+      out_vertices.emplace_back(glm::vec4(d1, 1.f));
+      out_vertices.emplace_back(glm::vec4(d2, 1.f));
+      out_vertices.emplace_back(glm::vec4(d3, 1.f));
 
       bezier_polygon_vertices.push_back(glm::vec4(b_e, 1.0f));
       bezier_polygon_vertices.push_back(glm::vec4(b_f, 1.0f));
@@ -90,16 +82,20 @@ bool regenerate_bezier(ecs::EntityType idx) {
 
       const auto second_child = r.children[j + 1];
       const auto b_i = transformations[second_child].translation;
-      for (float t = 0.0; t <= 1.0f; t = t + 1.0f) {
-        out_vertices.push_back(glm::vec4(((1.f - t) * b_h + t * b_i), 1.0f));
-      }
+
+      const auto d0 = b_h;
+      const auto d1 = 2.f / 3.f * b_h + 1.f / 3.f * b_i;
+      const auto d2 = 1.f / 3.f * b_h + 2.f / 3.f * b_i;
+      const auto d3 = b_i;
+
+      // elevating the degree to B3 from B1
+      out_vertices.emplace_back(glm::vec4(d0, 1.f));
+      out_vertices.emplace_back(glm::vec4(d1, 1.f));
+      out_vertices.emplace_back(glm::vec4(d2, 1.f));
+      out_vertices.emplace_back(glm::vec4(d3, 1.f));
+
       bezier_polygon_vertices.push_back(glm::vec4(b_h, 1.0f));
       bezier_polygon_vertices.push_back(glm::vec4(b_i, 1.0f));
-    } else if (remaining == 1) {
-      const auto first_child = r.children[j];
-      const auto first_t = transformations[first_child];
-      out_vertices.push_back({first_t.translation, 1.0f});
-      bezier_polygon_vertices.push_back(glm::vec4(first_t.translation, 1.0f));
     }
   }
 
