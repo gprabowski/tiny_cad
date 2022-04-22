@@ -66,22 +66,22 @@ GLuint shader_manager::add(shader_t st, const std::string &name) {
     ret = programs[st].idx;
   } else {
     // optional stages
-    std::optional<GLuint> tcs_shader;
-    std::optional<GLuint> tes_shader;
+    std::optional<GLuint> tesc_shader;
+    std::optional<GLuint> tese_shader;
 
     std::string vert_source = read_shader_file((name + ".vert").c_str());
     std::string frag_source = read_shader_file((name + ".frag").c_str());
 
-    if (fs::exists(name + ".tcs")) {
-      std::string tcs_source = read_shader_file((name + ".tcs").c_str());
-      tcs_shader =
-          compile_shader_from_source(tcs_source, GL_TESS_CONTROL_SHADER);
+    if (fs::exists(name + ".tesc")) {
+      std::string tesc_source = read_shader_file((name + ".tesc").c_str());
+      tesc_shader =
+          compile_shader_from_source(tesc_source, GL_TESS_CONTROL_SHADER);
     }
 
-    if (fs::exists(name + ".tes")) {
-      std::string tes_source = read_shader_file((name + ".tes").c_str());
-      tes_shader =
-          compile_shader_from_source(tes_source, GL_TESS_EVALUATION_SHADER);
+    if (fs::exists(name + ".tese")) {
+      std::string tese_source = read_shader_file((name + ".tese").c_str());
+      tese_shader =
+          compile_shader_from_source(tese_source, GL_TESS_EVALUATION_SHADER);
     }
 
     GLuint vertex_shader =
@@ -94,11 +94,11 @@ GLuint shader_manager::add(shader_t st, const std::string &name) {
     glAttachShader(program, vertex_shader);
     glAttachShader(program, frag_shader);
 
-    if (tcs_shader.has_value()) {
-      glAttachShader(program, tcs_shader.value());
+    if (tesc_shader.has_value()) {
+      glAttachShader(program, tesc_shader.value());
     }
-    if (tes_shader.has_value()) {
-      glAttachShader(program, tes_shader.value());
+    if (tese_shader.has_value()) {
+      glAttachShader(program, tese_shader.value());
     }
 
     glLinkProgram(program);
@@ -115,12 +115,12 @@ GLuint shader_manager::add(shader_t st, const std::string &name) {
     glDeleteShader(vertex_shader);
     glDeleteShader(frag_shader);
 
-    if (tcs_shader.has_value()) {
-      glDeleteShader(tcs_shader.value());
+    if (tesc_shader.has_value()) {
+      glDeleteShader(tesc_shader.value());
     }
 
-    if (tes_shader.has_value()) {
-      glDeleteShader(tes_shader.value());
+    if (tese_shader.has_value()) {
+      glDeleteShader(tese_shader.value());
     }
 
     shader ret_s{program, 0u};
