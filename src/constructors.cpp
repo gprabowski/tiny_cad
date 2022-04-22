@@ -87,7 +87,7 @@ ecs::EntityType add_bspline(const GLuint program) {
 
   reg.add_component<relationship>(b, {{}, std::move(sel_points)});
   systems::regenerate_bspline(b);
-  g.dmode = gl_object::draw_mode::line_strip;
+  g.dmode = gl_object::draw_mode::patches;
 
   return b;
 }
