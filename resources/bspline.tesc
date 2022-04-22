@@ -20,7 +20,7 @@ void main() {
     vec4 o4 = (proj * view * gl_in[3].gl_Position);
     o4 = o4 / o4.w;
 
-    float score = clamp(10 * (length(o2.xy - o1.xy) + length(o3.xy - o2.xy) + length(o4.xy - o1.xy)), 10, 100);
+    float score = clamp(20 * (length(o2.xy - o1.xy) + length(o3.xy - o2.xy) + length(o4.xy - o1.xy)), 10, 100);
 
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
     tes_colors[gl_InvocationID] = color[gl_InvocationID];
