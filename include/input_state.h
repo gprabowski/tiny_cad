@@ -33,8 +33,6 @@ struct input_state {
 
   glm::vec2 last_mouse{0.0f, 0.0f};
 
-  GLint default_program;
-
   std::bitset<1024> pressed{0x0};
   std::bitset<1024> just_pressed{0x0};
   std::bitset<4> mouse_pressed{0};

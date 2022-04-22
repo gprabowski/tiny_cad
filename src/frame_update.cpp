@@ -9,6 +9,7 @@
 #include <frame_update.h>
 #include <input_state.h>
 #include <registry.h>
+#include <shader_manager.h>
 #include <systems.h>
 
 namespace update {
@@ -49,17 +50,17 @@ void regenererate_adaptive_geometry() {
 }
 
 void refresh_ubos() {
-  glBindBufferBase(GL_UNIFORM_BUFFER, frame_state::common_block_loc,
-                   frame_state::common_ubo);
+  static auto &sm = shader_manager::get_manager();
+  glBindBufferBase(GL_UNIFORM_BUFFER, sm.common_ubo_block_loc, sm.common_ubo);
   float *common_ubo_ptr = (float *)glMapNamedBufferRange(
-      frame_state::common_ubo, 0, sizeof(float) * 32,
+      sm.common_ubo, 0, sizeof(float) * 32,
       GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
   memcpy(&common_ubo_ptr[0], glm::value_ptr(frame_state::proj),
          sizeof(float) * 16);
   memcpy(&common_ubo_ptr[16], glm::value_ptr(frame_state::view),
          sizeof(float) * 16);
-  glUnmapNamedBuffer(frame_state::common_ubo);
-  glBindBuffer(GL_UNIFORM_BUFFER, frame_state::common_ubo);
+  glUnmapNamedBuffer(sm.common_ubo);
+  glBindBuffer(GL_UNIFORM_BUFFER, sm.common_ubo);
 }
 
 void per_frame_update() {

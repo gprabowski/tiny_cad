@@ -2,12 +2,14 @@
 #include <adaptive_score.h>
 #include <frame_state.h>
 #include <log.h>
+#include <shader_manager.h>
 #include <systems.h>
 
 namespace systems {
 
 bool regenerate_bspline(ecs::EntityType idx) {
   auto &reg = ecs::registry::get_registry();
+  auto &sm = shader_manager::get_manager();
 
   relationship &r = reg.get_component<relationship>(idx);
   gl_object &g = reg.get_component<gl_object>(idx);
@@ -98,8 +100,8 @@ bool regenerate_bspline(ecs::EntityType idx) {
     // not enough
     const auto diff = goal_number - r.virtual_children.size();
     for (std::size_t i = 0; i < diff; ++i) {
-      const auto cp =
-          constructors::add_virtual_point({}, frame_state::default_program);
+      const auto cp = constructors::add_virtual_point(
+          {}, sm.programs[shader_t::POINT_SHADER].idx);
       auto &crel = reg.get_component<relationship>(cp);
       crel.parents.push_back(idx);
       r.virtual_children.push_back(cp);

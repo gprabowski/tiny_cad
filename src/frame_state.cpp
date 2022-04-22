@@ -12,12 +12,6 @@ int frame_state::window_h;
 ImVec2 frame_state::content_area;
 ImVec2 frame_state::content_pos;
 
-GLuint frame_state::common_ubo;
-GLuint frame_state::common_idx;
-int frame_state::common_block_loc;
-
-GLuint frame_state::default_program;
-
 uint64_t frame_state::freq = glfwGetTimerFrequency();
 double frame_state::last_cpu_frame;
 

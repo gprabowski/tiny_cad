@@ -19,12 +19,6 @@ struct frame_state {
   static int window_w;
   static int window_h;
 
-  static GLuint common_ubo;
-  static GLuint common_idx;
-  static int common_block_loc;
-
-  static GLuint default_program;
-
   static uint64_t freq;
   static double last_cpu_frame;
 

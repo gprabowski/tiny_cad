@@ -3,7 +3,6 @@ set(SOURCES
     gui.cpp
     callbacks.cpp
     init.cpp
-    shader.cpp
     registry.cpp
     constructors.cpp
     input_handlers.cpp
@@ -20,6 +19,7 @@ set(SOURCES
     frame_render.cpp
     frame_update.cpp
     adaptive_score.cpp
+    shader_manager.cpp
 )
 
 add_executable(tiny_cad)

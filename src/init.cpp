@@ -10,7 +10,7 @@
 #include <init.h>
 #include <input_state.h>
 #include <log.h>
-#include <shader.h>
+#include <shader_manager.h>
 
 namespace clb = callbacks;
 
@@ -120,8 +120,9 @@ void ogl_print_info() {
 }
 
 void common_ubo_setup(std::shared_ptr<GLFWwindow> w) {
-  glCreateBuffers(1, &frame_state::common_ubo);
-  glNamedBufferData(frame_state::common_ubo, 2 * 16 * sizeof(float), NULL,
+  auto &sm = shader_manager::get_manager();
+  glCreateBuffers(1, &sm.common_ubo);
+  glNamedBufferData(sm.common_ubo, 2 * 16 * sizeof(float), NULL,
                     GL_DYNAMIC_DRAW);
 }
 
@@ -164,12 +165,16 @@ std::shared_ptr<GLFWwindow> init_all(const char *caption) {
   clb::set_keyboard_callback(w);
   clb::set_mouse_callback(w);
 
-  auto &state = input_state::get_input_state();
-  state.default_program = shader::LoadProgram("resources/general");
-  frame_state::default_program = state.default_program;
-  glUseProgram(state.default_program);
+  auto &sm = shader_manager::get_manager();
+  // read in all shaders
+  sm.add(shader_t::TORUS_SHADER, "resources/general");
+  sm.add(shader_t::POINT_SHADER, "resources/general");
+  sm.add(shader_t::BEZIER_CURVE_SHADER, "resources/general");
+  sm.add(shader_t::BSPLINE_CURVE_SHADER, "resources/general");
+  sm.add(shader_t::CURSOR_SHADER, "resources/general");
+  sm.add(shader_t::INTERPOLATION_CURVE_SHADER, "resources/general");
 
-  constructors::setup_initial_geometry(state.default_program);
+  constructors::setup_initial_geometry();
   gui::setup_gui(w);
 
   frame_state::freq = glfwGetTimerFrequency();

@@ -12,7 +12,7 @@ ecs::EntityType add_cursor(transformation &&_t, gl_object &&_g);
 
 gl_object get_cursor_geometry(const GLint program);
 
-void setup_initial_geometry(GLuint program);
+void setup_initial_geometry();
 
 ecs::EntityType add_point(transformation &&_t, const GLuint program);
 

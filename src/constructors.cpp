@@ -1,6 +1,7 @@
 #include <constructors.h>
 #include <log.h>
 #include <relationship.h>
+#include <shader_manager.h>
 #include <systems.h>
 
 namespace constructors {
@@ -231,8 +232,10 @@ ecs::EntityType add_torus(parametric &&_p, transformation &&_t,
   return t;
 }
 
-void setup_initial_geometry(GLuint program) {
-  add_cursor(transformation{}, get_cursor_geometry(program));
-  add_center_of_weight({}, program);
+void setup_initial_geometry() {
+  auto &sm = shader_manager::get_manager();
+  add_cursor(transformation{},
+             get_cursor_geometry(sm.programs[shader_t::CURSOR_SHADER].idx));
+  add_center_of_weight({}, sm.programs[shader_t::POINT_SHADER].idx);
 }
 } // namespace constructors
