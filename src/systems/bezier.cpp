@@ -8,7 +8,7 @@
 
 namespace systems {
 
-bool regenerate_bezier(ecs::EntityType idx) {
+void regenerate_bezier(ecs::EntityType idx) {
   auto &reg = ecs::registry::get_registry();
 
   relationship &r = reg.get_component<relationship>(idx);
@@ -109,7 +109,5 @@ bool regenerate_bezier(ecs::EntityType idx) {
 
   systems::reset_gl_objects(g);
   systems::reset_gl_objects(bgl);
-
-  return true;
 }
 } // namespace systems

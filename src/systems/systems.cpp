@@ -24,6 +24,8 @@ void regenerate(ecs::EntityType idx) {
     regenerate_bspline(idx);
   } else if (reg.has_component<bezierc>(idx)) {
     regenerate_bezier(idx);
+  } else if (reg.has_component<icurve>(idx)) {
+    regenerate_icurve(idx);
   }
 }
 

@@ -34,6 +34,10 @@ inline void add_current_shape_at_cursor() {
              reg.get_map<selected>().size() >= 2) {
     new_shape = constructors::add_bspline(
         sm.programs[shader_t::BSPLINE_CURVE_SHADER].idx);
+  } else if (cp.current_shape == cursor_params::cursor_shape::icurve &&
+             reg.get_map<selected>().size() >= 2) {
+    new_shape = constructors::add_icurve(
+        sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx);
   }
 
   if (reg.get_map<selected>().size() == 1) {

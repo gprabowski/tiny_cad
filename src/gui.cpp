@@ -622,8 +622,8 @@ point_action render_figure_select_gui() {
 
 void render_cursor_gui() {
   static int dmode = 1;
-  static std::vector<std::string> combovalues{"Torus", "Point",
-                                              "Bezier Curve C0", "B-Spline"};
+  static std::vector<std::string> combovalues{
+      "Torus", "Point", "Bezier Curve C0", "B-Spline", "Interpolation Spline"};
 
   auto &reg = ecs::registry::get_registry();
 
@@ -646,6 +646,8 @@ void render_cursor_gui() {
         p.current_shape = cursor_params::cursor_shape::bezierc;
       } else if (dmode == 3) {
         p.current_shape = cursor_params::cursor_shape::bspline;
+      } else if (dmode == 4) {
+        p.current_shape = cursor_params::cursor_shape::icurve;
       }
     }
 

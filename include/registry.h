@@ -21,7 +21,7 @@
 
 namespace ecs {
 
-constexpr int num_components = 16;
+constexpr int num_components = 17;
 
 template <typename C> using ComponentStorage = std::map<EntityType, C>;
 
@@ -58,6 +58,7 @@ template <> struct com_id<tag_virtual> : com_id_impl<12> {};
 template <> struct com_id<tag_visible> : com_id_impl<13> {};
 template <> struct com_id<tag_clickable> : com_id_impl<14> {};
 template <> struct com_id<tag_center_of_weight> : com_id_impl<15> {};
+template <> struct com_id<icurve> : com_id_impl<16> {};
 
 template <typename T> constexpr component_bitset get_com_bit() {
   return 1ull << com_id<T>::value;
@@ -68,7 +69,8 @@ template <int ID> struct type_from_id {
       typename select<ID, parametric, transformation, gl_object, torus_params,
                       tag_figure, cursor_params, tag_point, selected, bezierc,
                       relationship, tag_parent, bspline, tag_virtual,
-                      tag_visible, tag_clickable, tag_center_of_weight>::type;
+                      tag_visible, tag_clickable, tag_center_of_weight,
+                      icurve>::type;
 };
 
 template <int ID> using type_from_id_t = typename type_from_id<ID>::type;
@@ -95,7 +97,8 @@ struct registry : component_owner<parametric>,
                   component_owner<tag_virtual>,
                   component_owner<tag_visible>,
                   component_owner<tag_clickable>,
-                  component_owner<tag_center_of_weight> {
+                  component_owner<tag_center_of_weight>,
+                  component_owner<icurve> {
 
   std::unordered_map<EntityType, component_bitset> entities;
 

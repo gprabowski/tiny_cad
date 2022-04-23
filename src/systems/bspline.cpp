@@ -6,7 +6,7 @@
 
 namespace systems {
 
-bool regenerate_bspline(ecs::EntityType idx) {
+void regenerate_bspline(ecs::EntityType idx) {
   auto &reg = ecs::registry::get_registry();
   auto &sm = shader_manager::get_manager();
 
@@ -154,7 +154,5 @@ bool regenerate_bspline(ecs::EntityType idx) {
   systems::reset_gl_objects(g);
   systems::reset_gl_objects(bgl);
   systems::reset_gl_objects(dbgl);
-
-  return true;
 }
 } // namespace systems

@@ -172,7 +172,7 @@ std::shared_ptr<GLFWwindow> init_all(const char *caption) {
   sm.add(shader_t::BEZIER_CURVE_SHADER, "resources/bezier");
   sm.add(shader_t::BSPLINE_CURVE_SHADER, "resources/bspline");
   sm.add(shader_t::CURSOR_SHADER, "resources/general");
-  sm.add(shader_t::INTERPOLATION_CURVE_SHADER, "resources/general");
+  sm.add(shader_t::INTERPOLATION_CURVE_SHADER, "resources/bezier");
 
   constructors::setup_initial_geometry();
   gui::setup_gui(w);

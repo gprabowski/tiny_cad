@@ -40,6 +40,46 @@ gl_object get_cursor_geometry(const GLint program) {
   return cursor;
 }
 
+ecs::EntityType add_icurve(const GLuint program) {
+  std::vector<ecs::EntityType> sel_points;
+  auto &reg = ecs::registry::get_registry();
+  for (auto &[idx, _] : reg.get_map<selected>()) {
+    if (reg.has_component<tag_point>(idx)) {
+      sel_points.push_back(idx);
+    }
+  }
+
+  if (sel_points.size() < 2)
+    return ecs::null_entity;
+
+  const auto b = reg.add_entity();
+  reg.add_component<gl_object>(b, gl_object{program});
+  reg.add_component<transformation>(b, {});
+  reg.add_component<tag_figure>(
+      b, tag_figure{"Cubic Interpolation Spline #" + std::to_string(b)});
+  reg.add_component<icurve>(b, {});
+  reg.add_component<tag_parent>(b, tag_parent{});
+  reg.add_component<tag_visible>(b, {});
+
+  auto &g = reg.get_component<gl_object>(b);
+  g.color = g.primary;
+
+  // add relationships to selected points
+  for (const auto p : sel_points) {
+    if (reg.has_component<relationship>(p)) {
+      auto &r = reg.get_component<relationship>(p);
+      r.parents.push_back(b);
+    } else {
+      reg.add_component<relationship>(p, {{b}, {}});
+    }
+  }
+
+  reg.add_component<relationship>(b, {{}, std::move(sel_points)});
+  systems::regenerate_icurve(b);
+  g.dmode = gl_object::draw_mode::patches;
+
+  return b;
+}
 ecs::EntityType add_bspline(const GLuint program) {
   std::vector<ecs::EntityType> sel_points;
   auto &reg = ecs::registry::get_registry();

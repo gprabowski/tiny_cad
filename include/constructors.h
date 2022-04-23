@@ -26,4 +26,6 @@ ecs::EntityType add_torus(parametric &&_p, transformation &&_t,
 ecs::EntityType add_bezier(const GLuint program);
 
 ecs::EntityType add_bspline(const GLuint program);
+
+ecs::EntityType add_icurve(const GLuint program);
 } // namespace constructors

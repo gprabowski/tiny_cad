@@ -10,6 +10,7 @@ set(SOURCES
     frame_state.cpp
     systems/bezier.cpp  
     systems/bspline.cpp  
+    systems/interpolation_curve.cpp  
     systems/gizmo.cpp  
     systems/gl_systems.cpp 
     systems/points.cpp 
