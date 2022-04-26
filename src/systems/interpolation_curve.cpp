@@ -1,25 +1,41 @@
 #include <systems.h>
 
+#include <array>
+#include <set>
+
 namespace systems {
+
 void regenerate_icurve(ecs::EntityType idx) {
   auto &reg = ecs::registry::get_registry();
 
-  relationship &r = reg.get_component<relationship>(idx);
+  relationship &_r = reg.get_component<relationship>(idx);
   gl_object &g = reg.get_component<gl_object>(idx);
   std::vector<glm::vec4> &out_vertices = g.points;
   std::vector<unsigned int> &out_indices = g.indices;
 
   auto &transformations = reg.get_map<transformation>();
+  std::vector<ecs::EntityType> children;
+
+  glm::vec3 last =
+      transformations[_r.children[0]].translation - glm::vec3{0.f, 1.f, 1.f};
+
+  for (const auto c : _r.children) {
+    auto &_p = transformations[c].translation;
+    if (_p != last) {
+      last = _p;
+      children.push_back(c);
+    }
+  }
   out_vertices.clear();
   out_indices.clear();
 
-  const auto N = r.children.size() - 1;
+  const auto N = children.size() - 1;
 
   // get distances
   std::vector<float> di;
-  for (std::size_t i = 0; i < r.children.size() - 1; ++i) {
-    auto &t1 = transformations[r.children[i]].translation;
-    auto &t2 = transformations[r.children[i + 1]].translation;
+  for (std::size_t i = 0; i < children.size() - 1; ++i) {
+    auto &t1 = transformations[children[i]].translation;
+    auto &t2 = transformations[children[i + 1]].translation;
     di.push_back(glm::length(t2 - t1));
   }
 
@@ -28,20 +44,16 @@ void regenerate_icurve(ecs::EntityType idx) {
   const auto alfa = [&](int i) { return di[i - 1] / (di[i - 1] + di[i]); };
   const auto beta = [&](int i) { return di[i] / (di[i - 1] + di[i]); };
 
-  diags[1] = {0, 2.f, beta(1)};
-  for (std::size_t i = 2; i < N - 1; ++i) {
+  for (std::size_t i = 1; i <= N - 1; ++i) {
     diags[i] = {alfa(i), 2.f, beta(i)};
   }
 
-  if (N > 2) {
-    diags[N - 1] = {alfa(N - 1), 2.f, 0};
-  }
   // generate RHS
   std::vector<glm::vec3> rhs(N);
   for (std::size_t i = 1; i < N; ++i) {
-    auto &t1 = transformations[r.children[i - 1]].translation;
-    auto &t2 = transformations[r.children[i]].translation;
-    auto &t3 = transformations[r.children[i + 1]].translation;
+    auto &t1 = transformations[children[i - 1]].translation;
+    auto &t2 = transformations[children[i]].translation;
+    auto &t3 = transformations[children[i + 1]].translation;
 
     rhs[i] =
         3.f * ((t3 - t2) / di[i] - (t2 - t1) / di[i - 1]) / (di[i - 1] + di[i]);
@@ -75,20 +87,21 @@ void regenerate_icurve(ecs::EntityType idx) {
   }
 
   // get d from c
-  d[N] = glm::vec3(0.0f);
   for (int i = N - 1; i >= 0; --i) {
     d[i] = (c[i + 1] - c[i]) / (3.f * di[i]);
   }
-  // get b from c, d
-  b[N] = glm::vec3(0.0f);
-  for (int i = N - 1; i >= 0; --i) {
-    b[i] = b[i + 1] - 2.f * c[i] * di[i] + 3.f * d[i] * di[i] * di[i];
-  }
+
   // get a
-  a[N] = glm::vec3(0.0f);
   for (int i = N - 1; i >= 0; --i) {
-    a[i] = a[i + 1] - b[i] * di[i] - c[i] * di[i] * di[i] -
-           d[i] * di[i] * di[i] * di[i];
+    auto &t = transformations[children[i]].translation;
+    a[i] = t;
+  }
+
+  // get b from c, d
+  for (int i = N - 1; i >= 0; --i) {
+    auto &t = transformations[children[i + 1]].translation;
+    b[i] = (t - a[i] - c[i] * di[i] * di[i] - d[i] * di[i] * di[i] * di[i]) /
+           di[i];
   }
   // generate points by multiplying by the base change matrix
   // clang-format off
@@ -100,7 +113,7 @@ void regenerate_icurve(ecs::EntityType idx) {
   std::array<glm::vec4, 3> bezier_p;
   for(std::size_t i = 0; i < N; ++i) {
     for(int j = 0; j < 3; ++j) {
-      bezier_p[j] = to_bezier * glm::vec4(a[i][j], b[i][j], c[i][j], d[i][j]);
+      bezier_p[j] = to_bezier * glm::vec4(a[i][j], b[i][j] * di[i], c[i][j] * di[i] * di[i], d[i][j] * di[i] * di[i] * di[i]);
     }
     out_vertices.push_back(glm::vec4(bezier_p[0][0], bezier_p[1][0], bezier_p[2][0], 1.0f));
     out_vertices.push_back(glm::vec4(bezier_p[0][1], bezier_p[1][1], bezier_p[2][1], 1.0f));

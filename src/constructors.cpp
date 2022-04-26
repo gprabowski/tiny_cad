@@ -4,6 +4,8 @@
 #include <shader_manager.h>
 #include <systems.h>
 
+#include <set>
+
 namespace constructors {
 
 ecs::EntityType add_cursor(transformation &&_t, gl_object &&_g) {
