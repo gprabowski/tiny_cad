@@ -15,8 +15,6 @@
 
 namespace gui {
 
-enum class point_action { none, edit, del };
-
 void setup_gui(std::shared_ptr<GLFWwindow> &w);
 void start_frame();
 void end_frame();
@@ -25,10 +23,12 @@ void render_bezier_gui(tag_figure &fc, gl_object &g, relationship &rel,
                        ecs::EntityType idx);
 void render_torus_gui(torus_params &tp, parametric &p, gl_object &g,
                       transformation &t);
+void render_icurve_gui(tag_figure &fc, gl_object &g, relationship &rel,
+                       ecs::EntityType idx);
 
 void render_performance_window();
 void render_general_settings();
-point_action render_figure_select_gui();
+void render_figure_select_gui();
 void render_selected_edit_gui();
 
 void render_cursor_gui();

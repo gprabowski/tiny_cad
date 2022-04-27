@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <optional>
 #include <string>
+#include <utility>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -23,6 +24,11 @@
 #include <torus.h>
 
 namespace gui {
+
+template <class Enum>
+constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept {
+  return static_cast<std::underlying_type_t<Enum>>(e);
+}
 
 static auto vector_getter = [](void *vec, int idx, const char **out_text) {
   auto &vector = *static_cast<std::vector<std::string> *>(vec);
@@ -223,127 +229,70 @@ void render_general_settings() {
   ImGui::End();
 }
 
-point_action render_point_gui(ecs::EntityType idx, transformation &t,
-                              tag_figure &fc) {
-  auto &reg = ecs::registry::get_registry();
+void render_figure_gui(ecs::EntityType idx, tag_figure &t,
+                       const std::function<void(void)> &render_func) {
+  std::string tree_id = t.name + ("##") + std::to_string(idx);
+  ImGui::Text("%s", t.name.c_str());
 
-  point_action ret{point_action::none};
-  std::string tree_id = fc.name + ("##") + std::to_string(idx);
-
-  ImGui::Text("%s", fc.name.c_str());
   std::string desc = ("Show more##") + std::to_string(idx);
-  ImGui::SameLine(200.f);
+  ImGui::SameLine(300.f);
+
   if (ImGui::TreeNode(desc.c_str())) {
-    if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
-                            100.f)) {
-      ret = point_action::edit;
+    if (ImGui::InputText("name", &t.name)) {
     }
 
-    auto &name = reg.get_component<tag_figure>(idx).name;
-
-    if (ImGui::InputText("name", &name)) {
-    }
-
-    auto &g = reg.get_component<gl_object>(idx);
-
-    if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
-    }
-
-    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.selected))) {
-    }
-
-    if (reg.has_component<relationship>(idx)) {
-      auto &rel = reg.get_component<relationship>(idx);
-      if (ImGui::TreeNode("Parents")) {
-        for (const auto p : rel.parents) {
-          ImGui::Text("%s##%ld", reg.get_component<tag_figure>(p).name.c_str(),
-                      p);
-        }
-        ImGui::TreePop();
-      }
-    }
+    render_func();
 
     if (ImGui::Button("Delete")) {
-      ret = point_action::del;
+      frame_state::deleted.push_back(idx);
     }
-
     ImGui::TreePop();
   }
-  return ret;
 }
 
-void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
-                        ecs::EntityType idx) {
+void render_parent_gui(ecs::EntityType idx) {
+  if (ImGui::Button("Add selected points")) {
+    systems::add_sel_points_to_parent(idx);
+  }
+}
 
-  using gldm = gl_object::draw_mode;
+void render_gl_object_gui(gl_object &g,
+                          const std::vector<gl_object::draw_mode> &dvals) {
+  const std::vector<std::string> mode_names{"points", "lines", "line_strip",
+                                            "triangles", "patches"};
+  int dmode = to_underlying(g.dmode);
+  std::vector<std::string> combovalues;
+  for (const auto d : dvals) {
+    combovalues.push_back(mode_names[to_underlying(d)]);
+  }
 
-  static int dmode = 1;
-  static std::vector<std::string> combovalues{"points", "lines"};
+  if (ImGui::Combo("draw mode", &dmode, vector_getter,
+                   static_cast<void *>(&combovalues), combovalues.size())) {
+    g.dmode = dvals[dmode];
+  }
 
-  auto &reg = ecs::registry::get_registry();
+  if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
+  }
 
-  ImGui::Text("%s", fc.name.c_str());
-  std::string desc = ("Show more##") + std::to_string(idx);
-  ImGui::SameLine(200.f);
-  if (ImGui::TreeNode(desc.c_str())) {
-    if (ImGui::Combo("draw mode", &dmode, vector_getter,
-                     static_cast<void *>(&combovalues), combovalues.size())) {
-      if (dmode == 0) {
-        g.dmode = gldm::points;
-      } else if (dmode == 1) {
-        g.dmode = gldm::patches;
+  if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.selected))) {
+  }
+}
+
+void render_relationship_gui(ecs::EntityType idx, relationship &r) {
+  static auto &reg = ecs::registry::get_registry();
+  if (r.parents.size()) {
+    if (ImGui::TreeNode("Parents")) {
+      for (const auto p : r.parents) {
+        ImGui::Text("%s##%ld", reg.get_component<tag_figure>(p).name.c_str(),
+                    p);
       }
+      ImGui::TreePop();
     }
-
-    auto &name = fc.name;
-
-    if (ImGui::InputText("name", &name)) {
-    }
-
-    auto &g = reg.get_component<gl_object>(idx);
-
-    if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
-    }
-
-    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.selected))) {
-    }
-
-    auto &bsp = reg.get_component<bspline>(idx);
-    bool visible_bezier = reg.has_component<tag_visible>(bsp.bezier_polygon);
-    bool visible_deboor = reg.has_component<tag_visible>(bsp.deboor_polygon);
-
-    if (ImGui::Checkbox("Bezier polygon", &visible_bezier)) {
-      if (visible_bezier) {
-        reg.add_component<tag_visible>(bsp.bezier_polygon, {});
-      } else {
-        reg.remove_component<tag_visible>(bsp.bezier_polygon);
-      }
-    }
-
-    if (ImGui::Checkbox("de Boor polygon", &visible_deboor)) {
-      if (visible_deboor) {
-        reg.add_component<tag_visible>(bsp.deboor_polygon, {});
-      } else {
-        reg.remove_component<tag_visible>(bsp.deboor_polygon);
-      }
-    }
-    bool bern = rel.virtual_children.size() > 0 &&
-                reg.has_component<tag_visible>(rel.virtual_children[0]);
-    if (ImGui::Checkbox("Bezier points", &bern)) {
-      if (bern) {
-        for (const auto vc : rel.virtual_children) {
-          reg.add_component<tag_visible>(vc, {});
-        }
-      } else {
-        for (const auto vc : rel.virtual_children) {
-          reg.remove_component<tag_visible>(vc);
-        }
-      }
-    }
-
+  }
+  if (r.children.size()) {
     if (ImGui::TreeNode("Children")) {
       std::optional<ecs::EntityType> del;
-      for (const auto c : rel.children) {
+      for (const auto c : r.children) {
         ImGui::Text("%s", reg.get_component<tag_figure>(c).name.c_str());
         ImGui::SameLine(200.f);
         if (ImGui::Button(
@@ -352,8 +301,8 @@ void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
         }
       }
       if (del.has_value()) {
-        rel.children.erase(
-            std::find(begin(rel.children), end(rel.children), del.value()));
+        r.children.erase(
+            std::find(begin(r.children), end(r.children), del.value()));
         auto &crel = reg.get_component<relationship>(del.value());
         crel.parents.erase(
             std::find(begin(crel.parents), end(crel.parents), idx));
@@ -361,93 +310,132 @@ void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
       }
       ImGui::TreePop();
     }
+  }
 
-    if (ImGui::Button("Add selected points")) {
-      systems::add_sel_points_to_parent(idx);
+  if (r.virtual_children.size()) {
+    bool bern = r.virtual_children.size() > 0 &&
+                reg.has_component<tag_visible>(r.virtual_children[0]);
+    if (ImGui::Checkbox("Virtual points", &bern)) {
+      if (bern) {
+        for (const auto vc : r.virtual_children) {
+          reg.add_component<tag_visible>(vc, {});
+        }
+      } else {
+        for (const auto vc : r.virtual_children) {
+          reg.remove_component<tag_visible>(vc);
+        }
+      }
     }
-
-    if (ImGui::Button("Delete")) {
-      reg.delete_entity(idx);
-    }
-    ImGui::TreePop();
   }
 }
-void render_bezier_gui(tag_figure &fc, gl_object &g, relationship &rel,
-                       ecs::EntityType idx) {
-  using gldm = gl_object::draw_mode;
 
-  static int dmode = 1;
-  static std::vector<std::string> combovalues{"points", "lines"};
+void render_bezier_component_gui(bezierc &bez) {
+  static ecs::registry &reg = ecs::registry::get_registry();
+
+  bool visible_bezier = reg.has_component<tag_visible>(bez.bezier_polygon);
+  if (ImGui::Checkbox("Bezier polygon", &visible_bezier)) {
+    if (visible_bezier) {
+      reg.add_component<tag_visible>(bez.bezier_polygon, {});
+    } else {
+      reg.remove_component<tag_visible>(bez.bezier_polygon);
+    }
+  }
+}
+
+void render_bspline_component_gui(bspline &bsp) {
+  static auto &reg = ecs::registry::get_registry();
+  bool visible_bezier = reg.has_component<tag_visible>(bsp.bezier_polygon);
+  bool visible_deboor = reg.has_component<tag_visible>(bsp.deboor_polygon);
+
+  if (ImGui::Checkbox("Bezier polygon", &visible_bezier)) {
+    if (visible_bezier) {
+      reg.add_component<tag_visible>(bsp.bezier_polygon, {});
+    } else {
+      reg.remove_component<tag_visible>(bsp.bezier_polygon);
+    }
+  }
+
+  if (ImGui::Checkbox("de Boor polygon", &visible_deboor)) {
+    if (visible_deboor) {
+      reg.add_component<tag_visible>(bsp.deboor_polygon, {});
+    } else {
+      reg.remove_component<tag_visible>(bsp.deboor_polygon);
+    }
+  }
+}
+
+void render_transformation_gui(ecs::EntityType idx, transformation &t) {
+  if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
+                          100.f)) {
+    frame_state::changed.push_back(idx);
+  }
+}
+
+void render_point_gui(ecs::EntityType idx, transformation &t, tag_figure &fc) {
+  static auto &reg = ecs::registry::get_registry();
+
+  render_figure_gui(idx, fc, [&]() {
+    auto &g = reg.get_component<gl_object>(idx);
+    std::vector<std::string> cvals{"points"};
+    render_gl_object_gui(g, {gl_object::draw_mode::points});
+
+    if (reg.has_component<relationship>(idx)) {
+      auto &r = reg.get_component<relationship>(idx);
+      render_relationship_gui(idx, r);
+    }
+
+    auto &t = reg.get_component<transformation>(idx);
+    render_transformation_gui(idx, t);
+  });
+}
+
+void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
+                        ecs::EntityType idx) {
+  auto &reg = ecs::registry::get_registry();
+
+  render_figure_gui(idx, fc, [&]() {
+    auto &g = reg.get_component<gl_object>(idx);
+    auto &bsp = reg.get_component<bspline>(idx);
+
+    render_gl_object_gui(
+        g, {gl_object::draw_mode::points, gl_object::draw_mode::patches});
+
+    render_bspline_component_gui(bsp);
+    render_relationship_gui(idx, rel);
+    render_parent_gui(idx);
+  });
+}
+
+void render_icurve_gui(tag_figure &fc, gl_object &g, relationship &rel,
+                       ecs::EntityType idx) {
 
   auto &reg = ecs::registry::get_registry();
 
-  ImGui::Text("%s", fc.name.c_str());
-  std::string desc = ("Show more##") + std::to_string(idx);
-  ImGui::SameLine(200.f);
-  if (ImGui::TreeNode(desc.c_str())) {
-    if (ImGui::Combo("draw mode", &dmode, vector_getter,
-                     static_cast<void *>(&combovalues), combovalues.size())) {
-      if (dmode == 0) {
-        g.dmode = gldm::points;
-      } else if (dmode == 1) {
-        g.dmode = gldm::patches;
-      }
-    }
-
-    auto &name = fc.name;
-
-    if (ImGui::InputText("name", &name)) {
-    }
-
+  render_figure_gui(idx, fc, [&]() {
     auto &g = reg.get_component<gl_object>(idx);
 
-    if (ImGui::ColorEdit4("Primary Color", glm::value_ptr(g.primary))) {
-    }
+    render_gl_object_gui(
+        g, {gl_object::draw_mode::points, gl_object::draw_mode::patches});
 
-    if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.selected))) {
-    }
+    render_relationship_gui(idx, rel);
+    render_parent_gui(idx);
+  });
+}
+void render_bezier_gui(tag_figure &fc, gl_object &g, relationship &rel,
+                       ecs::EntityType idx) {
+  auto &reg = ecs::registry::get_registry();
 
+  render_figure_gui(idx, fc, [&]() {
+    auto &g = reg.get_component<gl_object>(idx);
     auto &bez = reg.get_component<bezierc>(idx);
-    bool visible_bezier = reg.has_component<tag_visible>(bez.bezier_polygon);
 
-    if (ImGui::Checkbox("Bezier polygon", &visible_bezier)) {
-      if (visible_bezier) {
-        reg.add_component<tag_visible>(bez.bezier_polygon, {});
-      } else {
-        reg.remove_component<tag_visible>(bez.bezier_polygon);
-      }
-    }
+    render_gl_object_gui(
+        g, {gl_object::draw_mode::points, gl_object::draw_mode::patches});
 
-    if (ImGui::TreeNode("Children")) {
-      std::optional<ecs::EntityType> del;
-      for (const auto c : rel.children) {
-        ImGui::Text("%s", reg.get_component<tag_figure>(c).name.c_str());
-        ImGui::SameLine(300.f);
-        if (ImGui::Button(
-                (std::string("Detach##") + std::to_string(c)).c_str())) {
-          del = c;
-        }
-      }
-      if (del.has_value()) {
-        rel.children.erase(
-            std::find(begin(rel.children), end(rel.children), del.value()));
-        auto &crel = reg.get_component<relationship>(del.value());
-        crel.parents.erase(
-            std::find(begin(crel.parents), end(crel.parents), idx));
-        frame_state::changed.push_back(idx);
-      }
-      ImGui::TreePop();
-    }
-
-    if (ImGui::Button("Add selected points")) {
-      systems::add_sel_points_to_parent(idx);
-    }
-
-    if (ImGui::Button("Delete")) {
-      reg.delete_entity(idx);
-    }
-    ImGui::TreePop();
-  }
+    render_bezier_component_gui(bez);
+    render_relationship_gui(idx, rel);
+    render_parent_gui(idx);
+  });
 }
 
 void render_torus_gui(ecs::EntityType idx, torus_params &tp, parametric &p,
@@ -567,25 +555,20 @@ void render_selected_edit_gui() {
                !reg.has_component<tag_virtual>(idx)) {
       auto &t = reg.get_component<transformation>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
-      switch (render_point_gui(idx, t, fc)) {
-      case point_action::none: {
-      } break;
-      case point_action::edit: {
-        frame_state::changed.push_back(idx);
-      } break;
-      case point_action::del: {
-        frame_state::deleted.push_back(idx);
-      } break;
-      }
+      render_point_gui(idx, t, fc);
+    } else if (reg.has_component<icurve>(idx)) {
+      auto &g = reg.get_component<gl_object>(idx);
+      auto &rel = reg.get_component<relationship>(idx);
+      auto &fc = reg.get_component<tag_figure>(idx);
+      render_icurve_gui(fc, g, rel, idx);
     }
   }
   ImGui::End();
 }
 
-point_action render_figure_select_gui() {
+void render_figure_select_gui() {
   auto &reg = ecs::registry::get_registry();
 
-  point_action ret{point_action::none};
   bool sel{false};
   ImGui::Begin("Select figures:");
   for (auto &[idx, fc] : reg.get_map<tag_figure>()) {
@@ -617,7 +600,6 @@ point_action render_figure_select_gui() {
     }
   }
   ImGui::End();
-  return ret;
 }
 
 void render_cursor_gui() {

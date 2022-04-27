@@ -19,12 +19,12 @@ struct gl_object {
   glm::vec4 primary{0.0f, 0.0f, 1.0f, 1.0f};
   glm::vec4 selected{1.0f, 0.0f, 0.0f, 1.0f};
 
-  enum class draw_mode {
-    points,
-    lines,
-    line_strip,
-    triangles,
-    patches
+  enum class draw_mode : int {
+    points = 0,
+    lines = 1,
+    line_strip = 2,
+    triangles = 3,
+    patches = 4
   } dmode{draw_mode::lines};
 
   enum class vertex_t {
