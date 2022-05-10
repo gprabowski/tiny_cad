@@ -20,8 +20,8 @@ struct stereo_settings {
     optimized_anaglyph = 5,
     custom_anaglyph = 6
   } mode{stereo_mode::mono};
-  float convergence = 5.f;
-  float eye_separation = 0.5f;
+  float convergence = 60.f;
+  float eye_separation = 2.0f;
 };
 
 struct input_state {
