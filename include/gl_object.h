@@ -44,9 +44,5 @@ struct gl_object {
     if (glIsVertexArray(vao)) {
       glDeleteVertexArrays(1, &vao);
     }
-    if (glIsProgram(program)) {
-      // TODO add shader management
-      // glDeleteProgram(program);
-    }
   }
 };

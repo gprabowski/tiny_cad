@@ -137,6 +137,10 @@ void ogl_setup(std::shared_ptr<GLFWwindow> w) {
 
   // glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_LINE_SMOOTH);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
   int actualWindowWidth, actualWindowHeight;
   glfwGetWindowSize(w.get(), &actualWindowWidth, &actualWindowHeight);

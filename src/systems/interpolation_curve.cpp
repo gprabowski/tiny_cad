@@ -21,7 +21,7 @@ void regenerate_icurve(ecs::EntityType idx) {
 
   for (const auto c : _r.children) {
     auto &_p = transformations[c].translation;
-    if (_p != last) {
+    if (glm::length(_p - last) > 1e-4) {
       last = _p;
       children.push_back(c);
     }

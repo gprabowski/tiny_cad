@@ -8,9 +8,8 @@
 #include <registry.h>
 
 namespace constructors {
-ecs::EntityType add_cursor(transformation &&_t, gl_object &&_g);
-
 gl_object get_cursor_geometry(const GLint program);
+ecs::EntityType add_cursor(transformation &&_t, gl_object &&_g);
 
 void setup_initial_geometry();
 

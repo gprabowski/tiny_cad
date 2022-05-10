@@ -36,6 +36,8 @@ struct input_state {
   std::bitset<4> mouse_pressed{0};
   std::bitset<4> mouse_just_pressed{0};
 
+  bool stereo{false};
+
 public:
   static input_state &get_input_state() {
     static input_state as;

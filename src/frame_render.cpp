@@ -49,6 +49,7 @@ void render_window_gui() {
 void render_viewport() {
   // display
   static auto &fb = framebuffer::get();
+  static auto &is = input_state::get_input_state();
   static auto &desc = fb.get_desc();
   ImGui::Begin("Viewport");
   update::setup_globals(ImGui::GetContentRegionAvail());
@@ -61,10 +62,27 @@ void render_viewport() {
   }
 
   // render offscreen
-  fb.bind();
-  glViewport(0, 0, frame_state::content_area.x, frame_state::content_area.y);
-  sys::render_app();
-  fb.unbind();
+  if (is.stereo) {
+    fb.bind();
+    glViewport(0, 0, frame_state::content_area.x, frame_state::content_area.y);
+    fb.set_left();
+    // render left eye sight
+
+    fb.set_right();
+    // render right eye sight
+
+    fb.set_regular();
+    // render stereo with two textures
+
+    sys::render_app();
+    fb.unbind();
+  } else {
+    fb.bind();
+    fb.set_regular();
+    glViewport(0, 0, frame_state::content_area.x, frame_state::content_area.y);
+    sys::render_app();
+    fb.unbind();
+  }
 
   GLuint t = fb.get_color_att();
   ImGui::Image((void *)(uint64_t)t, s, {0, 1}, {1, 0});

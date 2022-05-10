@@ -43,33 +43,6 @@ void set_model_uniform(const transformation &t) {
                      glm::value_ptr(model));
 }
 
-void render_gl(const gl_object &g) {
-  using gldm = gl_object::draw_mode;
-
-  glBindVertexArray(g.vao);
-  glPointSize(4.0f);
-
-  if (g.dmode == gldm::points) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glDrawArrays(GL_POINTS, 0, g.points.size());
-  } else if (g.dmode == gldm::lines) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glDrawElements(GL_LINES, g.indices.size(), GL_UNSIGNED_INT, NULL);
-  } else if (g.dmode == gldm::line_strip) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glDrawElements(GL_LINE_STRIP, g.indices.size(), GL_UNSIGNED_INT, NULL);
-  } else if (g.dmode == gldm::patches) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glPatchParameteri(GL_PATCH_VERTICES, 4);
-    glDrawElements(GL_PATCHES, g.indices.size(), GL_UNSIGNED_INT, NULL);
-  } else if (g.dmode == gldm::triangles) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glDrawElements(GL_TRIANGLES, g.indices.size(), GL_UNSIGNED_INT, NULL);
-  }
-  glBindVertexArray(0);
-  glPointSize(1.0f);
-}
-
 void render_visible_entities() {
   auto &reg = ecs::registry::get_registry();
 
