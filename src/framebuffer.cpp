@@ -2,8 +2,10 @@
 #include <framebuffer.h>
 #include <input_state.h>
 #include <log.h>
+#include <systems.h>
 
 #include <algorithm>
+#include <shader_manager.h>
 
 void framebuffer::setup_stereo_textures() {
   if (!glIsFramebuffer(of_fb)) {
@@ -34,7 +36,7 @@ void framebuffer::setup_stereo_textures() {
   glTextureStorage2D(of_fb_col_tex_right, 1, GL_RGBA8, desc.width, desc.height);
 }
 
-void framebuffer::setup_buffer(GLuint& color, GLuint& depth) {
+void framebuffer::setup_buffer(GLuint &color, GLuint &depth) {
   if (!glIsFramebuffer(of_fb)) {
     glCreateFramebuffers(1, &of_fb);
   }
@@ -90,12 +92,26 @@ void framebuffer::set_regular() {
 void framebuffer::invalidate() {
   auto &is = input_state::get_input_state();
   setup_buffer(of_fb_col_tex, of_fb_dep_tex);
-  if (is.stereo) {
+  if (is.ster_sett.mode != stereo_settings::stereo_mode::mono) {
     setup_stereo_textures();
   }
 };
 
-framebuffer::framebuffer() {}
+framebuffer::framebuffer() {
+  // initialize quad
+  // position then texture position
+  quad.points = {{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f},
+                 {1.0f, -1.0f, 0.0f, 1.0f},  {1.0f, 0.0f, 0.0f, 0.0f},
+                 {1.0f, 1.0f, 0.0f, 1.0f},   {1.0f, 1.0f, 0.0f, 0.0f},
+                 {-1.0f, 1.0f, 0.0f, 1.0f},  {0.0f, 1.0f, 0.0f, 0.0f}};
+
+  quad.indices = {0, 1, 2, 2, 3, 0};
+  quad.vtype = gl_object::vertex_t::point_tex;
+  quad.dmode = gl_object::draw_mode::triangles;
+  quad.program =
+      shader_manager::get_manager().programs[shader_t::MERGE_SHADER].idx;
+  systems::reset_gl_objects(quad);
+}
 
 framebuffer::~framebuffer() { glDeleteFramebuffers(1, &of_fb); }
 

@@ -4,6 +4,7 @@ layout( isolines ) in;
 layout (std140) uniform common_block {
     mat4 proj;
     mat4 view;
+    mat4 col_mat;
 };
 
 in vec4 tes_colors[];

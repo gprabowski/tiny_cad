@@ -16,6 +16,10 @@ struct frame_state {
 
   static glm::mat4 view;
   static glm::mat4 proj;
+  static glm::mat4 col_mat;
+  static glm::mat4 col_mat_left;
+  static glm::mat4 col_mat_right;
+
   static int window_w;
   static int window_h;
 

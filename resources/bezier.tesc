@@ -5,6 +5,7 @@ layout (vertices = 4) out;
 layout (std140) uniform common_block {
     mat4 proj;
     mat4 view;
+    mat4 col_mat;
 };
 
 in vec4 color[];

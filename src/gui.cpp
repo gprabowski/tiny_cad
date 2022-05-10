@@ -13,10 +13,12 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_access.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <ImGuizmo.h>
 
+#include <constant_matrices.h>
 #include <frame_state.h>
 #include <framebuffer.h>
 #include <gl_object.h>
@@ -234,9 +236,17 @@ void render_general_settings() {
 
   static std::vector<std::string> gizmo_values{"Translation", "Rotation",
                                                "Scaling", "Universal"};
+
+  static std::vector<std::string> anaglyph_values{
+      "mono",           "true anaglyph",       "gray anaglyph",
+      "color anaglyph", "half color anaglyph", "optimized anaglyph",
+      "custom anaglyph"};
+
   ImGui::Begin("General Settings");
 
   static input_state::gizmo_mode gmode{input_state::gizmo_mode::universal};
+
+  ImGui::Text("Controls");
   if (ImGui::Combo("wasd mode", reinterpret_cast<int *>(&s.imode),
                    vector_getter, static_cast<void *>(&wasd_values),
                    wasd_values.size())) {
@@ -262,8 +272,96 @@ void render_general_settings() {
     }
   }
 
-  if (ImGui::Checkbox("Stereoscopic rendering", &s.stereo)) {
-    fb.setup_stereo_textures();
+  ImGui::Text("Rendering");
+  ImGui::SliderFloat("Near Clip", &s.clip_near, 0.00001f, 1.0f);
+  ImGui::SliderFloat("Far Clip", &s.clip_near, s.clip_near + 0.00001f,
+                     10000.0f);
+  ImGui::SliderFloat("FOV Y", &s.fov_y, 0, 90);
+
+  ImGui::Text("Anaglyphs");
+  ImGui::SliderFloat("Convergence", &s.ster_sett.convergence, s.clip_near,
+                     s.clip_far);
+  ImGui::SliderFloat("Eye Distance", &s.ster_sett.eye_separation, 0.001f,
+                     100.f);
+  if (ImGui::Combo("anaglyph mode", reinterpret_cast<int *>(&s.ster_sett.mode),
+                   vector_getter, static_cast<void *>(&anaglyph_values),
+                   anaglyph_values.size())) {
+    // reaction for input mode change
+    switch (s.ster_sett.mode) {
+    case stereo_settings::stereo_mode::mono: {
+    } break;
+    case stereo_settings::stereo_mode::true_anaglyph: {
+      fb.setup_stereo_textures();
+      frame_state::col_mat_left = constant_matrices::anaglyph_true_left;
+      frame_state::col_mat_right = constant_matrices::anaglyph_true_right;
+    } break;
+    case stereo_settings::stereo_mode::gray_anaglyph: {
+      fb.setup_stereo_textures();
+      frame_state::col_mat_left = constant_matrices::anaglyph_gray_left;
+      frame_state::col_mat_right = constant_matrices::anaglyph_gray_right;
+    } break;
+    case stereo_settings::stereo_mode::color_anaglyph: {
+      fb.setup_stereo_textures();
+      frame_state::col_mat_left = constant_matrices::anaglyph_color_left;
+      frame_state::col_mat_right = constant_matrices::anaglyph_color_right;
+    } break;
+    case stereo_settings::stereo_mode::half_color_anaglyph: {
+      fb.setup_stereo_textures();
+      frame_state::col_mat_left = constant_matrices::anaglyph_half_color_left;
+      frame_state::col_mat_right = constant_matrices::anaglyph_half_color_right;
+    } break;
+    case stereo_settings::stereo_mode::optimized_anaglyph: {
+      fb.setup_stereo_textures();
+      frame_state::col_mat_left = constant_matrices::anaglyph_optimized_left;
+      frame_state::col_mat_right = constant_matrices::anaglyph_optimized_right;
+    } break;
+    case stereo_settings::stereo_mode::custom_anaglyph: {
+      fb.setup_stereo_textures();
+    } break;
+    }
+  }
+  if (s.ster_sett.mode == stereo_settings::stereo_mode::custom_anaglyph) {
+    bool modified{false};
+    glm::vec3 lr = glm::row(frame_state::col_mat_left, 0),
+              lg = glm::row(frame_state::col_mat_left, 1),
+              lb = glm::row(frame_state::col_mat_left, 2),
+              rr = glm::row(frame_state::col_mat_right, 0),
+              rg = glm::row(frame_state::col_mat_right, 1),
+              rb = glm::row(frame_state::col_mat_right, 2);
+
+    ImGui::Text("Left eye");
+    if (ImGui::SliderFloat3("Red##l", glm::value_ptr(lr), -1.0f, 1.0f)) {
+      modified = true;
+    }
+    if (ImGui::SliderFloat3("Green##l", glm::value_ptr(lg), -1.0f, 1.0f)) {
+      modified = true;
+    }
+    if (ImGui::SliderFloat3("Blue##l", glm::value_ptr(lb), -1.0f, 1.0f)) {
+      modified = true;
+    }
+
+    ImGui::Text("Right eye");
+    if (ImGui::SliderFloat3("Red##r", glm::value_ptr(rr), -1.0f, 1.0f)) {
+      modified = true;
+    }
+    if (ImGui::SliderFloat3("Green##r", glm::value_ptr(rg), -1.0f, 1.0f)) {
+      modified = true;
+    }
+    if (ImGui::SliderFloat3("Blue##r", glm::value_ptr(rb), -1.0f, 1.0f)) {
+      modified = true;
+    }
+
+    if (modified) {
+      frame_state::col_mat_left = glm::mat4{{lr.x, lg.x, lb.x, 0.f},
+                                            {lr.y, lg.y, lb.y, 0.f},
+                                            {lr.z, lg.z, lb.z, 0.f},
+                                            {0.f, 0.f, 0.f, 1.f}};
+
+      frame_state::col_mat_right = glm::mat4{{rr.x, rg.x, rb.x, 0.f},
+                                             {rr.y, rg.y, rb.y, 0.f},
+                                             {rr.z, rg.z, rb.z, 0.f},
+                                             {0.f, 0.f, 0.f, 1.f}};
+    }
   }
 
   ImGui::Text(" ");
@@ -558,9 +656,9 @@ void end_frame() {
 
   // update and render additional platform windows
   // (platform functions may change the current opengl context so we
-  // save/restore it to make it easier to paste this code elsewhere. For this
-  // specific demo appp we could also call glfwMakeCOntextCurrent(window)
-  // directly)
+  // save/restore it to make it easier to paste this code elsewhere. For
+  // this specific demo appp we could also call
+  // glfwMakeCOntextCurrent(window) directly)
   ImGuiIO &io = ImGui::GetIO();
   if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
     GLFWwindow *backup_current_context = glfwGetCurrentContext();

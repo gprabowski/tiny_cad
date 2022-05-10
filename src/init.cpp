@@ -122,7 +122,7 @@ void ogl_print_info() {
 void common_ubo_setup(std::shared_ptr<GLFWwindow> w) {
   auto &sm = shader_manager::get_manager();
   glCreateBuffers(1, &sm.common_ubo);
-  glNamedBufferData(sm.common_ubo, 2 * 16 * sizeof(float), NULL,
+  glNamedBufferData(sm.common_ubo, 3 * 16 * sizeof(float), NULL,
                     GL_DYNAMIC_DRAW);
 }
 
@@ -177,6 +177,7 @@ std::shared_ptr<GLFWwindow> init_all(const char *caption) {
   sm.add(shader_t::BSPLINE_CURVE_SHADER, "resources/bspline");
   sm.add(shader_t::CURSOR_SHADER, "resources/general");
   sm.add(shader_t::INTERPOLATION_CURVE_SHADER, "resources/bezier");
+  sm.add(shader_t::MERGE_SHADER, "resources/merge");
 
   constructors::setup_initial_geometry();
   gui::setup_gui(w);

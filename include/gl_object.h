@@ -30,6 +30,7 @@ struct gl_object {
   enum class vertex_t {
     point,
     point_color,
+    point_tex,
     point_normal,
     point_color_normal
   } vtype{vertex_t::point};

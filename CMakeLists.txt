@@ -9,6 +9,14 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
 endif(CCACHE_FOUND)
 
+set(TC_DEBUG TRUE)
+
+if((MSVC) AND (TC_DEBUG))
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
+elseif(${TC_DEBUG})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+endif()
+
 message("ADDING THIRDPARTY LIBRARIES")
 add_subdirectory(thirdparty)
 message("ADDING TINYCAD EXECUTABLE")

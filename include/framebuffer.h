@@ -4,6 +4,8 @@
 
 #include <glad/glad.h>
 
+#include <gl_object.h>
+
 struct fb_desc {
   uint32_t width{1000};
   uint32_t height{1000};
@@ -16,7 +18,7 @@ struct framebuffer {
   }
 
   void bind();
-  void setup_buffer(GLuint& color, GLuint& depth);
+  void setup_buffer(GLuint &color, GLuint &depth);
   void setup_stereo_textures();
 
   void set_left();
@@ -29,12 +31,14 @@ struct framebuffer {
   GLuint get_color_att();
   fb_desc &get_desc() { return desc; };
 
+  gl_object quad;
+  GLuint of_fb_col_tex_right;
+  GLuint of_fb_col_tex_left;
+
 private:
   fb_desc desc;
   GLuint of_fb;
   GLuint of_fb_col_tex;
-  GLuint of_fb_col_tex_right;
-  GLuint of_fb_col_tex_left;
   GLuint of_fb_dep_tex;
   std::vector<GLuint> additional_color;
   framebuffer();

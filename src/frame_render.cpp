@@ -26,7 +26,6 @@ void begin_frame(uint64_t &b) {
   ImGui::Begin("Viewport");
   hnd::process_input();
   ImGui::End();
-  update::refresh_ubos();
 }
 
 void end_frame(GLFWwindow *w, uint64_t &begin_time) {
@@ -62,27 +61,40 @@ void render_viewport() {
   }
 
   // render offscreen
-  if (is.stereo) {
+  if (is.ster_sett.mode == stereo_settings::stereo_mode::mono) {
+    update::refresh_ubos();
     fb.bind();
-    glViewport(0, 0, frame_state::content_area.x, frame_state::content_area.y);
-    fb.set_left();
-    // render left eye sight
-
-    sys::render_app();
-    fb.set_right();
-    // render right eye sight
-
-    sys::render_app();
     fb.set_regular();
-    // render stereo with two textures
-
+    glViewport(0, 0, frame_state::content_area.x, frame_state::content_area.y);
     sys::render_app();
     fb.unbind();
   } else {
     fb.bind();
-    fb.set_regular();
     glViewport(0, 0, frame_state::content_area.x, frame_state::content_area.y);
+
+    // render left eye sight
+    fb.set_left();
+    update::refresh_ubos_left();
     sys::render_app();
+
+    // render right eye sight
+    fb.set_right();
+    update::refresh_ubos_right();
+    sys::render_app();
+
+    // render stereo with two textures
+    fb.set_regular();
+
+    glUseProgram(fb.quad.program);
+
+    glBindTextureUnit(2, fb.of_fb_col_tex_left);
+    glBindTextureUnit(3, fb.of_fb_col_tex_right);
+    glUniform1i(glGetUniformLocation(fb.quad.program, "leftTexture"), 2);
+    glUniform1i(glGetUniformLocation(fb.quad.program, "rightTexture"), 3);
+    systems::render_gl(fb.quad);
+
+    update::refresh_ubos();
+
     fb.unbind();
   }
 

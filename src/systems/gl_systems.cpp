@@ -21,7 +21,7 @@ void render_gl(const gl_object &g) {
     glPatchParameteri(GL_PATCH_VERTICES, 4);
     glDrawElements(GL_PATCHES, g.indices.size(), GL_UNSIGNED_INT, NULL);
   } else if (g.dmode == gldm::triangles) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glDrawElements(GL_TRIANGLES, g.indices.size(), GL_UNSIGNED_INT, NULL);
   }
   glBindVertexArray(0);
@@ -55,6 +55,19 @@ void reset_gl_objects(gl_object &g) {
     glEnableVertexArrayAttrib(g.vao, 0);
     glVertexArrayAttribFormat(g.vao, 0, 4, GL_FLOAT, GL_FALSE, 0);
     glVertexArrayAttribBinding(g.vao, 0, 0);
+  } break;
+  case gl_object::vertex_t::point_tex: {
+    glVertexArrayVertexBuffer(g.vao, 0, g.vbo, 0, 2 * sizeof(g.points[0]));
+    glVertexArrayElementBuffer(g.vao, g.ebo);
+    glEnableVertexArrayAttrib(g.vao, 0);
+    glEnableVertexArrayAttrib(g.vao, 1);
+
+    glVertexArrayAttribFormat(g.vao, 0, 4, GL_FLOAT, GL_FALSE, 0);
+    glVertexArrayAttribFormat(g.vao, 1, 2, GL_FLOAT, GL_FALSE,
+                              sizeof(glm::vec4));
+
+    glVertexArrayAttribBinding(g.vao, 0, 0);
+    glVertexArrayAttribBinding(g.vao, 1, 0);
   } break;
   case gl_object::vertex_t::point_color: {
     glVertexArrayVertexBuffer(g.vao, 0, g.vbo, 0, 2 * sizeof(g.points[0]));

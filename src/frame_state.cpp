@@ -5,6 +5,9 @@
 
 glm::mat4 frame_state::proj;
 glm::mat4 frame_state::view;
+glm::mat4 frame_state::col_mat = glm::mat4(1.0f);
+glm::mat4 frame_state::col_mat_left = glm::mat4(1.0f);
+glm::mat4 frame_state::col_mat_right = glm::mat4(1.0f);
 
 int frame_state::window_w;
 int frame_state::window_h;

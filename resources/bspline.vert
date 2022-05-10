@@ -6,6 +6,7 @@ layout(location = 1) in vec4 col;
 layout (std140) uniform common_block {
     mat4 proj;
     mat4 view;
+    mat4 col_mat;
 };
 
 uniform mat4 model;
@@ -14,5 +15,5 @@ out vec4 color;
 
 void main() {
     gl_Position = model * pos;
-    color = col;
+    color = col_mat * col;
 }

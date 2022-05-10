@@ -12,6 +12,7 @@ enum class shader_t {
   BEZIER_CURVE_SHADER,
   BSPLINE_CURVE_SHADER,
   INTERPOLATION_CURVE_SHADER,
+  MERGE_SHADER,
 };
 
 struct shader {
