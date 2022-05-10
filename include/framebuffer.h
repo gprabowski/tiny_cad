@@ -16,7 +16,7 @@ struct framebuffer {
   }
 
   void bind();
-  void setup_buffer(GLuint color, GLuint depth);
+  void setup_buffer(GLuint& color, GLuint& depth);
   void setup_stereo_textures();
 
   void set_left();

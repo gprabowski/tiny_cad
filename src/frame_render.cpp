@@ -68,9 +68,11 @@ void render_viewport() {
     fb.set_left();
     // render left eye sight
 
+    sys::render_app();
     fb.set_right();
     // render right eye sight
 
+    sys::render_app();
     fb.set_regular();
     // render stereo with two textures
 

@@ -34,7 +34,7 @@ void framebuffer::setup_stereo_textures() {
   glTextureStorage2D(of_fb_col_tex_right, 1, GL_RGBA8, desc.width, desc.height);
 }
 
-void framebuffer::setup_buffer(GLuint color, GLuint depth) {
+void framebuffer::setup_buffer(GLuint& color, GLuint& depth) {
   if (!glIsFramebuffer(of_fb)) {
     glCreateFramebuffers(1, &of_fb);
   }
