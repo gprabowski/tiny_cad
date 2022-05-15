@@ -32,6 +32,8 @@ bool generate_torus_points(const torus_params &s, const parametric &p,
                            std::vector<glm::vec4> &out_vertices);
 
 void regenerate_bezier(ecs::EntityType idx);
+void regenerate_bezier_surface_builder(ecs::EntityType idx);
+void regenerate_bezier_surface(ecs::EntityType idx);
 
 void regenerate_bspline(ecs::EntityType idx);
 

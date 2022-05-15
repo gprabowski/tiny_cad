@@ -44,7 +44,7 @@ struct input_state {
   float clip_far = 1000.f;
   float fov_y = 90.f;
 
-  glm::vec3 cam_pos{10.0f, 10.0f, 70.0f};
+  glm::vec3 cam_pos{0.0f, 5.0f, 10.0f};
   glm::vec3 cam_front{0.0f, 0.0f, -1.0f};
   glm::vec3 cam_up{0.0f, 1.0f, 0.0f};
 

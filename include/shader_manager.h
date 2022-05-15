@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 
 enum class shader_t {
+  GENERAL_SHADER,
   POINT_SHADER,
   CURSOR_SHADER,
   TORUS_SHADER,
@@ -13,6 +14,7 @@ enum class shader_t {
   BSPLINE_CURVE_SHADER,
   INTERPOLATION_CURVE_SHADER,
   MERGE_SHADER,
+  BEZIER_PATCH_SHADER,
 };
 
 struct shader {

@@ -89,8 +89,10 @@ void render_viewport() {
 
     glBindTextureUnit(2, fb.of_fb_col_tex_left);
     glBindTextureUnit(3, fb.of_fb_col_tex_right);
+
     glUniform1i(glGetUniformLocation(fb.quad.program, "leftTexture"), 2);
     glUniform1i(glGetUniformLocation(fb.quad.program, "rightTexture"), 3);
+
     systems::render_gl(fb.quad);
 
     update::refresh_ubos();

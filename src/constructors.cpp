@@ -1,3 +1,4 @@
+#include <bezier_surface.h>
 #include <constructors.h>
 #include <log.h>
 #include <relationship.h>
@@ -79,9 +80,96 @@ ecs::EntityType add_icurve(const GLuint program) {
   reg.add_component<relationship>(b, {{}, std::move(sel_points)});
   systems::regenerate_icurve(b);
   g.dmode = gl_object::draw_mode::patches;
+  g.patch_size = 4;
 
   return b;
 }
+
+ecs::EntityType add_bezier_surface(ecs::EntityType builder) {
+  static auto &reg = ecs::registry::get_registry();
+  static auto &sm = shader_manager::get_manager();
+
+  auto &bsp = reg.get_component<bezier_surface_params>(builder);
+  auto &g = reg.get_component<gl_object>(builder);
+  g.program = sm.programs[shader_t::BEZIER_PATCH_SHADER].idx;
+  auto &f = reg.get_component<tag_figure>(builder);
+  f.name = "Bezier Surface #" + std::to_string(builder);
+  reg.add_component<relationship>(builder, {});
+  auto &rel = reg.get_component<relationship>(builder);
+  rel.indestructible_relation = true;
+
+  // 1. generate points as entities
+  //
+  if (!bsp.cyllinder) {
+    for (unsigned int j = 0; j <= 3 * bsp.v; ++j) {
+      for (unsigned int i = 0; i <= 3 * bsp.u; ++i) {
+        glm::vec3 pos;
+        pos = bsp.root +
+              glm::vec3(bsp.width / 3.f * i, 0.f, bsp.height / 3.f * j);
+        auto point = add_point(transformation{pos},
+                               sm.programs[shader_t::POINT_SHADER].idx);
+        reg.add_component<relationship>(point, {});
+        auto &prel = reg.get_component<relationship>(point);
+        rel.children.push_back(point);
+        prel.parents.push_back(builder);
+        prel.indestructible_counter++;
+      }
+    }
+  } else {
+    for (unsigned int j = 0; j < 4 * bsp.v; ++j) {
+      for (unsigned int i = 0; i < 4 * bsp.u; ++i) {
+        glm::vec3 pos;
+        pos = bsp.root +
+              glm::vec3(bsp.width / 4.f * i, 0.f, bsp.height / 4.f * j);
+        auto point = add_point(transformation{pos},
+                               sm.programs[shader_t::POINT_SHADER].idx);
+        reg.add_component<relationship>(point, {});
+        auto &prel = reg.get_component<relationship>(point);
+        rel.children.push_back(point);
+        prel.parents.push_back(builder);
+        prel.indestructible_counter++;
+      }
+    }
+  }
+  // 2. delete builder tag
+  reg.remove_component<tag_surface_builder>(builder);
+
+  // 3. regenerate all necessary buffers
+  systems::regenerate_bezier_surface(builder);
+
+  return builder;
+}
+
+ecs::EntityType add_bezier_surface_builder(transformation &&_t,
+                                           const GLuint program) {
+  static auto &reg = ecs::registry::get_registry();
+
+  const auto b = reg.add_entity();
+  reg.add_component<gl_object>(b, gl_object{program});
+  reg.add_component<transformation>(b, {});
+  reg.add_component<tag_parent>(b, {});
+  reg.add_component<tag_figure>(
+      b, tag_figure{"[BUILDER] Bezier Surface #" + std::to_string(b)});
+  reg.add_component<tag_surface_builder>(b, {});
+  reg.add_component<bezier_surface_params>(b, {});
+  reg.add_component<tag_visible>(b, {});
+
+  auto &bsp = reg.get_component<bezier_surface_params>(b);
+  bsp.root = _t.translation;
+
+  auto &g = reg.get_component<gl_object>(b);
+  g.color = g.primary;
+
+  g.dmode = gl_object::draw_mode::lines;
+  g.primary = {255.f / 255.f, 69.f / 255.f, 0.f, 1.0f};
+  g.selected = {0.f, 255.f / 255.f, 171.f / 255.f, 1.0f};
+  g.color = g.primary;
+
+  systems::regenerate_bezier_surface_builder(b);
+
+  return b;
+}
+
 ecs::EntityType add_bspline(const GLuint program) {
   std::vector<ecs::EntityType> sel_points;
   auto &reg = ecs::registry::get_registry();
@@ -130,6 +218,7 @@ ecs::EntityType add_bspline(const GLuint program) {
   reg.add_component<relationship>(b, {{}, std::move(sel_points)});
   systems::regenerate_bspline(b);
   g.dmode = gl_object::draw_mode::patches;
+  g.patch_size = 4;
 
   return b;
 }
@@ -176,6 +265,7 @@ ecs::EntityType add_bezier(const GLuint program) {
   reg.add_component<relationship>(b, {{}, std::move(sel_points)});
   systems::regenerate_bezier(b);
   g.dmode = gl_object::draw_mode::patches;
+  g.patch_size = 4;
 
   return b;
 }

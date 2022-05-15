@@ -28,6 +28,7 @@ void get_gizmo_transform(glm::mat4 &gtrans) {
                     frame_state::content_area.x, frame_state::content_area.y);
   auto c = reg.get_map<tag_center_of_weight>().begin()->first;
   auto &ct = reg.get_component<transformation>(c);
+
   gtrans = glm::translate(glm::mat4(1.0f), ct.translation);
 
   ImGuizmo::Manipulate(glm::value_ptr(frame_state::view),

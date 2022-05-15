@@ -18,7 +18,7 @@ void render_gl(const gl_object &g) {
     glDrawElements(GL_LINE_STRIP, g.indices.size(), GL_UNSIGNED_INT, NULL);
   } else if (g.dmode == gldm::patches) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glPatchParameteri(GL_PATCH_VERTICES, 4);
+    glPatchParameteri(GL_PATCH_VERTICES, g.patch_size);
     glDrawElements(GL_PATCHES, g.indices.size(), GL_UNSIGNED_INT, NULL);
   } else if (g.dmode == gldm::triangles) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

@@ -8,3 +8,5 @@ struct tag_virtual {};
 struct tag_clickable {};
 struct tag_visible {};
 struct tag_center_of_weight {};
+
+struct tag_surface_builder {};

@@ -27,4 +27,10 @@ ecs::EntityType add_bezier(const GLuint program);
 ecs::EntityType add_bspline(const GLuint program);
 
 ecs::EntityType add_icurve(const GLuint program);
+
+ecs::EntityType add_bezier_surface_builder(transformation &&_t,
+                                           const GLuint program);
+
+ecs::EntityType add_bezier_surface(ecs::EntityType builder);
+
 } // namespace constructors

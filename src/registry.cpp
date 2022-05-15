@@ -6,8 +6,6 @@ using r = registry;
 ecs::EntityType r::add_entity() {
   static EntityType counter = 0;
   const auto ret = counter++;
-  if (counter > 1024)
-    throw;
   entities[ret] = 0;
   return ret;
 }

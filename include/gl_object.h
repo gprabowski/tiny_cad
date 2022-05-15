@@ -10,7 +10,7 @@
 
 struct gl_object {
   GLuint program;
-  GLuint vao, vbo, ebo;
+  GLuint vao{0}, vbo{0}, ebo{0};
 
   std::vector<glm::vec4> points;
   std::vector<unsigned int> indices;
@@ -26,6 +26,7 @@ struct gl_object {
     triangles = 3,
     patches = 4
   } dmode{draw_mode::lines};
+  GLuint patch_size{1};
 
   enum class vertex_t {
     point,

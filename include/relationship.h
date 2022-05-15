@@ -7,4 +7,6 @@ struct relationship {
   std::vector<ecs::EntityType> parents;
   std::vector<ecs::EntityType> children;
   std::vector<ecs::EntityType> virtual_children;
+  bool indestructible_relation{false};
+  int indestructible_counter{0};
 };

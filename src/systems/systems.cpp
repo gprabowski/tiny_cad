@@ -26,6 +26,10 @@ void regenerate(ecs::EntityType idx) {
     regenerate_bezier(idx);
   } else if (reg.has_component<icurve>(idx)) {
     regenerate_icurve(idx);
+  } else if (reg.has_component<tag_surface_builder>(idx)) {
+    regenerate_bezier_surface_builder(idx);
+  } else if (reg.has_component<bezier_surface_params>(idx)) {
+    regenerate_bezier_surface(idx);
   }
 }
 
@@ -145,6 +149,9 @@ void update_changed_relationships() {
       if (rel.children.size()) {
         frame_state::changed_parents.insert(id);
       }
+    }
+    if (reg.has_component<bezier_surface_params>(id)) {
+      regenerate_bezier_surface_builder(id);
     }
   }
 
