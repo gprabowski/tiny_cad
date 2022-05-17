@@ -23,7 +23,20 @@ void regenerate_bezier_surface(ecs::EntityType idx) {
       if (!bsp.cyllinder) {
         for (auto jj = 0; jj < 4; ++jj) {
           for (auto ii = 0; ii < 4; ++ii) {
-                g.indices.push_back(3 * ((3 * bsp.u + 1) * j + i) + (3 * bsp.u + 1) * jj + ii);
+            g.indices.push_back(3 * ((3 * bsp.u + 1) * j + i) +
+                                (3 * bsp.u + 1) * jj + ii);
+          }
+        }
+      } else {
+        for (auto jj = 0; jj < 4; ++jj) {
+          for (auto ii = 0; ii < 4; ++ii) {
+            const auto patch_col_offset = 3 * ((3 * bsp.u) * j);
+            const auto patch_row_offset = 3 * i;
+            const auto local_col_offset = (3 * bsp.u) * jj;
+            const auto local_row_offset = ii;
+            g.indices.push_back(patch_col_offset + local_col_offset +
+                                (patch_row_offset + local_row_offset) %
+                                    (bsp.u * 3));
           }
         }
       }
@@ -66,7 +79,7 @@ void regenerate_bezier_surface_builder(ecs::EntityType idx) {
     const auto angle = (2 * glm::pi<float>()) / bsp.u;
     const auto dist =
         bsp.width * (4.f / 3.f) * tanf(glm::pi<float>() / (2.f * bsp.u));
-    for (unsigned int j = 0; j < bsp.v; ++j) {
+    for (unsigned int j = 0; j <= bsp.v; ++j) {
       for (unsigned int i = 0; i < bsp.u; ++i) {
         // first rooted on the circle
         const auto tan1 =

@@ -595,13 +595,15 @@ void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
 void render_bezier_surface_gui(tag_figure &fc, bezier_surface_params &bsp,
                                gl_object &g, ecs::EntityType idx) {
   auto &reg = ecs::registry::get_registry();
+  auto& rel = reg.get_component<relationship>(idx);
 
   render_figure_gui(idx, fc, [&]() {
     auto &g = reg.get_component<gl_object>(idx);
 
     render_gl_object_gui(
-        g, {gl_object::draw_mode::points, gl_object::draw_mode::lines});
+        g, {gl_object::draw_mode::patches});
     render_parent_gui(idx);
+    render_relationship_gui(idx, rel);
   });
 }
 

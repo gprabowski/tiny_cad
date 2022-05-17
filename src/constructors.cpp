@@ -116,18 +116,55 @@ ecs::EntityType add_bezier_surface(ecs::EntityType builder) {
       }
     }
   } else {
-    for (unsigned int j = 0; j < 4 * bsp.v; ++j) {
-      for (unsigned int i = 0; i < 4 * bsp.u; ++i) {
-        glm::vec3 pos;
-        pos = bsp.root +
-              glm::vec3(bsp.width / 4.f * i, 0.f, bsp.height / 4.f * j);
-        auto point = add_point(transformation{pos},
-                               sm.programs[shader_t::POINT_SHADER].idx);
-        reg.add_component<relationship>(point, {});
-        auto &prel = reg.get_component<relationship>(point);
-        rel.children.push_back(point);
-        prel.parents.push_back(builder);
-        prel.indestructible_counter++;
+    const auto angle = (2 * glm::pi<float>()) / bsp.u;
+    const auto dist =
+        bsp.width * (4.f / 3.f) * tanf(glm::pi<float>() / (2.f * bsp.u));
+
+    for (unsigned int j = 0; j <= 3 * bsp.v; ++j) {
+      for (unsigned int i = 0; i < bsp.u; ++i) {
+        // first rooted on the circle
+        const auto tan1 =
+            glm::normalize(glm::vec3{-sinf(i * angle), 0.0f, cosf(i * angle)});
+        const auto tan2 = glm::normalize(
+            glm::vec3{-sinf((i + 1) * angle), 0.f, cosf((i + 1) * angle)});
+
+        const auto p1 = (bsp.root + glm::vec3{bsp.width * cosf(i * angle),
+                                              j * bsp.height / 4.f,
+                                              bsp.width * sinf(i * angle)});
+
+        const auto p2 = p1 + dist * tan1;
+
+        // second rooted on the circle
+        const auto p4 =
+            (bsp.root + glm::vec3{bsp.width * cosf((i + 1) * angle),
+                                  j * bsp.height / 4.f,
+                                  bsp.width * sinf((i + 1) * angle)});
+
+        const auto p3 = p4 - dist * tan2;
+
+        auto point1 = add_point(transformation{p1},
+                                sm.programs[shader_t::POINT_SHADER].idx);
+        reg.add_component<relationship>(point1, {});
+        auto &prel1 = reg.get_component<relationship>(point1);
+        rel.children.push_back(point1);
+        prel1.parents.push_back(builder);
+        prel1.indestructible_counter++;
+
+        auto point2 = add_point(transformation{p2},
+                                sm.programs[shader_t::POINT_SHADER].idx);
+        reg.add_component<relationship>(point2, {});
+        auto &prel2 = reg.get_component<relationship>(point2);
+        rel.children.push_back(point2);
+        prel2.parents.push_back(builder);
+        prel2.indestructible_counter++;
+
+        auto point3 = add_point(transformation{p3},
+                                sm.programs[shader_t::POINT_SHADER].idx);
+        reg.add_component<relationship>(point3, {});
+        auto& prel3 = reg.get_component<relationship>(point3);
+        rel.children.push_back(point3);
+        prel3.parents.push_back(builder);
+        prel3.indestructible_counter++;
       }
     }
   }

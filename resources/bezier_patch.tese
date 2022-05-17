@@ -1,5 +1,5 @@
 #version 460
-layout( isolines ) in;
+layout( quads, equal_spacing, ccw ) in;
 
 layout (std140) uniform common_block {
     mat4 proj;
