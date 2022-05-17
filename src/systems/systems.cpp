@@ -158,7 +158,7 @@ void update_changed_relationships() {
   for (const auto id : frame_state::deleted) {
     if (reg.has_component<relationship>(id)) {
       auto &rel = reg.get_component<relationship>(id);
-      if (rel.parents.size()) {
+      if (rel.parents.size() && rel.indestructible_counter == 0) {
         for (auto p : rel.parents) {
           frame_state::changed_parents.insert(p);
         }

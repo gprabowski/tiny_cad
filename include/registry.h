@@ -230,6 +230,8 @@ struct registry : component_owner<parametric>,
   std::enable_if_t<std::is_same_v<T, relationship>, void>
   remove_component(EntityType id) {
     auto &rel = get_component<relationship>(id);
+    if (rel.indestructible_counter > 0)
+      return;
     if (rel.parents.size()) {
       for (auto p : rel.parents) {
         // delete from parent this relationship
@@ -249,6 +251,7 @@ struct registry : component_owner<parametric>,
                                           crel.parents.end(),
                                           [=](auto cp) { return cp == id; }),
                            crel.parents.end());
+        crel.indestructible_counter -= rel.indestructible_relation;
         if (0 == crel.parents.size()) {
           get_map<relationship>().erase(c);
           entities[c] &= ~get_com_bit<relationship>();

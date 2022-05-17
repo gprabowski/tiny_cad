@@ -99,7 +99,6 @@ ecs::EntityType add_bezier_surface(ecs::EntityType builder) {
   rel.indestructible_relation = true;
 
   // 1. generate points as entities
-  //
   if (!bsp.cyllinder) {
     for (unsigned int j = 0; j <= 3 * bsp.v; ++j) {
       for (unsigned int i = 0; i <= 3 * bsp.u; ++i) {
@@ -161,7 +160,7 @@ ecs::EntityType add_bezier_surface(ecs::EntityType builder) {
         auto point3 = add_point(transformation{p3},
                                 sm.programs[shader_t::POINT_SHADER].idx);
         reg.add_component<relationship>(point3, {});
-        auto& prel3 = reg.get_component<relationship>(point3);
+        auto &prel3 = reg.get_component<relationship>(point3);
         rel.children.push_back(point3);
         prel3.parents.push_back(builder);
         prel3.indestructible_counter++;

@@ -432,6 +432,7 @@ void render_gl_object_gui(gl_object &g,
 
 void render_relationship_gui(ecs::EntityType idx, relationship &r) {
   static auto &reg = ecs::registry::get_registry();
+  ImGui::Text("Life Counter %d", r.indestructible_counter);
   if (r.parents.size()) {
     if (ImGui::TreeNode("Parents")) {
       for (const auto p : r.parents) {
@@ -594,14 +595,12 @@ void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
 
 void render_bezier_surface_gui(tag_figure &fc, bezier_surface_params &bsp,
                                gl_object &g, ecs::EntityType idx) {
-  auto &reg = ecs::registry::get_registry();
-  auto& rel = reg.get_component<relationship>(idx);
-
-  render_figure_gui(idx, fc, [&]() {
+  render_figure_gui(idx, fc, [=]() {
+    auto &reg = ecs::registry::get_registry();
+    auto &rel = reg.get_component<relationship>(idx);
     auto &g = reg.get_component<gl_object>(idx);
 
-    render_gl_object_gui(
-        g, {gl_object::draw_mode::patches});
+    render_gl_object_gui(g, {gl_object::draw_mode::patches});
     render_parent_gui(idx);
     render_relationship_gui(idx, rel);
   });

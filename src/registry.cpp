@@ -15,6 +15,13 @@ void r::delete_entity(ecs::EntityType idx) {
     return;
   }
 
+  if (has_component<relationship>(idx)) {
+    auto &r = get_component<relationship>(idx);
+    if (r.indestructible_counter > 0) {
+      return;
+    }
+  }
+
   remove_all_components(idx);
   entities.erase(idx);
 }
