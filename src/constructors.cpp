@@ -98,6 +98,15 @@ ecs::EntityType add_bezier_surface(ecs::EntityType builder) {
   auto &rel = reg.get_component<relationship>(builder);
   rel.indestructible_relation = true;
 
+  const auto bezier_polygon = reg.add_entity();
+  reg.add_component<gl_object>(
+      bezier_polygon, gl_object{sm.programs[shader_t::GENERAL_SHADER].idx});
+  reg.add_component<transformation>(bezier_polygon, {});
+  auto &b_g = reg.get_component<gl_object>(bezier_polygon);
+  b_g.dmode = gl_object::draw_mode::lines;
+
+  bsp.bezier_polygon = bezier_polygon;
+
   // 1. generate points as entities
   if (!bsp.cyllinder) {
     for (unsigned int j = 0; j <= 3 * bsp.v; ++j) {

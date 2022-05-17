@@ -193,7 +193,8 @@ struct registry : component_owner<parametric>,
   template <typename T>
   std::enable_if_t<
       !std::is_same_v<T, relationship> && !std::is_same_v<T, selected> &&
-          !std::is_same_v<T, bezierc> && !std::is_same_v<T, bspline>,
+          !std::is_same_v<T, bezierc> && !std::is_same_v<T, bspline> &&
+          !std::is_same_v<T, bezier_surface_params>,
       void>
   remove_component(EntityType idx) {
     auto &m = get_map<T>();
@@ -222,6 +223,15 @@ struct registry : component_owner<parametric>,
     if constexpr (std::is_same_v<T, bspline>) {
       delete_entity(s.deboor_polygon);
     }
+    get_map<T>().erase(idx);
+    entities[idx] &= ~get_com_bit<T>();
+  }
+
+  template <typename T>
+  std::enable_if_t<std::is_same_v<T, bezier_surface_params>, void>
+  remove_component(EntityType idx) {
+    const auto s = get_component<T>(idx);
+    delete_entity(s.bezier_polygon);
     get_map<T>().erase(idx);
     entities[idx] &= ~get_com_bit<T>();
   }

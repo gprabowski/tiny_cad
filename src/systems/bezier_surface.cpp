@@ -44,7 +44,53 @@ void regenerate_bezier_surface(ecs::EntityType idx) {
   }
   g.dmode = gl_object::draw_mode::patches;
   g.patch_size = 16;
+
+  // bezier polygon
+  auto &bgl = reg.get_component<gl_object>(bsp.bezier_polygon);
+  bgl.points.clear();
+  bgl.indices.clear();
+
+  if (!bsp.cyllinder) {
+    // vertices
+    for (unsigned int j = 0; j <= 3 * bsp.v; ++j) {
+      for (unsigned int i = 0; i <= 3 * bsp.u; ++i) {
+        bgl.points.push_back(g.points[j * (3 * bsp.u + 1) + i]);
+        if (i > 0) {
+          bgl.indices.push_back(j * (3 * bsp.u + 1) + i - 1);
+          bgl.indices.push_back(j * (3 * bsp.u + 1) + i);
+        }
+      }
+    }
+    for (unsigned int i = 0; i <= 3 * bsp.u; ++i) {
+      for (unsigned int j = 0; j <= 3 * bsp.v; ++j) {
+        if (j > 0) {
+          bgl.indices.push_back((j - 1) * (3 * bsp.u + 1) + i);
+          bgl.indices.push_back(j * (3 * bsp.u + 1) + i);
+        }
+      }
+    }
+  } else {
+    for (unsigned int j = 0; j <= 3 * bsp.v; ++j) {
+      for (unsigned int i = 0; i <= 3 * bsp.u; ++i) {
+        bgl.points.push_back(g.points[j * (3 * bsp.u + 1) + i]);
+        if (i > 0) {
+          bgl.indices.push_back(j * (3 * bsp.u) + (i - 1) % (bsp.u * 3));
+          bgl.indices.push_back(j * (3 * bsp.u) + (i) % (bsp.u * 3));
+        }
+      }
+    }
+    for (unsigned int i = 0; i < 3 * bsp.u; ++i) {
+      for (unsigned int j = 0; j <= 3 * bsp.v; ++j) {
+        if (j > 0) {
+          bgl.indices.push_back((j - 1) * (3 * bsp.u) + i);
+          bgl.indices.push_back(j * (3 * bsp.u) + i);
+        }
+      }
+    }
+  }
+
   systems::reset_gl_objects(g);
+  systems::reset_gl_objects(bgl);
 }
 
 void regenerate_bezier_surface_builder(ecs::EntityType idx) {

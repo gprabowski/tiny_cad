@@ -603,6 +603,14 @@ void render_bezier_surface_gui(tag_figure &fc, bezier_surface_params &bsp,
     render_gl_object_gui(g, {gl_object::draw_mode::patches});
     render_parent_gui(idx);
     render_relationship_gui(idx, rel);
+    bool visible_bezier = reg.has_component<tag_visible>(bsp.bezier_polygon);
+    if (ImGui::Checkbox("Bezier polygon", &visible_bezier)) {
+      if (visible_bezier) {
+        reg.add_component<tag_visible>(bsp.bezier_polygon, {});
+      } else {
+        reg.remove_component<tag_visible>(bsp.bezier_polygon);
+      }
+    }
   });
 }
 
