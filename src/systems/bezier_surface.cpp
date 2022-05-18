@@ -125,7 +125,7 @@ void regenerate_bezier_surface_builder(ecs::EntityType idx) {
     const auto angle = (2 * glm::pi<float>()) / bsp.u;
     const auto dist =
         bsp.width * (4.f / 3.f) * tanf(glm::pi<float>() / (2.f * bsp.u));
-    for (unsigned int j = 0; j <= bsp.v; ++j) {
+    for (unsigned int j = 0; j <= 3 * bsp.v; ++j) {
       for (unsigned int i = 0; i < bsp.u; ++i) {
         // first rooted on the circle
         const auto tan1 =
@@ -134,7 +134,7 @@ void regenerate_bezier_surface_builder(ecs::EntityType idx) {
             glm::vec3{-sinf((i + 1) * angle), 0.f, cosf((i + 1) * angle)});
 
         const auto p1 = (bsp.root + glm::vec3{bsp.width * cosf(i * angle),
-                                              j * bsp.height / 4.f,
+                                              j * bsp.height / 3.f,
                                               bsp.width * sinf(i * angle)});
 
         const auto p2 = p1 + dist * tan1;
@@ -142,7 +142,7 @@ void regenerate_bezier_surface_builder(ecs::EntityType idx) {
         // second rooted on the circle
         const auto p4 =
             (bsp.root + glm::vec3{bsp.width * cosf((i + 1) * angle),
-                                  j * bsp.height / 4.f,
+                                  j * bsp.height / 3.f,
                                   bsp.width * sinf((i + 1) * angle)});
 
         const auto p3 = p4 - dist * tan2;

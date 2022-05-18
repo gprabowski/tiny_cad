@@ -19,6 +19,9 @@ struct gl_object {
   glm::vec4 primary{0.0f, 0.0f, 1.0f, 1.0f};
   glm::vec4 selected{1.0f, 0.0f, 0.0f, 1.0f};
 
+  glm::vec4 tesselation_outer{10, 10, 10, 10};
+  glm::vec2 tesselation_inner{10, 10};
+
   enum class draw_mode : int {
     points = 0,
     lines = 1,

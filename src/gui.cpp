@@ -428,6 +428,14 @@ void render_gl_object_gui(gl_object &g,
   if (ImGui::ColorEdit4("Selection Color", glm::value_ptr(g.selected))) {
     g.color = g.selected;
   }
+
+  if (ImGui::SliderFloat4("Outer Tesselation",
+                          glm::value_ptr(g.tesselation_outer), 1.0f, 100.f)) {
+  }
+
+  if (ImGui::SliderFloat2("Inner Tesselation",
+                          glm::value_ptr(g.tesselation_inner), 1.0f, 100.f)) {
+  }
 }
 
 void render_relationship_gui(ecs::EntityType idx, relationship &r) {

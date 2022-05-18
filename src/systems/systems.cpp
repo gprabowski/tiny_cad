@@ -47,6 +47,17 @@ void set_model_uniform(const transformation &t) {
                      glm::value_ptr(model));
 }
 
+void set_tesselation_uniform(const gl_object &g) {
+  GLint program;
+  glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+
+  glUniform4fv(glGetUniformLocation(program, "tess_outer"), 1,
+               glm::value_ptr(g.tesselation_outer));
+
+  glUniform2fv(glGetUniformLocation(program, "tess_inner"), 1,
+               glm::value_ptr(g.tesselation_inner));
+}
+
 void render_visible_entities() {
   auto &reg = ecs::registry::get_registry();
 
@@ -55,6 +66,7 @@ void render_visible_entities() {
     auto &gl = reg.get_component<gl_object>(idx);
     glUseProgram(gl.program);
     systems::set_model_uniform(t);
+    set_tesselation_uniform(gl);
     glVertexAttrib4f(1, gl.color.r, gl.color.g, gl.color.b, gl.color.a);
     systems::render_gl(gl);
   }

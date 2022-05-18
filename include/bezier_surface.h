@@ -9,5 +9,5 @@ struct bezier_surface_params {
   unsigned int u{2}, v{2};
   glm::vec3 root{0.f, 0.f, 0.f};
   bool cyllinder{false};
-  ecs::EntityType bezier_polygon;
+  ecs::EntityType bezier_polygon{1u<<31};
 };

@@ -137,7 +137,7 @@ ecs::EntityType add_bezier_surface(ecs::EntityType builder) {
             glm::vec3{-sinf((i + 1) * angle), 0.f, cosf((i + 1) * angle)});
 
         const auto p1 = (bsp.root + glm::vec3{bsp.width * cosf(i * angle),
-                                              j * bsp.height / 4.f,
+                                              j * bsp.height / 3.f,
                                               bsp.width * sinf(i * angle)});
 
         const auto p2 = p1 + dist * tan1;
@@ -145,7 +145,7 @@ ecs::EntityType add_bezier_surface(ecs::EntityType builder) {
         // second rooted on the circle
         const auto p4 =
             (bsp.root + glm::vec3{bsp.width * cosf((i + 1) * angle),
-                                  j * bsp.height / 4.f,
+                                  j * bsp.height / 3.f,
                                   bsp.width * sinf((i + 1) * angle)});
 
         const auto p3 = p4 - dist * tan2;

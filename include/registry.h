@@ -231,7 +231,7 @@ struct registry : component_owner<parametric>,
   std::enable_if_t<std::is_same_v<T, bezier_surface_params>, void>
   remove_component(EntityType idx) {
     const auto s = get_component<T>(idx);
-    delete_entity(s.bezier_polygon);
+    if(exists(s.bezier_polygon)) {delete_entity(s.bezier_polygon);}
     get_map<T>().erase(idx);
     entities[idx] &= ~get_com_bit<T>();
   }
