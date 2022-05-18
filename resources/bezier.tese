@@ -10,6 +10,17 @@ layout (std140) uniform common_block {
 in vec4 tes_colors[];
 out vec4 color;
 
+vec3 casteljau(float t, inout vec3 a, inout vec3 b, inout vec3 c, inout vec3 d) {
+    vec3 e = (1.0 - t) * a + t * b;
+    vec3 f = (1.0 - t) * b + t * c;
+    vec3 g = (1.0 - t) * c + t * d;
+
+    vec3 h = (1.0 - t) * e + t * f;
+    vec3 i = (1.0 - t) * f + t * g;
+
+    return (1.0 - t) * h + t * i;
+}
+
 void main() {
     float t = gl_TessCoord.x;
 
@@ -18,13 +29,8 @@ void main() {
     vec3 b_c = gl_in[2].gl_Position.xyz;
     vec3 b_d = gl_in[3].gl_Position.xyz;
 
-    vec3 b_e = (1.0 - t) * b_a + t * b_b;
-    vec3 b_f = (1.0 - t) * b_b + t * b_c;
-    vec3 b_g = (1.0 - t) * b_c + t * b_d;
-    vec3 b_h = (1.0 - t) * b_e + t * b_f;
-    vec3 b_i = (1.0 - t) * b_f + t * b_g;
-
-    vec4 res = vec4((1.0 - t) * b_h + t * b_i, 1.0f);
+    vec3 result = casteljau(t, b_a, b_b, b_c, b_d);
+    vec4 res = vec4(result, 1.0f);
 
     gl_Position = proj * view * res;
 

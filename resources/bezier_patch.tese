@@ -10,6 +10,17 @@ layout (std140) uniform common_block {
 in vec4 tes_colors[];
 out vec4 color;
 
+vec3 casteljau(float t, inout vec3 a, inout vec3 b, inout vec3 c, inout vec3 d) {
+    vec3 e = (1.0 - t) * a + t * b;
+    vec3 f = (1.0 - t) * b + t * c;
+    vec3 g = (1.0 - t) * c + t * d;
+
+    vec3 h = (1.0 - t) * e + t * f;
+    vec3 i = (1.0 - t) * f + t * g;
+
+    return (1.0 - t) * h + t * i;
+}
+
 void main() {
     vec3 p00 = vec3(gl_in[12].gl_Position);
     vec3 p10 = vec3(gl_in[13].gl_Position);
@@ -31,20 +42,14 @@ void main() {
     float u = gl_TessCoord.x;
     float v = gl_TessCoord.y;
 
-    float bu0 = (1.0 -u) * (1.0 -  u) * (1.0 - u);
-    float bu1 = 3.0 * u * (1.0 -  u) * (1.0 - u);
-    float bu2 = 3.0 * u * u * (1.0 - u);
-    float bu3 = u * u * u;
+    vec3 inter_1 = casteljau(v, p00, p01, p02, p03);
+    vec3 inter_2 = casteljau(v, p10, p11, p12, p13);
+    vec3 inter_3 = casteljau(v, p20, p21, p22, p23);
+    vec3 inter_4 = casteljau(v, p30, p31, p32, p33);
 
-    float bv0 = (1.0 -v) * (1.0 -  v) * (1.0 - v);
-    float bv1 = 3.0 * v * (1.0 -  v) * (1.0 - v);
-    float bv2 = 3.0 * v * v * (1.0 - v);
-    float bv3 = v * v * v;
+    vec3 result = casteljau(u, inter_1, inter_2, inter_3, inter_4);
 
-    gl_Position = proj * view * vec4(bu0 * (bv0*p00 + bv1 *p01 + bv2 *p02 + bv3 * p03)
-        + bu1 * (bv0*p10 + bv1 *p11 + bv2 *p12 + bv3 * p13)
-        + bu2 * (bv0*p20 + bv1 *p21 + bv2 *p22 + bv3 * p23)
-        + bu3 * (bv0*p30 + bv1 *p31 + bv2 *p32 + bv3 * p33), 1.0);
+    gl_Position = proj * view * vec4(result, 1.0);
 
     color = tes_colors[0];
 }
