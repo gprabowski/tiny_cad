@@ -216,7 +216,7 @@ ecs::EntityType add_bezier_surface_builder(transformation &&_t,
 }
 
 ecs::EntityType add_bspline(const GLuint program) {
-    auto& sm = shader_manager::get_manager();
+  auto &sm = shader_manager::get_manager();
   std::vector<ecs::EntityType> sel_points;
   auto &reg = ecs::registry::get_registry();
   for (auto &[idx, _] : reg.get_map<selected>()) {
@@ -273,6 +273,7 @@ ecs::EntityType add_bspline(const GLuint program) {
 
 ecs::EntityType add_bezier(const GLuint program) {
   auto &reg = ecs::registry::get_registry();
+  auto &sm = shader_manager::get_manager();
   std::vector<ecs::EntityType> sel_points;
   for (auto &[idx, _] : reg.get_map<selected>()) {
     if (reg.has_component<tag_point>(idx)) {
@@ -288,6 +289,7 @@ ecs::EntityType add_bezier(const GLuint program) {
   reg.add_component<transformation>(bezier_polygon, {});
   auto &sec_g = reg.get_component<gl_object>(bezier_polygon);
   sec_g.dmode = gl_object::draw_mode::line_strip;
+  sec_g.program = sm.programs[shader_t::GENERAL_SHADER].idx;
 
   const auto b = reg.add_entity();
   reg.add_component<gl_object>(b, gl_object{program});
