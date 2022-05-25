@@ -7,6 +7,7 @@
 #include <implot/implot.h>
 
 #include <algorithm>
+#include <functional>
 #include <optional>
 #include <string>
 #include <utility>
@@ -559,6 +560,41 @@ void render_bsp_component_gui(ecs::EntityType idx, bezier_surface_params &bsp) {
   }
 }
 
+void render_bsp_component_gui(ecs::EntityType idx,
+                              bspline_surface_params &bsp) {
+  std::array<int, 2> tmpi{static_cast<int>(bsp.u), static_cast<int>(bsp.v)};
+  std::array<float, 2> tmpf{bsp.width, bsp.height};
+  bool changed{false};
+  if (ImGui::SliderInt2("Num Patches U / V", tmpi.data(), 1, 100)) {
+    changed = true;
+  }
+
+  if (ImGui::SliderFloat2("Patch Size", tmpf.data(), 1.f, 100.f)) {
+    changed = true;
+  }
+
+  if (ImGui::Checkbox("Cyllinder", &bsp.cyllinder)) {
+    changed = true;
+  }
+
+  if (changed) {
+    bsp.u = tmpi[0];
+    bsp.v = tmpi[1];
+    bsp.width = tmpf[0];
+    bsp.height = tmpf[1];
+
+    if (bsp.cyllinder) {
+      bsp.u = std::max(4u, bsp.u);
+    }
+
+    frame_state::changed.push_back(idx);
+  }
+
+  if (ImGui::Button("Build")) {
+    constructors::add_bspline_surface(idx);
+  }
+}
+
 void render_transformation_gui(ecs::EntityType idx, transformation &t) {
   if (ImGui::SliderFloat3("position", glm::value_ptr(t.translation), -100.f,
                           100.f)) {
@@ -622,6 +658,27 @@ void render_bezier_surface_gui(tag_figure &fc, bezier_surface_params &bsp,
   });
 }
 
+void render_bspline_surface_gui(tag_figure &fc, bspline_surface_params &bsp,
+                                gl_object &g, ecs::EntityType idx) {
+  render_figure_gui(idx, fc, [=]() {
+    auto &reg = ecs::registry::get_registry();
+    auto &rel = reg.get_component<relationship>(idx);
+    auto &g = reg.get_component<gl_object>(idx);
+
+    render_gl_object_gui(g, {gl_object::draw_mode::patches});
+    render_parent_gui(idx);
+    render_relationship_gui(idx, rel);
+    bool visible_deboor = reg.has_component<tag_visible>(bsp.deboor_polygon);
+    if (ImGui::Checkbox("de Boor polygon", &visible_deboor)) {
+      if (visible_deboor) {
+        reg.add_component<tag_visible>(bsp.deboor_polygon, {});
+      } else {
+        reg.remove_component<tag_visible>(bsp.deboor_polygon);
+      }
+    }
+  });
+}
+
 void render_bezier_surface_builder_gui(tag_figure &fc,
                                        bezier_surface_params &bsp, gl_object &g,
                                        ecs::EntityType idx) {
@@ -636,6 +693,22 @@ void render_bezier_surface_builder_gui(tag_figure &fc,
     render_parent_gui(idx);
   });
 }
+
+void render_bspline_surface_builder_gui(tag_figure &fc,
+                                        bspline_surface_params &bsp,
+                                        gl_object &g, ecs::EntityType idx) {
+  auto &reg = ecs::registry::get_registry();
+
+  render_figure_gui(idx, fc, [&]() {
+    auto &g = reg.get_component<gl_object>(idx);
+
+    render_bsp_component_gui(idx, bsp);
+    render_gl_object_gui(
+        g, {gl_object::draw_mode::points, gl_object::draw_mode::lines});
+    render_parent_gui(idx);
+  });
+}
+
 void render_icurve_gui(tag_figure &fc, gl_object &g, relationship &rel,
                        ecs::EntityType idx) {
 
@@ -791,7 +864,7 @@ void render_selected_edit_gui() {
       auto &rel = reg.get_component<relationship>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
       render_icurve_gui(fc, g, rel, idx);
-    } else if (reg.has_component<tag_surface_builder>(idx)) {
+    } else if (reg.has_component<tag_bezier_surface_builder>(idx)) {
       auto &bsp = reg.get_component<bezier_surface_params>(idx);
       auto &g = reg.get_component<gl_object>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
@@ -801,6 +874,16 @@ void render_selected_edit_gui() {
       auto &g = reg.get_component<gl_object>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
       render_bezier_surface_gui(fc, bsp, g, idx);
+    } else if (reg.has_component<tag_bspline_surface_builder>(idx)) {
+      auto &bsp = reg.get_component<bspline_surface_params>(idx);
+      auto &g = reg.get_component<gl_object>(idx);
+      auto &fc = reg.get_component<tag_figure>(idx);
+      render_bspline_surface_builder_gui(fc, bsp, g, idx);
+    } else if (reg.has_component<bspline_surface_params>(idx)) {
+      auto &bsp = reg.get_component<bspline_surface_params>(idx);
+      auto &g = reg.get_component<gl_object>(idx);
+      auto &fc = reg.get_component<tag_figure>(idx);
+      render_bspline_surface_gui(fc, bsp, g, idx);
     }
   }
   ImGui::End();
@@ -844,12 +927,15 @@ void render_figure_select_gui() {
 
 void render_cursor_gui() {
   static int dmode = 1;
-  static std::vector<std::string> combovalues{"Torus",
-                                              "Point",
-                                              "Bezier Curve C0",
-                                              "B-Spline",
-                                              "Interpolation Spline",
-                                              "Bezier Surface"};
+  static std::vector<std::string> combovalues{
+      "Torus",
+      "Point",
+      "Bezier Curve C0",
+      "B-Spline",
+      "Interpolation Spline",
+      "Bezier Surface",
+      "B-Spline Surface",
+  };
 
   auto &reg = ecs::registry::get_registry();
 
@@ -876,6 +962,8 @@ void render_cursor_gui() {
         p.current_shape = cursor_params::cursor_shape::icurve;
       } else if (dmode == 5) {
         p.current_shape = cursor_params::cursor_shape::bsurface;
+      } else if (dmode == 6) {
+        p.current_shape = cursor_params::cursor_shape::bspsurface;
       }
     }
 

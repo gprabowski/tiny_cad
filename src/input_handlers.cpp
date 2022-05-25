@@ -41,6 +41,9 @@ inline void add_current_shape_at_cursor() {
   } else if (cp.current_shape == cursor_params::cursor_shape::bsurface) {
     new_shape = constructors::add_bezier_surface_builder(
         std::move(t), sm.programs[shader_t::GENERAL_SHADER].idx);
+  } else if (cp.current_shape == cursor_params::cursor_shape::bspsurface) {
+    new_shape = constructors::add_bspline_surface_builder(
+        std::move(t), sm.programs[shader_t::GENERAL_SHADER].idx);
   }
 
   if (reg.get_map<selected>().size() == 1) {

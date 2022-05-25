@@ -9,4 +9,5 @@ struct tag_clickable {};
 struct tag_visible {};
 struct tag_center_of_weight {};
 
-struct tag_surface_builder {};
+struct tag_bezier_surface_builder {};
+struct tag_bspline_surface_builder {};

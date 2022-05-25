@@ -17,6 +17,7 @@ set(SOURCES
     systems/systems.cpp	
     systems/torus.cpp
     systems/bezier_surface.cpp
+    systems/bspline_surface.cpp
     framebuffer.cpp
     frame_render.cpp
     frame_update.cpp

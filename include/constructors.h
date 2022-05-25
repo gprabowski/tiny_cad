@@ -33,4 +33,9 @@ ecs::EntityType add_bezier_surface_builder(transformation &&_t,
 
 ecs::EntityType add_bezier_surface(ecs::EntityType builder);
 
+ecs::EntityType add_bspline_surface_builder(transformation &&_t,
+                                            const GLuint program);
+
+ecs::EntityType add_bspline_surface(ecs::EntityType builder);
+
 } // namespace constructors

@@ -36,6 +36,8 @@ void regenerate_bezier_surface_builder(ecs::EntityType idx);
 void regenerate_bezier_surface(ecs::EntityType idx);
 
 void regenerate_bspline(ecs::EntityType idx);
+void regenerate_bspline_surface_builder(ecs::EntityType idx);
+void regenerate_bspline_surface(ecs::EntityType idx);
 
 void regenerate_icurve(ecs::EntityType idx);
 

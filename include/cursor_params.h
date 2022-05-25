@@ -7,6 +7,7 @@ struct cursor_params {
     bezierc = 2,
     bspline = 3,
     icurve = 4,
-    bsurface = 5
+    bsurface = 5,
+    bspsurface = 6
   } current_shape{point};
 };

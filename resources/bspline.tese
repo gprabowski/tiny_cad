@@ -10,14 +10,7 @@ layout (std140) uniform common_block {
 in vec4 tes_colors[];
 out vec4 color;
 
-void main() {
-    vec3 P10 = gl_in[0].gl_Position.xyz;
-    vec3 P20 = gl_in[1].gl_Position.xyz;
-    vec3 P30 = gl_in[2].gl_Position.xyz;
-    vec3 P40 = gl_in[3].gl_Position.xyz;
-
-    float t = gl_TessCoord.x;
-
+vec3 deboor(inout vec3 P10, inout vec3 P20, inout vec3 P30, inout vec3 P40, float t) {
     const float u = 2.f + t;
 
     const float a41 = (u - 2.0f) / 3.0f;
@@ -46,7 +39,18 @@ void main() {
 
     const vec3 P43 = a43 * P42 + b43 * P32;
 
-    gl_Position = proj * view * vec4(P43, 1.0);
+    return P43;
+}
+
+void main() {
+    vec3 P10 = gl_in[0].gl_Position.xyz;
+    vec3 P20 = gl_in[1].gl_Position.xyz;
+    vec3 P30 = gl_in[2].gl_Position.xyz;
+    vec3 P40 = gl_in[3].gl_Position.xyz;
+
+    float t = gl_TessCoord.x;
+
+    gl_Position = proj * view * vec4(deboor(P10, P20, P30, P40, t), 1.0);
 
     color = tes_colors[0];
 }
