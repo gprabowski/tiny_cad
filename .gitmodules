@@ -17,3 +17,6 @@
 [submodule "thirdparty/implot"]
 	path = thirdparty/implot
 	url = https://github.com/epezent/implot
+[submodule "thirdparty/scene_serializer"]
+	path = thirdparty/scene_serializer
+	url = https://github.com/MG1-2022/Scene-Serializer
