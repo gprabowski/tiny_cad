@@ -20,3 +20,7 @@
 [submodule "thirdparty/scene_serializer"]
 	path = thirdparty/scene_serializer
 	url = https://github.com/MG1-2022/Scene-Serializer
+[submodule "thirdparty/file_dialog"]
+	path = thirdparty/file_dialog
+	url = https://github.com/aiekick/ImGuiFileDialog
+	branch = docking

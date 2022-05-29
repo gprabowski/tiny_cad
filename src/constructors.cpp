@@ -85,6 +85,58 @@ ecs::EntityType add_icurve(const GLuint program) {
   return b;
 }
 
+ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points, unsigned int patches[2]) {
+  static auto &reg = ecs::registry::get_registry();
+  static auto &sm = shader_manager::get_manager();
+  const auto builder = reg.add_entity();
+
+  reg.add_component<bezier_surface_params>(builder, {});
+  reg.add_component<gl_object>(builder, {});
+  reg.add_component<relationship>(builder, {});
+  reg.add_component<transformation>(builder, {});
+  reg.add_component<tag_figure>(builder, {});
+  reg.add_component<tag_parent>(builder, {});
+  reg.add_component<tag_visible>(builder, {});
+
+  auto &g = reg.get_component<gl_object>(builder);
+  g.primary = {255.f / 255.f, 69.f / 255.f, 0.f, 1.0f};
+  g.selected = {0.f, 255.f / 255.f, 171.f / 255.f, 1.0f};
+  g.color = g.primary;
+  g.program = sm.programs[shader_t::BEZIER_PATCH_SHADER].idx;
+
+  auto &f = reg.get_component<tag_figure>(builder);
+  f.name = "Bezier Surface #" + std::to_string(builder);
+
+  auto &rel = reg.get_component<relationship>(builder);
+  rel.indestructible_relation = true;
+
+  const auto bezier_polygon = reg.add_entity();
+  reg.add_component<gl_object>(
+      bezier_polygon, gl_object{sm.programs[shader_t::GENERAL_SHADER].idx});
+  reg.add_component<transformation>(bezier_polygon, {});
+  auto &b_g = reg.get_component<gl_object>(bezier_polygon);
+  b_g.dmode = gl_object::draw_mode::lines;
+
+  auto &bsp = reg.get_component<bezier_surface_params>(builder);
+  bsp.u = patches[0];
+  bsp.v = patches[1];
+  bsp.bezier_polygon = bezier_polygon;
+
+  // 1. generate points as entities
+  for (const auto point : points) {
+    reg.add_component<relationship>(point, {});
+    auto &prel = reg.get_component<relationship>(point);
+    rel.children.push_back(point);
+    prel.parents.push_back(builder);
+    prel.indestructible_counter++;
+  }
+
+  // 3. regenerate all necessary buffers
+  systems::regenerate_bezier_surface(builder);
+
+  return builder;
+}
+
 ecs::EntityType add_bezier_surface(ecs::EntityType builder) {
   static auto &reg = ecs::registry::get_registry();
   static auto &sm = shader_manager::get_manager();
@@ -417,6 +469,63 @@ void setup_initial_geometry() {
   add_cursor(transformation{},
              get_cursor_geometry(sm.programs[shader_t::CURSOR_SHADER].idx));
   add_center_of_weight({}, sm.programs[shader_t::POINT_SHADER].idx);
+}
+
+ecs::EntityType add_bspline_surface(std::vector<ecs::EntityType> &points, unsigned int patches[2]) {
+  static auto &reg = ecs::registry::get_registry();
+  static auto &sm = shader_manager::get_manager();
+
+  const auto builder = reg.add_entity();
+  reg.add_component<gl_object>(builder, gl_object{});
+  reg.add_component<transformation>(builder, {});
+  reg.add_component<tag_parent>(builder, {});
+  reg.add_component<tag_figure>(
+      builder,
+      tag_figure{"[BUILDER] B-Spline Surface #" + std::to_string(builder)});
+  reg.add_component<bspline_surface_params>(builder, {});
+  reg.add_component<tag_visible>(builder, {});
+  reg.add_component<relationship>(builder, {});
+
+  auto &bsp = reg.get_component<bspline_surface_params>(builder);
+  bsp.u = patches[0];
+  bsp.v = patches[1];
+
+  auto &g = reg.get_component<gl_object>(builder);
+  g.color = g.primary;
+  g.dmode = gl_object::draw_mode::lines;
+  g.primary = {255.f / 255.f, 69.f / 255.f, 0.f, 1.0f};
+  g.selected = {0.f, 255.f / 255.f, 171.f / 255.f, 1.0f};
+  g.color = g.primary;
+  g.program = sm.programs[shader_t::BSPLINE_PATCH_SHADER].idx;
+
+  auto &f = reg.get_component<tag_figure>(builder);
+  f.name = "B-Spline Surface #" + std::to_string(builder);
+
+  auto &rel = reg.get_component<relationship>(builder);
+  rel.indestructible_relation = true;
+
+  const auto deboor_polygon = reg.add_entity();
+  reg.add_component<gl_object>(
+      deboor_polygon, gl_object{sm.programs[shader_t::GENERAL_SHADER].idx});
+  reg.add_component<transformation>(deboor_polygon, {});
+  auto &b_g = reg.get_component<gl_object>(deboor_polygon);
+  b_g.dmode = gl_object::draw_mode::lines;
+
+  bsp.deboor_polygon = deboor_polygon;
+
+  // 1. generate points as entities
+  for (auto &point : points) {
+    reg.add_component<relationship>(point, {});
+    auto &prel = reg.get_component<relationship>(point);
+    rel.children.push_back(point);
+    prel.parents.push_back(builder);
+    prel.indestructible_counter++;
+  }
+
+  // 2. regenerate all necessary buffers
+  systems::regenerate_bspline_surface(builder);
+
+  return builder;
 }
 
 ecs::EntityType add_bspline_surface(ecs::EntityType builder) {

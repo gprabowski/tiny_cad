@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <Serializer.h>
 #include <bezier_surface.h>
 #include <bspline_surface.h>
 #include <cursor_params.h>
@@ -112,8 +113,13 @@ struct registry : component_owner<parametric>,
 
   std::unordered_map<EntityType, component_bitset> entities;
 
+  EntityType counter{0};
+
+  void reset();
   EntityType add_entity();
   void delete_entity(EntityType idx);
+  void load_from_scene(const MG1::Scene &scene);
+  void get_scene(MG1::Scene &scene);
 
   template <typename C>
   std::enable_if_t<!std::is_same_v<C, selected>, bool>
@@ -193,6 +199,27 @@ struct registry : component_owner<parametric>,
     if (has_component<typename type_from_id<0>::type>(idx)) {
       remove_component<typename type_from_id<0>::type>(idx);
     }
+  }
+
+  template <typename First> void reset_component() {
+    auto &m = get_map<First>();
+    m.clear();
+  }
+
+  template <typename First, typename... T> void reset_all_components() {
+    reset_component<First>();
+    reset_all_components<T...>();
+  }
+
+  template <component_bitset N = num_components - 1>
+  std::enable_if_t<N != 0, void> reset_all_components() {
+    reset_component<typename type_from_id<N>::type>();
+    reset_all_components<N - 1>();
+  }
+
+  template <component_bitset N = num_components - 1>
+  std::enable_if_t<N == 0, void> reset_all_components() {
+    reset_component<typename type_from_id<0>::type>();
   }
 
   template <typename T>

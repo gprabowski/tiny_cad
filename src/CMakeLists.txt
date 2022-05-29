@@ -54,6 +54,9 @@ target_include_directories(tiny_cad
     ${CMAKE_SOURCE_DIR}/thirdparty/glfw/include/
     ${CMAKE_SOURCE_DIR}/thirdparty/ImGuizmo/
     ${CMAKE_SOURCE_DIR}/thirdparty/spdlog/include/
+    ${CMAKE_SOURCE_DIR}/thirdparty/spdlog/include/
+    ${CMAKE_SOURCE_DIR}/thirdparty/scene_serializer/cpp/Serializer/Serializer
+    ${CMAKE_SOURCE_DIR}/thirdparty/file_dialog/
     ${CMAKE_SOURCE_DIR}/include
  )
 
@@ -67,6 +70,8 @@ target_link_libraries(tiny_cad
         imgui
         imguizmo
         implot
+        MGSerializer
+        filedialog
 )
 
 add_custom_command(TARGET tiny_cad PRE_BUILD

@@ -6,6 +6,8 @@
 
 #include <implot/implot.h>
 
+#include <ImGuiFileDialog.h>
+
 #include <algorithm>
 #include <functional>
 #include <optional>
@@ -19,6 +21,7 @@
 
 #include <ImGuizmo.h>
 
+#include <Serializer.h>
 #include <constant_matrices.h>
 #include <constructors.h>
 #include <frame_state.h>
@@ -775,7 +778,13 @@ void render_torus_gui(ecs::EntityType idx, torus_params &tp, parametric &p,
       systems::reset_gl_objects(g);
     }
 
-    if (ImGui::SliderInt2("samples", p.samples, 3u, 100u)) {
+    int tmp_samp[2];
+    tmp_samp[0] = static_cast<int>(p.samples[0]);
+    tmp_samp[1] = static_cast<int>(p.samples[1]);
+
+    if (ImGui::SliderInt2("samples", tmp_samp, 3u, 100u)) {
+      p.samples[0] = tmp_samp[0];
+      p.samples[1] = tmp_samp[1];
       g.points.clear();
       g.indices.clear();
       systems::generate_torus_points(tp, p, g.points);
@@ -968,6 +977,123 @@ void render_cursor_gui() {
     }
 
     ImGui::End();
+  }
+}
+
+static void ShowExampleMenuFile() {
+  ecs::registry &reg = ecs::registry::get_registry();
+
+  if (ImGui::MenuItem("Reset")) {
+    reg.reset();
+  }
+
+  if (ImGui::MenuItem("Open", "Ctrl+O")) {
+    ImGuiFileDialog::Instance()->OpenDialog("OpenModelChoice",
+                                            "Choose Model File", ".json,", ".");
+  }
+
+  if (ImGui::MenuItem("Save", "Ctrl+S")) {
+    ImGuiFileDialog::Instance()->OpenDialog(
+        "SaveModelChoice", "Choose Model Filename", ".json,", ".");
+  }
+
+  ImGui::Separator();
+  if (ImGui::BeginMenu("Options")) {
+    static bool enabled = true;
+    ImGui::MenuItem("Enabled", "", &enabled);
+    ImGui::BeginChild("child", ImVec2(0, 60), true);
+    for (int i = 0; i < 10; i++)
+      ImGui::Text("Scrolling Text %d", i);
+    ImGui::EndChild();
+    static float f = 0.5f;
+    static int n = 0;
+    ImGui::SliderFloat("Value", &f, 0.0f, 1.0f);
+    ImGui::InputFloat("Input", &f, 0.1f);
+    ImGui::Combo("Combo", &n, "Yes\0No\0Maybe\0\0");
+    ImGui::EndMenu();
+  }
+
+  if (ImGui::BeginMenu("Colors")) {
+    float sz = ImGui::GetTextLineHeight();
+    for (int i = 0; i < ImGuiCol_COUNT; i++) {
+      const char *name = ImGui::GetStyleColorName((ImGuiCol)i);
+      ImVec2 p = ImGui::GetCursorScreenPos();
+      ImGui::GetWindowDrawList()->AddRectFilled(
+          p, ImVec2(p.x + sz, p.y + sz), ImGui::GetColorU32((ImGuiCol)i));
+      ImGui::Dummy(ImVec2(sz, sz));
+      ImGui::SameLine();
+      ImGui::MenuItem(name);
+    }
+    ImGui::EndMenu();
+  }
+
+  // Here we demonstrate appending again to the "Options" menu (which we already
+  // created above) Of course in this demo it is a little bit silly that this
+  // function calls BeginMenu("Options") twice. In a real code-base using it
+  // would make senses to use this feature from very different code locations.
+  if (ImGui::BeginMenu("Options")) // <-- Append!
+  {
+    static bool b = true;
+    ImGui::Checkbox("SomeOption", &b);
+    ImGui::EndMenu();
+  }
+
+  if (ImGui::BeginMenu("Disabled", false)) // Disabled
+  {
+    IM_ASSERT(0);
+  }
+  if (ImGui::MenuItem("Checked", NULL, true)) {
+  }
+  if (ImGui::MenuItem("Quit", "Alt+F4")) {
+  }
+}
+
+void render_main_menu() {
+  if (ImGui::BeginMainMenuBar()) {
+    if (ImGui::BeginMenu("File")) {
+      ShowExampleMenuFile();
+      ImGui::EndMenu();
+    }
+    if (ImGui::BeginMenu("Edit")) {
+      if (ImGui::MenuItem("Undo", "CTRL+Z")) {
+      }
+      if (ImGui::MenuItem("Redo", "CTRL+Y", false, false)) {
+      } // Disabled item
+      ImGui::Separator();
+      if (ImGui::MenuItem("Cut", "CTRL+X")) {
+      }
+      if (ImGui::MenuItem("Copy", "CTRL+C")) {
+      }
+      if (ImGui::MenuItem("Paste", "CTRL+V")) {
+      }
+      ImGui::EndMenu();
+    }
+    ImGui::EndMainMenuBar();
+  }
+
+  if (ImGuiFileDialog::Instance()->Display("OpenModelChoice")) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+      std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+      std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+      // action
+      MG1::SceneSerializer serializer;
+      auto &scene = serializer.LoadScene(filePathName);
+      auto &reg = ecs::registry::get_registry();
+      reg.load_from_scene(scene);
+    }
+    ImGuiFileDialog::Instance()->Close();
+  }
+
+  if (ImGuiFileDialog::Instance()->Display("SaveModelChoice")) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+      auto &reg = ecs::registry::get_registry();
+      std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+      // action
+      MG1::SceneSerializer serializer;
+      reg.get_scene(MG1::Scene::Get());
+      serializer.SaveScene(filePathName);
+    }
+    ImGuiFileDialog::Instance()->Close();
   }
 }
 } // namespace gui

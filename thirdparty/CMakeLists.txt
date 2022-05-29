@@ -14,6 +14,9 @@ add_library(imgui
 message("ADDING GLAD")
 add_library(glad glad/glad.c)
 
+message("ADDING FILE DIALOG")
+add_library(filedialog file_dialog/ImGuiFileDialog.cpp)
+
 message("ADDING IMGUIZMO")
 add_library(imguizmo 
     ImGuizmo/GraphEditor.cpp
@@ -45,7 +48,10 @@ target_include_directories(imguizmo PUBLIC imgui imgui/backends glfw/include)
 
 target_include_directories(glad PUBLIC glfw/include/)
 
+target_include_directories(filedialog PUBLIC imgui thirdparty/file_dialog)
+
 target_include_directories(implot PUBLIC imgui imgui/backends implot)
+
 
 #GLFW
 message("GLFW DOCS BUILD TURNED OFF")
@@ -66,3 +72,6 @@ message(" ADDING SPDLOG")
 add_subdirectory(spdlog)
 message(" ADDING GLM")
 add_subdirectory(glm)
+message("ADDING SCENE SERIALIZER")
+add_subdirectory(scene_serializer/cpp/Serializer)
+

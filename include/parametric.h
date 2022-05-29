@@ -10,5 +10,5 @@ struct parametric {
   float u_max{0.0f};
   float v_min{0.0f};
   float v_max{0.0f};
-  int samples[2]{0u, 0u};
+  unsigned int samples[2]{0u, 0u};
 };
