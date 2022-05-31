@@ -29,8 +29,8 @@ glm::vec4 sample_torus(const torus_params &tp, const float u, const float v) {
   const auto cos_v = cosf(v);
 
   return {tp.radii[1] * cos_u + tp.radii[0] * cos_u * cos_v,
-          tp.radii[1] * sin_u + tp.radii[0] * sin_u * cos_v,
-          tp.radii[0] * sin_v, 1.0f};
+          tp.radii[0] * sin_v,
+          tp.radii[1] * sin_u + tp.radii[0] * sin_u * cos_v, 1.0f};
 }
 
 void generate_torus_lines(const parametric &p,

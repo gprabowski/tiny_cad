@@ -153,6 +153,15 @@ struct registry : component_owner<parametric>,
       g.color = g.selected;
     }
 
+    if (has_component<relationship>(e)) {
+      auto &rel = get_component<relationship>(e);
+      if (rel.children.size() > 0) {
+        for (const auto c : rel.children) {
+          add_component<selected>(c, {});
+        }
+      }
+    }
+
     return true;
   }
 

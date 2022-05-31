@@ -1,0 +1,5587 @@
+{
+	"geometry": [
+		{
+			"id": 1,
+			"largeRadius": 2.0,
+			"name": "Torus",
+			"objectType": "torus",
+			"position": {
+				"x": -2.525256395339966,
+				"y": 4.412680625915527,
+				"z": -4.034323692321777
+			},
+			"rotation": {
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"samples": {
+				"x": 42,
+				"y": 30
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"smallRadius": 1.0
+		},
+		{
+			"controlPoints": [
+				{
+					"id": 216
+				},
+				{
+					"id": 217
+				},
+				{
+					"id": 218
+				},
+				{
+					"id": 219
+				},
+				{
+					"id": 220
+				}
+			],
+			"id": 221,
+			"name": "Bezier Curve C0",
+			"objectType": "bezierC0"
+		},
+		{
+			"deBoorPoints": [
+				{
+					"id": 216
+				},
+				{
+					"id": 217
+				},
+				{
+					"id": 218
+				},
+				{
+					"id": 219
+				},
+				{
+					"id": 220
+				}
+			],
+			"id": 222,
+			"name": "Bezier Curve C2",
+			"objectType": "bezierC2"
+		},
+		{
+			"controlPoints": [
+				{
+					"id": 216
+				},
+				{
+					"id": 217
+				},
+				{
+					"id": 218
+				},
+				{
+					"id": 219
+				},
+				{
+					"id": 220
+				}
+			],
+			"id": 230,
+			"name": "Interpolation Curve C2",
+			"objectType": "interpolatedC2"
+		},
+		{
+			"id": 143,
+			"name": "Bicubic Bezier surface C0",
+			"objectType": "bezierSurfaceC0",
+			"parameterWrapped": {
+				"u": true,
+				"v": false
+			},
+			"patches": [
+				{
+					"controlPoints": [
+						{
+							"id": 61
+						},
+						{
+							"id": 59
+						},
+						{
+							"id": 57
+						},
+						{
+							"id": 55
+						},
+						{
+							"id": 53
+						},
+						{
+							"id": 51
+						},
+						{
+							"id": 49
+						},
+						{
+							"id": 47
+						},
+						{
+							"id": 45
+						},
+						{
+							"id": 43
+						},
+						{
+							"id": 41
+						},
+						{
+							"id": 39
+						},
+						{
+							"id": 61
+						},
+						{
+							"id": 59
+						},
+						{
+							"id": 57
+						},
+						{
+							"id": 55
+						}
+					],
+					"id": 144,
+					"name": "Bicubic Bezier patch C0",
+					"objectType": "bezierPatchC0",
+					"samples": {
+						"x": 93,
+						"y": 58
+					}
+				}
+			],
+			"size": {
+				"x": 1,
+				"y": 1
+			}
+		},
+		{
+			"id": 161,
+			"name": "Bicubic B-spline surface C2",
+			"objectType": "bezierSurfaceC2",
+			"parameterWrapped": {
+				"u": false,
+				"v": true
+			},
+			"patches": [
+				{
+					"controlPoints": [
+						{
+							"id": 30
+						},
+						{
+							"id": 32
+						},
+						{
+							"id": 34
+						},
+						{
+							"id": 36
+						},
+						{
+							"id": 71
+						},
+						{
+							"id": 72
+						},
+						{
+							"id": 73
+						},
+						{
+							"id": 74
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						}
+					],
+					"id": 145,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 32
+						},
+						{
+							"id": 34
+						},
+						{
+							"id": 36
+						},
+						{
+							"id": 66
+						},
+						{
+							"id": 72
+						},
+						{
+							"id": 73
+						},
+						{
+							"id": 74
+						},
+						{
+							"id": 75
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						}
+					],
+					"id": 146,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 34
+						},
+						{
+							"id": 36
+						},
+						{
+							"id": 66
+						},
+						{
+							"id": 67
+						},
+						{
+							"id": 73
+						},
+						{
+							"id": 74
+						},
+						{
+							"id": 75
+						},
+						{
+							"id": 76
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						}
+					],
+					"id": 147,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 36
+						},
+						{
+							"id": 66
+						},
+						{
+							"id": 67
+						},
+						{
+							"id": 68
+						},
+						{
+							"id": 74
+						},
+						{
+							"id": 75
+						},
+						{
+							"id": 76
+						},
+						{
+							"id": 77
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						}
+					],
+					"id": 148,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 66
+						},
+						{
+							"id": 67
+						},
+						{
+							"id": 68
+						},
+						{
+							"id": 69
+						},
+						{
+							"id": 75
+						},
+						{
+							"id": 76
+						},
+						{
+							"id": 77
+						},
+						{
+							"id": 78
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						}
+					],
+					"id": 149,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 67
+						},
+						{
+							"id": 68
+						},
+						{
+							"id": 69
+						},
+						{
+							"id": 70
+						},
+						{
+							"id": 76
+						},
+						{
+							"id": 77
+						},
+						{
+							"id": 78
+						},
+						{
+							"id": 79
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						}
+					],
+					"id": 150,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 68
+						},
+						{
+							"id": 69
+						},
+						{
+							"id": 70
+						},
+						{
+							"id": 30
+						},
+						{
+							"id": 77
+						},
+						{
+							"id": 78
+						},
+						{
+							"id": 79
+						},
+						{
+							"id": 71
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						}
+					],
+					"id": 151,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 69
+						},
+						{
+							"id": 70
+						},
+						{
+							"id": 30
+						},
+						{
+							"id": 32
+						},
+						{
+							"id": 78
+						},
+						{
+							"id": 79
+						},
+						{
+							"id": 71
+						},
+						{
+							"id": 72
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						}
+					],
+					"id": 152,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 70
+						},
+						{
+							"id": 30
+						},
+						{
+							"id": 32
+						},
+						{
+							"id": 34
+						},
+						{
+							"id": 79
+						},
+						{
+							"id": 71
+						},
+						{
+							"id": 72
+						},
+						{
+							"id": 73
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						}
+					],
+					"id": 153,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 71
+						},
+						{
+							"id": 72
+						},
+						{
+							"id": 73
+						},
+						{
+							"id": 74
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						}
+					],
+					"id": 154,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 72
+						},
+						{
+							"id": 73
+						},
+						{
+							"id": 74
+						},
+						{
+							"id": 75
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						}
+					],
+					"id": 155,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 73
+						},
+						{
+							"id": 74
+						},
+						{
+							"id": 75
+						},
+						{
+							"id": 76
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						}
+					],
+					"id": 156,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 74
+						},
+						{
+							"id": 75
+						},
+						{
+							"id": 76
+						},
+						{
+							"id": 77
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						}
+					],
+					"id": 157,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 75
+						},
+						{
+							"id": 76
+						},
+						{
+							"id": 77
+						},
+						{
+							"id": 78
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						}
+					],
+					"id": 158,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 76
+						},
+						{
+							"id": 77
+						},
+						{
+							"id": 78
+						},
+						{
+							"id": 79
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						}
+					],
+					"id": 159,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 77
+						},
+						{
+							"id": 78
+						},
+						{
+							"id": 79
+						},
+						{
+							"id": 71
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						}
+					],
+					"id": 160,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 78
+						},
+						{
+							"id": 79
+						},
+						{
+							"id": 71
+						},
+						{
+							"id": 72
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						}
+					],
+					"id": 162,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 79
+						},
+						{
+							"id": 71
+						},
+						{
+							"id": 72
+						},
+						{
+							"id": 73
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						}
+					],
+					"id": 163,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 80
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						}
+					],
+					"id": 164,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 81
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						}
+					],
+					"id": 165,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 82
+						},
+						{
+							"id": 83
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						}
+					],
+					"id": 166,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 83
+						},
+						{
+							"id": 84
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						}
+					],
+					"id": 167,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 84
+						},
+						{
+							"id": 85
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						}
+					],
+					"id": 168,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 85
+						},
+						{
+							"id": 86
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						}
+					],
+					"id": 169,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 86
+						},
+						{
+							"id": 87
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						}
+					],
+					"id": 170,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 87
+						},
+						{
+							"id": 88
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						}
+					],
+					"id": 171,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 88
+						},
+						{
+							"id": 80
+						},
+						{
+							"id": 81
+						},
+						{
+							"id": 82
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						}
+					],
+					"id": 172,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 119
+						}
+					],
+					"id": 173,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 120
+						}
+					],
+					"id": 174,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 91
+						},
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 121
+						}
+					],
+					"id": 175,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 92
+						},
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 122
+						}
+					],
+					"id": 176,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 93
+						},
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 123
+						}
+					],
+					"id": 177,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 94
+						},
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 124
+						}
+					],
+					"id": 178,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 95
+						},
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 116
+						}
+					],
+					"id": 179,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 96
+						},
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 117
+						}
+					],
+					"id": 180,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 97
+						},
+						{
+							"id": 89
+						},
+						{
+							"id": 90
+						},
+						{
+							"id": 91
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 118
+						}
+					],
+					"id": 181,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 125
+						},
+						{
+							"id": 126
+						},
+						{
+							"id": 127
+						},
+						{
+							"id": 128
+						}
+					],
+					"id": 182,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 126
+						},
+						{
+							"id": 127
+						},
+						{
+							"id": 128
+						},
+						{
+							"id": 129
+						}
+					],
+					"id": 183,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 100
+						},
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 127
+						},
+						{
+							"id": 128
+						},
+						{
+							"id": 129
+						},
+						{
+							"id": 130
+						}
+					],
+					"id": 184,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 101
+						},
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 128
+						},
+						{
+							"id": 129
+						},
+						{
+							"id": 130
+						},
+						{
+							"id": 131
+						}
+					],
+					"id": 185,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 102
+						},
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 129
+						},
+						{
+							"id": 130
+						},
+						{
+							"id": 131
+						},
+						{
+							"id": 132
+						}
+					],
+					"id": 186,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 103
+						},
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 130
+						},
+						{
+							"id": 131
+						},
+						{
+							"id": 132
+						},
+						{
+							"id": 133
+						}
+					],
+					"id": 187,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 104
+						},
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 131
+						},
+						{
+							"id": 132
+						},
+						{
+							"id": 133
+						},
+						{
+							"id": 125
+						}
+					],
+					"id": 188,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 105
+						},
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 132
+						},
+						{
+							"id": 133
+						},
+						{
+							"id": 125
+						},
+						{
+							"id": 126
+						}
+					],
+					"id": 189,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 106
+						},
+						{
+							"id": 98
+						},
+						{
+							"id": 99
+						},
+						{
+							"id": 100
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 133
+						},
+						{
+							"id": 125
+						},
+						{
+							"id": 126
+						},
+						{
+							"id": 127
+						}
+					],
+					"id": 190,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 125
+						},
+						{
+							"id": 126
+						},
+						{
+							"id": 127
+						},
+						{
+							"id": 128
+						},
+						{
+							"id": 134
+						},
+						{
+							"id": 135
+						},
+						{
+							"id": 136
+						},
+						{
+							"id": 137
+						}
+					],
+					"id": 191,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 126
+						},
+						{
+							"id": 127
+						},
+						{
+							"id": 128
+						},
+						{
+							"id": 129
+						},
+						{
+							"id": 135
+						},
+						{
+							"id": 136
+						},
+						{
+							"id": 137
+						},
+						{
+							"id": 138
+						}
+					],
+					"id": 192,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 109
+						},
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 127
+						},
+						{
+							"id": 128
+						},
+						{
+							"id": 129
+						},
+						{
+							"id": 130
+						},
+						{
+							"id": 136
+						},
+						{
+							"id": 137
+						},
+						{
+							"id": 138
+						},
+						{
+							"id": 139
+						}
+					],
+					"id": 193,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 110
+						},
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 119
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 128
+						},
+						{
+							"id": 129
+						},
+						{
+							"id": 130
+						},
+						{
+							"id": 131
+						},
+						{
+							"id": 137
+						},
+						{
+							"id": 138
+						},
+						{
+							"id": 139
+						},
+						{
+							"id": 140
+						}
+					],
+					"id": 194,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 111
+						},
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 120
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 129
+						},
+						{
+							"id": 130
+						},
+						{
+							"id": 131
+						},
+						{
+							"id": 132
+						},
+						{
+							"id": 138
+						},
+						{
+							"id": 139
+						},
+						{
+							"id": 140
+						},
+						{
+							"id": 141
+						}
+					],
+					"id": 195,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 112
+						},
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 121
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 130
+						},
+						{
+							"id": 131
+						},
+						{
+							"id": 132
+						},
+						{
+							"id": 133
+						},
+						{
+							"id": 139
+						},
+						{
+							"id": 140
+						},
+						{
+							"id": 141
+						},
+						{
+							"id": 142
+						}
+					],
+					"id": 196,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 113
+						},
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 122
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 131
+						},
+						{
+							"id": 132
+						},
+						{
+							"id": 133
+						},
+						{
+							"id": 125
+						},
+						{
+							"id": 140
+						},
+						{
+							"id": 141
+						},
+						{
+							"id": 142
+						},
+						{
+							"id": 134
+						}
+					],
+					"id": 197,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 114
+						},
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 123
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 132
+						},
+						{
+							"id": 133
+						},
+						{
+							"id": 125
+						},
+						{
+							"id": 126
+						},
+						{
+							"id": 141
+						},
+						{
+							"id": 142
+						},
+						{
+							"id": 134
+						},
+						{
+							"id": 135
+						}
+					],
+					"id": 198,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 115
+						},
+						{
+							"id": 107
+						},
+						{
+							"id": 108
+						},
+						{
+							"id": 109
+						},
+						{
+							"id": 124
+						},
+						{
+							"id": 116
+						},
+						{
+							"id": 117
+						},
+						{
+							"id": 118
+						},
+						{
+							"id": 133
+						},
+						{
+							"id": 125
+						},
+						{
+							"id": 126
+						},
+						{
+							"id": 127
+						},
+						{
+							"id": 142
+						},
+						{
+							"id": 134
+						},
+						{
+							"id": 135
+						},
+						{
+							"id": 136
+						}
+					],
+					"id": 199,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 16,
+						"y": 18
+					}
+				}
+			],
+			"size": {
+				"x": 6,
+				"y": 9
+			}
+		},
+		{
+			"id": 200,
+			"name": "Bicubic B-spline surface C2",
+			"objectType": "bezierSurfaceC2",
+			"parameterWrapped": {
+				"u": false,
+				"v": false
+			},
+			"patches": [
+				{
+					"controlPoints": [
+						{
+							"id": 2
+						},
+						{
+							"id": 3
+						},
+						{
+							"id": 4
+						},
+						{
+							"id": 5
+						},
+						{
+							"id": 8
+						},
+						{
+							"id": 9
+						},
+						{
+							"id": 10
+						},
+						{
+							"id": 11
+						},
+						{
+							"id": 14
+						},
+						{
+							"id": 15
+						},
+						{
+							"id": 16
+						},
+						{
+							"id": 17
+						},
+						{
+							"id": 20
+						},
+						{
+							"id": 21
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						}
+					],
+					"id": 201,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 3
+						},
+						{
+							"id": 4
+						},
+						{
+							"id": 5
+						},
+						{
+							"id": 6
+						},
+						{
+							"id": 9
+						},
+						{
+							"id": 10
+						},
+						{
+							"id": 11
+						},
+						{
+							"id": 12
+						},
+						{
+							"id": 15
+						},
+						{
+							"id": 16
+						},
+						{
+							"id": 17
+						},
+						{
+							"id": 18
+						},
+						{
+							"id": 21
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 24
+						}
+					],
+					"id": 202,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 4
+						},
+						{
+							"id": 5
+						},
+						{
+							"id": 6
+						},
+						{
+							"id": 7
+						},
+						{
+							"id": 10
+						},
+						{
+							"id": 11
+						},
+						{
+							"id": 12
+						},
+						{
+							"id": 13
+						},
+						{
+							"id": 16
+						},
+						{
+							"id": 17
+						},
+						{
+							"id": 18
+						},
+						{
+							"id": 19
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 24
+						},
+						{
+							"id": 25
+						}
+					],
+					"id": 203,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 8
+						},
+						{
+							"id": 9
+						},
+						{
+							"id": 10
+						},
+						{
+							"id": 11
+						},
+						{
+							"id": 14
+						},
+						{
+							"id": 15
+						},
+						{
+							"id": 16
+						},
+						{
+							"id": 17
+						},
+						{
+							"id": 20
+						},
+						{
+							"id": 21
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 26
+						},
+						{
+							"id": 27
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						}
+					],
+					"id": 204,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 9
+						},
+						{
+							"id": 10
+						},
+						{
+							"id": 11
+						},
+						{
+							"id": 12
+						},
+						{
+							"id": 15
+						},
+						{
+							"id": 16
+						},
+						{
+							"id": 17
+						},
+						{
+							"id": 18
+						},
+						{
+							"id": 21
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 24
+						},
+						{
+							"id": 27
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 31
+						}
+					],
+					"id": 205,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 10
+						},
+						{
+							"id": 11
+						},
+						{
+							"id": 12
+						},
+						{
+							"id": 13
+						},
+						{
+							"id": 16
+						},
+						{
+							"id": 17
+						},
+						{
+							"id": 18
+						},
+						{
+							"id": 19
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 24
+						},
+						{
+							"id": 25
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 31
+						},
+						{
+							"id": 33
+						}
+					],
+					"id": 206,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 14
+						},
+						{
+							"id": 15
+						},
+						{
+							"id": 16
+						},
+						{
+							"id": 17
+						},
+						{
+							"id": 20
+						},
+						{
+							"id": 21
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 26
+						},
+						{
+							"id": 27
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 35
+						},
+						{
+							"id": 37
+						},
+						{
+							"id": 38
+						},
+						{
+							"id": 40
+						}
+					],
+					"id": 207,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 15
+						},
+						{
+							"id": 16
+						},
+						{
+							"id": 17
+						},
+						{
+							"id": 18
+						},
+						{
+							"id": 21
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 24
+						},
+						{
+							"id": 27
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 31
+						},
+						{
+							"id": 37
+						},
+						{
+							"id": 38
+						},
+						{
+							"id": 40
+						},
+						{
+							"id": 42
+						}
+					],
+					"id": 208,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 16
+						},
+						{
+							"id": 17
+						},
+						{
+							"id": 18
+						},
+						{
+							"id": 19
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 24
+						},
+						{
+							"id": 25
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 31
+						},
+						{
+							"id": 33
+						},
+						{
+							"id": 38
+						},
+						{
+							"id": 40
+						},
+						{
+							"id": 42
+						},
+						{
+							"id": 44
+						}
+					],
+					"id": 209,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 20
+						},
+						{
+							"id": 21
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 26
+						},
+						{
+							"id": 27
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 35
+						},
+						{
+							"id": 37
+						},
+						{
+							"id": 38
+						},
+						{
+							"id": 40
+						},
+						{
+							"id": 46
+						},
+						{
+							"id": 48
+						},
+						{
+							"id": 50
+						},
+						{
+							"id": 52
+						}
+					],
+					"id": 210,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 21
+						},
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 24
+						},
+						{
+							"id": 27
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 31
+						},
+						{
+							"id": 37
+						},
+						{
+							"id": 38
+						},
+						{
+							"id": 40
+						},
+						{
+							"id": 42
+						},
+						{
+							"id": 48
+						},
+						{
+							"id": 50
+						},
+						{
+							"id": 52
+						},
+						{
+							"id": 54
+						}
+					],
+					"id": 211,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 22
+						},
+						{
+							"id": 23
+						},
+						{
+							"id": 24
+						},
+						{
+							"id": 25
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 31
+						},
+						{
+							"id": 33
+						},
+						{
+							"id": 38
+						},
+						{
+							"id": 40
+						},
+						{
+							"id": 42
+						},
+						{
+							"id": 44
+						},
+						{
+							"id": 50
+						},
+						{
+							"id": 52
+						},
+						{
+							"id": 54
+						},
+						{
+							"id": 56
+						}
+					],
+					"id": 212,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 26
+						},
+						{
+							"id": 27
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 35
+						},
+						{
+							"id": 37
+						},
+						{
+							"id": 38
+						},
+						{
+							"id": 40
+						},
+						{
+							"id": 46
+						},
+						{
+							"id": 48
+						},
+						{
+							"id": 50
+						},
+						{
+							"id": 52
+						},
+						{
+							"id": 58
+						},
+						{
+							"id": 60
+						},
+						{
+							"id": 62
+						},
+						{
+							"id": 63
+						}
+					],
+					"id": 213,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 27
+						},
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 31
+						},
+						{
+							"id": 37
+						},
+						{
+							"id": 38
+						},
+						{
+							"id": 40
+						},
+						{
+							"id": 42
+						},
+						{
+							"id": 48
+						},
+						{
+							"id": 50
+						},
+						{
+							"id": 52
+						},
+						{
+							"id": 54
+						},
+						{
+							"id": 60
+						},
+						{
+							"id": 62
+						},
+						{
+							"id": 63
+						},
+						{
+							"id": 64
+						}
+					],
+					"id": 214,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				},
+				{
+					"controlPoints": [
+						{
+							"id": 28
+						},
+						{
+							"id": 29
+						},
+						{
+							"id": 31
+						},
+						{
+							"id": 33
+						},
+						{
+							"id": 38
+						},
+						{
+							"id": 40
+						},
+						{
+							"id": 42
+						},
+						{
+							"id": 44
+						},
+						{
+							"id": 50
+						},
+						{
+							"id": 52
+						},
+						{
+							"id": 54
+						},
+						{
+							"id": 56
+						},
+						{
+							"id": 62
+						},
+						{
+							"id": 63
+						},
+						{
+							"id": 64
+						},
+						{
+							"id": 65
+						}
+					],
+					"id": 215,
+					"name": "Bicubic Bezier patch C2",
+					"objectType": "bezierPatchC2",
+					"samples": {
+						"x": 13,
+						"y": 14
+					}
+				}
+			],
+			"size": {
+				"x": 5,
+				"y": 3
+			}
+		}
+	],
+	"points": [
+		{
+			"id": 2,
+			"name": "Point",
+			"position": {
+				"x": -4.923847675323486,
+				"y": 1.2350356578826904,
+				"z": -1.197208285331726
+			}
+		},
+		{
+			"id": 3,
+			"name": "Point",
+			"position": {
+				"x": -4.521998405456543,
+				"y": 1.9829134941101074,
+				"z": -0.16911625862121582
+			}
+		},
+		{
+			"id": 4,
+			"name": "Point",
+			"position": {
+				"x": -4.1201491355896,
+				"y": 2.7307913303375244,
+				"z": 0.8589761853218079
+			}
+		},
+		{
+			"id": 5,
+			"name": "Point",
+			"position": {
+				"x": -4.441815376281738,
+				"y": 1.4961472749710083,
+				"z": 2.8657312393188477
+			}
+		},
+		{
+			"id": 6,
+			"name": "Point",
+			"position": {
+				"x": -4.062471866607666,
+				"y": 2.182194948196411,
+				"z": 3.9207749366760254
+			}
+		},
+		{
+			"id": 7,
+			"name": "Point",
+			"position": {
+				"x": -2.9146013259887695,
+				"y": 4.974425315856934,
+				"z": 3.943253517150879
+			}
+		},
+		{
+			"id": 8,
+			"name": "Point",
+			"position": {
+				"x": -4.042957305908203,
+				"y": 0.7617160081863403,
+				"z": -1.197208285331726
+			}
+		},
+		{
+			"id": 9,
+			"name": "Point",
+			"position": {
+				"x": -3.6411080360412598,
+				"y": 1.5095938444137573,
+				"z": -0.16911625862121582
+			}
+		},
+		{
+			"id": 10,
+			"name": "Point",
+			"position": {
+				"x": -3.9674124717712402,
+				"y": 0.28412675857543945,
+				"z": 2.0503368377685547
+			}
+		},
+		{
+			"id": 11,
+			"name": "Point",
+			"position": {
+				"x": -3.5878193378448486,
+				"y": 0.9701749086380005,
+				"z": 3.105703115463257
+			}
+		},
+		{
+			"id": 12,
+			"name": "Point",
+			"position": {
+				"x": -2.4355602264404297,
+				"y": 3.7532272338867188,
+				"z": 2.915160655975342
+			}
+		},
+		{
+			"id": 13,
+			"name": "Point",
+			"position": {
+				"x": -2.0337107181549072,
+				"y": 4.501105308532715,
+				"z": 3.943253517150879
+			}
+		},
+		{
+			"id": 14,
+			"name": "Point",
+			"position": {
+				"x": -3.1620664596557617,
+				"y": 0.28839635848999023,
+				"z": -1.197208285331726
+			}
+		},
+		{
+			"id": 15,
+			"name": "Point",
+			"position": {
+				"x": -2.7602171897888184,
+				"y": 1.0362741947174072,
+				"z": -0.16911625862121582
+			}
+		},
+		{
+			"id": 16,
+			"name": "Point",
+			"position": {
+				"x": -2.358367919921875,
+				"y": 1.7841520309448242,
+				"z": 0.8589761853218079
+			}
+		},
+		{
+			"id": 17,
+			"name": "Point",
+			"position": {
+				"x": -1.9565186500549316,
+				"y": 2.532029867172241,
+				"z": 1.887068510055542
+			}
+		},
+		{
+			"id": 18,
+			"name": "Point",
+			"position": {
+				"x": -1.5546693801879883,
+				"y": 3.279907703399658,
+				"z": 2.915160655975342
+			}
+		},
+		{
+			"id": 19,
+			"name": "Point",
+			"position": {
+				"x": -1.1528198719024658,
+				"y": 4.027785778045654,
+				"z": 3.943253517150879
+			}
+		},
+		{
+			"id": 20,
+			"name": "Point",
+			"position": {
+				"x": -2.2811756134033203,
+				"y": -0.18492341041564941,
+				"z": -1.197208285331726
+			}
+		},
+		{
+			"id": 21,
+			"name": "Point",
+			"position": {
+				"x": -1.879326343536377,
+				"y": 0.5629544258117676,
+				"z": -0.16911625862121582
+			}
+		},
+		{
+			"id": 22,
+			"name": "Point",
+			"position": {
+				"x": -1.8588978052139282,
+				"y": 3.094810962677002,
+				"z": -3.6772539615631104
+			}
+		},
+		{
+			"id": 23,
+			"name": "Point",
+			"position": {
+				"x": -0.8041723370552063,
+				"y": -0.1544141322374344,
+				"z": 4.752109050750732
+			}
+		},
+		{
+			"id": 24,
+			"name": "Point",
+			"position": {
+				"x": -0.6737786531448364,
+				"y": 2.8065879344940186,
+				"z": 2.915160655975342
+			}
+		},
+		{
+			"id": 25,
+			"name": "Point",
+			"position": {
+				"x": -0.27192920446395874,
+				"y": 3.5544662475585938,
+				"z": 3.943253517150879
+			}
+		},
+		{
+			"id": 26,
+			"name": "Point",
+			"position": {
+				"x": -1.400285005569458,
+				"y": -0.6582431793212891,
+				"z": -1.197208285331726
+			}
+		},
+		{
+			"id": 27,
+			"name": "Point",
+			"position": {
+				"x": -0.9984357357025146,
+				"y": 0.08963477611541748,
+				"z": -0.16911625862121582
+			}
+		},
+		{
+			"id": 28,
+			"name": "Point",
+			"position": {
+				"x": -0.5965864062309265,
+				"y": 0.8375126719474792,
+				"z": 0.8589761853218079
+			}
+		},
+		{
+			"id": 29,
+			"name": "Point",
+			"position": {
+				"x": 0.06115543097257614,
+				"y": -0.5021615624427795,
+				"z": 4.589335918426514
+			}
+		},
+		{
+			"id": 30,
+			"name": "Point",
+			"position": {
+				"x": 5.4861602783203125,
+				"y": 0.79195237159729,
+				"z": 12.25983715057373
+			}
+		},
+		{
+			"id": 31,
+			"name": "Point",
+			"position": {
+				"x": 0.4459180235862732,
+				"y": 0.38208866119384766,
+				"z": 5.441603183746338
+			}
+		},
+		{
+			"id": 32,
+			"name": "Point",
+			"position": {
+				"x": 6.823455333709717,
+				"y": 2.9876222610473633,
+				"z": 7.799027442932129
+			}
+		},
+		{
+			"id": 33,
+			"name": "Point",
+			"position": {
+				"x": 0.6089615225791931,
+				"y": 3.081146478652954,
+				"z": 3.943253517150879
+			}
+		},
+		{
+			"id": 34,
+			"name": "Point",
+			"position": {
+				"x": 6.823455333709717,
+				"y": 4.692601203918457,
+				"z": 6.368379592895508
+			}
+		},
+		{
+			"id": 35,
+			"name": "Point",
+			"position": {
+				"x": -0.2712952196598053,
+				"y": 2.6287503242492676,
+				"z": -2.231966018676758
+			}
+		},
+		{
+			"id": 36,
+			"name": "Point",
+			"position": {
+				"x": 6.404594421386719,
+				"y": 12.260147094726563,
+				"z": 4.117326259613037
+			}
+		},
+		{
+			"id": 37,
+			"name": "Point",
+			"position": {
+				"x": 0.1375066190958023,
+				"y": 3.5340144634246826,
+				"z": -1.242704153060913
+			}
+		},
+		{
+			"id": 38,
+			"name": "Point",
+			"position": {
+				"x": 0.2843042016029358,
+				"y": 0.3641929626464844,
+				"z": 0.8589761853218079
+			}
+		},
+		{
+			"id": 39,
+			"name": "Point",
+			"position": {
+				"x": -1.8323712348937988,
+				"y": -4.996760368347168,
+				"z": -11.080013275146484
+			}
+		},
+		{
+			"id": 40,
+			"name": "Point",
+			"position": {
+				"x": 0.9267921447753906,
+				"y": -0.8496648669242859,
+				"z": 4.426440238952637
+			}
+		},
+		{
+			"id": 41,
+			"name": "Point",
+			"position": {
+				"x": -4.162348747253418,
+				"y": -1.5527052879333496,
+				"z": -16.21497344970703
+			}
+		},
+		{
+			"id": 42,
+			"name": "Point",
+			"position": {
+				"x": 1.3120286464691162,
+				"y": 0.03457481414079666,
+				"z": 5.278533458709717
+			}
+		},
+		{
+			"id": 43,
+			"name": "Point",
+			"position": {
+				"x": -4.3240532875061035,
+				"y": -3.185654640197754,
+				"z": -9.674235343933105
+			}
+		},
+		{
+			"id": 44,
+			"name": "Point",
+			"position": {
+				"x": 1.696867823600769,
+				"y": 0.9186143279075623,
+				"z": 6.130805492401123
+			}
+		},
+		{
+			"id": 45,
+			"name": "Point",
+			"position": {
+				"x": -5.577986717224121,
+				"y": -2.2833187580108643,
+				"z": -8.973834037780762
+			}
+		},
+		{
+			"id": 46,
+			"name": "Point",
+			"position": {
+				"x": 0.6341975927352905,
+				"y": 1.8736168146133423,
+				"z": -2.2048048973083496
+			}
+		},
+		{
+			"id": 47,
+			"name": "Point",
+			"position": {
+				"x": 6.78428316116333,
+				"y": 5.584752559661865,
+				"z": -11.888235092163086
+			}
+		},
+		{
+			"id": 48,
+			"name": "Point",
+			"position": {
+				"x": 1.0427727699279785,
+				"y": 2.778859853744507,
+				"z": -1.2157046794891357
+			}
+		},
+		{
+			"id": 49,
+			"name": "Point",
+			"position": {
+				"x": 5.537039279937744,
+				"y": 6.488036632537842,
+				"z": -11.187470436096191
+			}
+		},
+		{
+			"id": 50,
+			"name": "Point",
+			"position": {
+				"x": 1.1651952266693115,
+				"y": -0.10912656784057617,
+				"z": 0.8589761853218079
+			}
+		},
+		{
+			"id": 51,
+			"name": "Point",
+			"position": {
+				"x": 4.28765869140625,
+				"y": 7.391305446624756,
+				"z": -10.487196922302246
+			}
+		},
+		{
+			"id": 52,
+			"name": "Point",
+			"position": {
+				"x": 1.7920331954956055,
+				"y": -1.1974964141845703,
+				"z": 4.263601779937744
+			}
+		},
+		{
+			"id": 53,
+			"name": "Point",
+			"position": {
+				"x": 3.0396578311920166,
+				"y": 8.299315452575684,
+				"z": -9.78350830078125
+			}
+		},
+		{
+			"id": 54,
+			"name": "Point",
+			"position": {
+				"x": 2.177588701248169,
+				"y": -0.31314370036125183,
+				"z": 5.115713596343994
+			}
+		},
+		{
+			"id": 55,
+			"name": "Point",
+			"position": {
+				"x": 4.342199325561523,
+				"y": -0.9785105586051941,
+				"z": -5.437214374542236
+			}
+		},
+		{
+			"id": 56,
+			"name": "Point",
+			"position": {
+				"x": 2.3707430362701416,
+				"y": 2.134507179260254,
+				"z": 3.943253517150879
+			}
+		},
+		{
+			"id": 57,
+			"name": "Point",
+			"position": {
+				"x": 1.896842360496521,
+				"y": -4.255406379699707,
+				"z": -2.6925876140594482
+			}
+		},
+		{
+			"id": 58,
+			"name": "Point",
+			"position": {
+				"x": 1.5394929647445679,
+				"y": 1.1187591552734375,
+				"z": -2.1781914234161377
+			}
+		},
+		{
+			"id": 59,
+			"name": "Point",
+			"position": {
+				"x": 0.5434293746948242,
+				"y": -3.6048920154571533,
+				"z": -1.9145368337631226
+			}
+		},
+		{
+			"id": 60,
+			"name": "Point",
+			"position": {
+				"x": 1.6442365646362305,
+				"y": -1.3303241729736328,
+				"z": -0.16911625862121582
+			}
+		},
+		{
+			"id": 61,
+			"name": "Point",
+			"position": {
+				"x": 0.5946475267410278,
+				"y": 1.7359528541564941,
+				"z": -3.332122802734375
+			}
+		},
+		{
+			"id": 62,
+			"name": "Point",
+			"position": {
+				"x": 2.046085834503174,
+				"y": -0.5824463367462158,
+				"z": 0.8589761853218079
+			}
+		},
+		{
+			"id": 63,
+			"name": "Point",
+			"position": {
+				"x": 2.447935104370117,
+				"y": 0.16543161869049072,
+				"z": 1.887068510055542
+			}
+		},
+		{
+			"id": 64,
+			"name": "Point",
+			"position": {
+				"x": 3.042830467224121,
+				"y": -0.6607519388198853,
+				"z": 4.952755451202393
+			}
+		},
+		{
+			"id": 65,
+			"name": "Point",
+			"position": {
+				"x": 3.251633644104004,
+				"y": 1.6611875295639038,
+				"z": 3.943253517150879
+			}
+		},
+		{
+			"id": 66,
+			"name": "Point",
+			"position": {
+				"x": 6.823455333709717,
+				"y": 3.9662420749664307,
+				"z": 2.2489964962005615
+			}
+		},
+		{
+			"id": 67,
+			"name": "Point",
+			"position": {
+				"x": 6.111412048339844,
+				"y": 1.4470609426498413,
+				"z": -3.001920223236084
+			}
+		},
+		{
+			"id": 68,
+			"name": "Point",
+			"position": {
+				"x": 6.823455333709717,
+				"y": -0.2166910171508789,
+				"z": 2.248997211456299
+			}
+		},
+		{
+			"id": 69,
+			"name": "Point",
+			"position": {
+				"x": 8.981182098388672,
+				"y": -4.904635906219482,
+				"z": 4.534781455993652
+			}
+		},
+		{
+			"id": 70,
+			"name": "Point",
+			"position": {
+				"x": 6.823455333709717,
+				"y": -0.9430480003356934,
+				"z": 6.368381977081299
+			}
+		},
+		{
+			"id": 71,
+			"name": "Point",
+			"position": {
+				"x": 6.375155925750732,
+				"y": 0.7908788919448853,
+				"z": 12.081377983093262
+			}
+		},
+		{
+			"id": 72,
+			"name": "Point",
+			"position": {
+				"x": 7.6567888259887695,
+				"y": 2.9876222610473633,
+				"z": 7.799027442932129
+			}
+		},
+		{
+			"id": 73,
+			"name": "Point",
+			"position": {
+				"x": 7.6567888259887695,
+				"y": 4.692601203918457,
+				"z": 6.368379592895508
+			}
+		},
+		{
+			"id": 74,
+			"name": "Point",
+			"position": {
+				"x": 7.2591328620910645,
+				"y": 11.972127914428711,
+				"z": 4.118441581726074
+			}
+		},
+		{
+			"id": 75,
+			"name": "Point",
+			"position": {
+				"x": 7.6567888259887695,
+				"y": 3.9662420749664307,
+				"z": 2.2489964962005615
+			}
+		},
+		{
+			"id": 76,
+			"name": "Point",
+			"position": {
+				"x": 6.968986988067627,
+				"y": 1.463627576828003,
+				"z": -2.8363990783691406
+			}
+		},
+		{
+			"id": 77,
+			"name": "Point",
+			"position": {
+				"x": 7.6567888259887695,
+				"y": -0.2166910171508789,
+				"z": 2.248997211456299
+			}
+		},
+		{
+			"id": 78,
+			"name": "Point",
+			"position": {
+				"x": 9.738276481628418,
+				"y": -4.787029266357422,
+				"z": 4.521367073059082
+			}
+		},
+		{
+			"id": 79,
+			"name": "Point",
+			"position": {
+				"x": 7.6567888259887695,
+				"y": -0.9430480003356934,
+				"z": 6.368381977081299
+			}
+		},
+		{
+			"id": 80,
+			"name": "Point",
+			"position": {
+				"x": 7.261148929595947,
+				"y": 0.7895936965942383,
+				"z": 11.903016090393066
+			}
+		},
+		{
+			"id": 81,
+			"name": "Point",
+			"position": {
+				"x": 8.490121841430664,
+				"y": 2.9876222610473633,
+				"z": 7.799027442932129
+			}
+		},
+		{
+			"id": 82,
+			"name": "Point",
+			"position": {
+				"x": 8.490121841430664,
+				"y": 4.692601203918457,
+				"z": 6.368379592895508
+			}
+		},
+		{
+			"id": 83,
+			"name": "Point",
+			"position": {
+				"x": 8.105257034301758,
+				"y": 11.690267562866211,
+				"z": 4.121866703033447
+			}
+		},
+		{
+			"id": 84,
+			"name": "Point",
+			"position": {
+				"x": 8.490121841430664,
+				"y": 3.9662420749664307,
+				"z": 2.2489964962005615
+			}
+		},
+		{
+			"id": 85,
+			"name": "Point",
+			"position": {
+				"x": 7.829115390777588,
+				"y": 1.4785840511322021,
+				"z": -2.6693966388702393
+			}
+		},
+		{
+			"id": 86,
+			"name": "Point",
+			"position": {
+				"x": 8.490121841430664,
+				"y": -0.2166910171508789,
+				"z": 2.248997211456299
+			}
+		},
+		{
+			"id": 87,
+			"name": "Point",
+			"position": {
+				"x": 10.500967979431152,
+				"y": -4.66887092590332,
+				"z": 4.510875701904297
+			}
+		},
+		{
+			"id": 88,
+			"name": "Point",
+			"position": {
+				"x": 8.490121841430664,
+				"y": -0.9430480003356934,
+				"z": 6.368381977081299
+			}
+		},
+		{
+			"id": 89,
+			"name": "Point",
+			"position": {
+				"x": 8.147603034973145,
+				"y": 0.7883753776550293,
+				"z": 11.723928451538086
+			}
+		},
+		{
+			"id": 90,
+			"name": "Point",
+			"position": {
+				"x": 9.323455810546875,
+				"y": 2.9876222610473633,
+				"z": 7.799027442932129
+			}
+		},
+		{
+			"id": 91,
+			"name": "Point",
+			"position": {
+				"x": 9.323455810546875,
+				"y": 4.692601203918457,
+				"z": 6.368379592895508
+			}
+		},
+		{
+			"id": 92,
+			"name": "Point",
+			"position": {
+				"x": 8.955561637878418,
+				"y": 11.40506649017334,
+				"z": 4.124057769775391
+			}
+		},
+		{
+			"id": 93,
+			"name": "Point",
+			"position": {
+				"x": 9.323455810546875,
+				"y": 3.9662420749664307,
+				"z": 2.2489964962005615
+			}
+		},
+		{
+			"id": 94,
+			"name": "Point",
+			"position": {
+				"x": 8.687347412109375,
+				"y": 1.494903326034546,
+				"z": -2.5032947063446045
+			}
+		},
+		{
+			"id": 95,
+			"name": "Point",
+			"position": {
+				"x": 9.323455810546875,
+				"y": -0.2166910171508789,
+				"z": 2.248997211456299
+			}
+		},
+		{
+			"id": 96,
+			"name": "Point",
+			"position": {
+				"x": 11.260481834411621,
+				"y": -4.550073623657227,
+				"z": 4.497590065002441
+			}
+		},
+		{
+			"id": 97,
+			"name": "Point",
+			"position": {
+				"x": 9.323455810546875,
+				"y": -0.9430480003356934,
+				"z": 6.368381977081299
+			}
+		},
+		{
+			"id": 98,
+			"name": "Point",
+			"position": {
+				"x": 9.034005165100098,
+				"y": 0.7871218323707581,
+				"z": 11.545714378356934
+			}
+		},
+		{
+			"id": 99,
+			"name": "Point",
+			"position": {
+				"x": 10.15678882598877,
+				"y": 2.9876222610473633,
+				"z": 7.799027442932129
+			}
+		},
+		{
+			"id": 100,
+			"name": "Point",
+			"position": {
+				"x": 10.15678882598877,
+				"y": 4.692601203918457,
+				"z": 6.368379592895508
+			}
+		},
+		{
+			"id": 101,
+			"name": "Point",
+			"position": {
+				"x": 9.804855346679688,
+				"y": 11.122664451599121,
+				"z": 4.126933574676514
+			}
+		},
+		{
+			"id": 102,
+			"name": "Point",
+			"position": {
+				"x": 10.15678882598877,
+				"y": 3.9662420749664307,
+				"z": 2.2489964962005615
+			}
+		},
+		{
+			"id": 103,
+			"name": "Point",
+			"position": {
+				"x": 9.545138359069824,
+				"y": 1.5094307661056519,
+				"z": -2.3372385501861572
+			}
+		},
+		{
+			"id": 104,
+			"name": "Point",
+			"position": {
+				"x": 10.15678882598877,
+				"y": -0.2166910171508789,
+				"z": 2.248997211456299
+			}
+		},
+		{
+			"id": 105,
+			"name": "Point",
+			"position": {
+				"x": 12.024480819702148,
+				"y": -4.433541774749756,
+				"z": 4.486138343811035
+			}
+		},
+		{
+			"id": 106,
+			"name": "Point",
+			"position": {
+				"x": 10.15678882598877,
+				"y": -0.9430480003356934,
+				"z": 6.368381977081299
+			}
+		},
+		{
+			"id": 107,
+			"name": "Point",
+			"position": {
+				"x": 9.920218467712402,
+				"y": 0.7859275937080383,
+				"z": 11.36707878112793
+			}
+		},
+		{
+			"id": 108,
+			"name": "Point",
+			"position": {
+				"x": 10.990121841430664,
+				"y": 2.9876222610473633,
+				"z": 7.799027442932129
+			}
+		},
+		{
+			"id": 109,
+			"name": "Point",
+			"position": {
+				"x": 10.990121841430664,
+				"y": 4.692601203918457,
+				"z": 6.368379592895508
+			}
+		},
+		{
+			"id": 110,
+			"name": "Point",
+			"position": {
+				"x": 10.654851913452148,
+				"y": 10.83752727508545,
+				"z": 4.128742218017578
+			}
+		},
+		{
+			"id": 111,
+			"name": "Point",
+			"position": {
+				"x": 10.990121841430664,
+				"y": 3.9662420749664307,
+				"z": 2.2489964962005615
+			}
+		},
+		{
+			"id": 112,
+			"name": "Point",
+			"position": {
+				"x": 10.406774520874023,
+				"y": 1.525913119316101,
+				"z": -2.1705894470214844
+			}
+		},
+		{
+			"id": 113,
+			"name": "Point",
+			"position": {
+				"x": 10.990121841430664,
+				"y": -0.2166910171508789,
+				"z": 2.248997211456299
+			}
+		},
+		{
+			"id": 114,
+			"name": "Point",
+			"position": {
+				"x": 12.786409378051758,
+				"y": -4.314730167388916,
+				"z": 4.474999904632568
+			}
+		},
+		{
+			"id": 115,
+			"name": "Point",
+			"position": {
+				"x": 10.990121841430664,
+				"y": -0.9430480003356934,
+				"z": 6.368381977081299
+			}
+		},
+		{
+			"id": 116,
+			"name": "Point",
+			"position": {
+				"x": 10.8076753616333,
+				"y": 0.7847403883934021,
+				"z": 11.187750816345215
+			}
+		},
+		{
+			"id": 117,
+			"name": "Point",
+			"position": {
+				"x": 11.823455810546875,
+				"y": 2.9876222610473633,
+				"z": 7.799027442932129
+			}
+		},
+		{
+			"id": 118,
+			"name": "Point",
+			"position": {
+				"x": 11.823455810546875,
+				"y": 4.692601203918457,
+				"z": 6.368379592895508
+			}
+		},
+		{
+			"id": 119,
+			"name": "Point",
+			"position": {
+				"x": 11.50740909576416,
+				"y": 10.551928520202637,
+				"z": 4.130733489990234
+			}
+		},
+		{
+			"id": 120,
+			"name": "Point",
+			"position": {
+				"x": 11.823455810546875,
+				"y": 3.9662420749664307,
+				"z": 2.2489964962005615
+			}
+		},
+		{
+			"id": 121,
+			"name": "Point",
+			"position": {
+				"x": 11.269680976867676,
+				"y": 1.5419119596481323,
+				"z": -2.0041630268096924
+			}
+		},
+		{
+			"id": 122,
+			"name": "Point",
+			"position": {
+				"x": 11.823455810546875,
+				"y": -0.2166910171508789,
+				"z": 2.248997211456299
+			}
+		},
+		{
+			"id": 123,
+			"name": "Point",
+			"position": {
+				"x": 13.549607276916504,
+				"y": -4.196059703826904,
+				"z": 4.462795257568359
+			}
+		},
+		{
+			"id": 124,
+			"name": "Point",
+			"position": {
+				"x": 11.823455810546875,
+				"y": -0.9430480003356934,
+				"z": 6.368381977081299
+			}
+		},
+		{
+			"id": 125,
+			"name": "Point",
+			"position": {
+				"x": 11.694320678710938,
+				"y": 0.7834764719009399,
+				"z": 11.008502960205078
+			}
+		},
+		{
+			"id": 126,
+			"name": "Point",
+			"position": {
+				"x": 12.65678882598877,
+				"y": 2.9876222610473633,
+				"z": 7.799027442932129
+			}
+		},
+		{
+			"id": 127,
+			"name": "Point",
+			"position": {
+				"x": 12.65678882598877,
+				"y": 4.692601203918457,
+				"z": 6.368379592895508
+			}
+		},
+		{
+			"id": 128,
+			"name": "Point",
+			"position": {
+				"x": 12.354738235473633,
+				"y": 10.269428253173828,
+				"z": 4.133693218231201
+			}
+		},
+		{
+			"id": 129,
+			"name": "Point",
+			"position": {
+				"x": 12.65678882598877,
+				"y": 3.9662420749664307,
+				"z": 2.2489964962005615
+			}
+		},
+		{
+			"id": 130,
+			"name": "Point",
+			"position": {
+				"x": 12.126272201538086,
+				"y": 1.5579206943511963,
+				"z": -1.837958812713623
+			}
+		},
+		{
+			"id": 131,
+			"name": "Point",
+			"position": {
+				"x": 12.65678882598877,
+				"y": -0.2166910171508789,
+				"z": 2.248997211456299
+			}
+		},
+		{
+			"id": 132,
+			"name": "Point",
+			"position": {
+				"x": 14.310873031616211,
+				"y": -4.079310417175293,
+				"z": 4.4509406089782715
+			}
+		},
+		{
+			"id": 133,
+			"name": "Point",
+			"position": {
+				"x": 12.65678882598877,
+				"y": -0.9430480003356934,
+				"z": 6.368381977081299
+			}
+		},
+		{
+			"id": 134,
+			"name": "Point",
+			"position": {
+				"x": 12.581329345703125,
+				"y": 0.782297670841217,
+				"z": 10.829754829406738
+			}
+		},
+		{
+			"id": 135,
+			"name": "Point",
+			"position": {
+				"x": 13.490121841430664,
+				"y": 2.9876222610473633,
+				"z": 7.799027442932129
+			}
+		},
+		{
+			"id": 136,
+			"name": "Point",
+			"position": {
+				"x": 13.490121841430664,
+				"y": 4.692601203918457,
+				"z": 6.368379592895508
+			}
+		},
+		{
+			"id": 137,
+			"name": "Point",
+			"position": {
+				"x": 13.206122398376465,
+				"y": 9.985274314880371,
+				"z": 4.13605260848999
+			}
+		},
+		{
+			"id": 138,
+			"name": "Point",
+			"position": {
+				"x": 13.490121841430664,
+				"y": 3.9662420749664307,
+				"z": 2.2489964962005615
+			}
+		},
+		{
+			"id": 139,
+			"name": "Point",
+			"position": {
+				"x": 12.986250877380371,
+				"y": 1.5735267400741577,
+				"z": -1.6716421842575073
+			}
+		},
+		{
+			"id": 140,
+			"name": "Point",
+			"position": {
+				"x": 13.490121841430664,
+				"y": -0.2166910171508789,
+				"z": 2.248997211456299
+			}
+		},
+		{
+			"id": 141,
+			"name": "Point",
+			"position": {
+				"x": 15.07388687133789,
+				"y": -3.961866617202759,
+				"z": 4.4396162033081055
+			}
+		},
+		{
+			"id": 142,
+			"name": "Point",
+			"position": {
+				"x": 13.490121841430664,
+				"y": -0.9430480003356934,
+				"z": 6.368381977081299
+			}
+		},
+		{
+			"id": 216,
+			"name": "Point",
+			"position": {
+				"x": -7.677637100219727,
+				"y": 3.8346455097198486,
+				"z": 4.4281005859375
+			}
+		},
+		{
+			"id": 217,
+			"name": "Point",
+			"position": {
+				"x": -3.1065187454223633,
+				"y": 5.971887111663818,
+				"z": 7.081039905548096
+			}
+		},
+		{
+			"id": 218,
+			"name": "Point",
+			"position": {
+				"x": 4.324158191680908,
+				"y": 5.585752010345459,
+				"z": 3.834712028503418
+			}
+		},
+		{
+			"id": 219,
+			"name": "Point",
+			"position": {
+				"x": 4.462260723114014,
+				"y": 6.217856407165527,
+				"z": -2.7425765991210938
+			}
+		},
+		{
+			"id": 220,
+			"name": "Point",
+			"position": {
+				"x": -1.3316049575805664,
+				"y": 7.130352020263672,
+				"z": -7.145795822143555
+			}
+		}
+	]
+}

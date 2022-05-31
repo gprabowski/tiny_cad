@@ -85,7 +85,7 @@ ecs::EntityType add_icurve(const GLuint program) {
   return b;
 }
 
-ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points, unsigned int patches[2]) {
+ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points, unsigned int patches[2], bool cyllinder) {
   static auto &reg = ecs::registry::get_registry();
   static auto &sm = shader_manager::get_manager();
   const auto builder = reg.add_entity();
@@ -120,6 +120,7 @@ ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points, unsigne
   auto &bsp = reg.get_component<bezier_surface_params>(builder);
   bsp.u = patches[0];
   bsp.v = patches[1];
+  bsp.cyllinder = cyllinder;
   bsp.bezier_polygon = bezier_polygon;
 
   // 1. generate points as entities
@@ -471,7 +472,7 @@ void setup_initial_geometry() {
   add_center_of_weight({}, sm.programs[shader_t::POINT_SHADER].idx);
 }
 
-ecs::EntityType add_bspline_surface(std::vector<ecs::EntityType> &points, unsigned int patches[2]) {
+ecs::EntityType add_bspline_surface(std::vector<ecs::EntityType> &points, unsigned int patches[2], bool cyllinder) {
   static auto &reg = ecs::registry::get_registry();
   static auto &sm = shader_manager::get_manager();
 
@@ -487,6 +488,7 @@ ecs::EntityType add_bspline_surface(std::vector<ecs::EntityType> &points, unsign
   reg.add_component<relationship>(builder, {});
 
   auto &bsp = reg.get_component<bspline_surface_params>(builder);
+  bsp.cyllinder = cyllinder;
   bsp.u = patches[0];
   bsp.v = patches[1];
 
