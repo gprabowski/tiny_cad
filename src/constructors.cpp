@@ -85,7 +85,9 @@ ecs::EntityType add_icurve(const GLuint program) {
   return b;
 }
 
-ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points, unsigned int patches[2], bool cyllinder) {
+ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points,
+                                   unsigned int patches[2], bool cyllinder,
+                                   glm::vec2 &samples) {
   static auto &reg = ecs::registry::get_registry();
   static auto &sm = shader_manager::get_manager();
   const auto builder = reg.add_entity();
@@ -103,6 +105,8 @@ ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points, unsigne
   g.selected = {0.f, 255.f / 255.f, 171.f / 255.f, 1.0f};
   g.color = g.primary;
   g.program = sm.programs[shader_t::BEZIER_PATCH_SHADER].idx;
+  g.tesselation_inner = {samples[0], samples[0]};
+  g.tesselation_outer = {samples[1], samples[1], samples[1], samples[1]};
 
   auto &f = reg.get_component<tag_figure>(builder);
   f.name = "Bezier Surface #" + std::to_string(builder);
@@ -472,7 +476,9 @@ void setup_initial_geometry() {
   add_center_of_weight({}, sm.programs[shader_t::POINT_SHADER].idx);
 }
 
-ecs::EntityType add_bspline_surface(std::vector<ecs::EntityType> &points, unsigned int patches[2], bool cyllinder) {
+ecs::EntityType add_bspline_surface(std::vector<ecs::EntityType> &points,
+                                    unsigned int patches[2], bool cyllinder,
+                                    glm::vec2 &samples) {
   static auto &reg = ecs::registry::get_registry();
   static auto &sm = shader_manager::get_manager();
 
@@ -499,6 +505,8 @@ ecs::EntityType add_bspline_surface(std::vector<ecs::EntityType> &points, unsign
   g.selected = {0.f, 255.f / 255.f, 171.f / 255.f, 1.0f};
   g.color = g.primary;
   g.program = sm.programs[shader_t::BSPLINE_PATCH_SHADER].idx;
+  g.tesselation_inner = {samples[0], samples[0]};
+  g.tesselation_outer = {samples[1], samples[1], samples[1], samples[1]};
 
   auto &f = reg.get_component<tag_figure>(builder);
   f.name = "B-Spline Surface #" + std::to_string(builder);

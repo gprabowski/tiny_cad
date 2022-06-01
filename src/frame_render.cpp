@@ -40,6 +40,7 @@ void end_frame(GLFWwindow *w, uint64_t &begin_time) {
 
 void render_window_gui() {
   gui::render_main_menu();
+  gui::render_popups();
   gui::render_performance_window();
   gui::render_general_settings();
   gui::render_figure_select_gui();

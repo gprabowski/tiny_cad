@@ -198,7 +198,7 @@ void ShowDemo_RealtimePlots() {
 }
 
 void start_frame() {
-  static bool show_demo = false;
+  static bool show_demo = true;
   ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
   ImGuiWindowFlags host_window_flags = 0;
   host_window_flags |= ImGuiWindowFlags_NoTitleBar |
@@ -1048,6 +1048,24 @@ static void ShowExampleMenuFile() {
   }
 }
 
+void render_popups() {
+  // Always center this window when appearing
+  ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+  ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+  if (ImGui::BeginPopupModal("File Corrupted", NULL,
+                             ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::Text("The file you have pointed to is corrupted or wrongly "
+                "formatted!\n\n");
+    ImGui::Separator();
+
+    if (ImGui::Button("OK", ImVec2(120, 0))) {
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+  }
+}
+
 void render_main_menu() {
   if (ImGui::BeginMainMenuBar()) {
     if (ImGui::BeginMenu("File")) {
@@ -1077,9 +1095,14 @@ void render_main_menu() {
       std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
       // action
       MG1::SceneSerializer serializer;
-      auto &scene = serializer.LoadScene(filePathName);
-      auto &reg = ecs::registry::get_registry();
-      reg.load_from_scene(scene);
+      try {
+        auto &scene = serializer.LoadScene(filePathName);
+
+        auto &reg = ecs::registry::get_registry();
+        reg.load_from_scene(scene);
+      } catch (...) {
+        ImGui::OpenPopup("File Corrupted");
+      }
     }
     ImGuiFileDialog::Instance()->Close();
   }
