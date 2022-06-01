@@ -82,6 +82,11 @@ void registry::load_from_scene(const MG1::Scene &scene) {
 
     auto samples =
         glm::vec2{sc0.patches[0].samples.x, sc0.patches[0].samples.y};
+    if (sc0.size.x < 2) {
+      reset();
+      ImGui::OpenPopup("File Corrupted");
+      return;
+    }
     for (uint32_t ypat = 0; ypat < sc0.size.y; ++ypat) {
       for (uint32_t xpat = 0; xpat < sc0.size.x; ++xpat) {
         // build points
@@ -120,6 +125,11 @@ void registry::load_from_scene(const MG1::Scene &scene) {
         (4 + sc2.size.x - (ucyllinder ? 4 : 1)) * (4 + sc2.size.y - 1));
     auto samples =
         glm::vec2{sc2.patches[0].samples.x, sc2.patches[0].samples.y};
+    if (sc2.size.x < 3) {
+      reset();
+      ImGui::OpenPopup("File Corrupted");
+      return;
+    }
     for (uint32_t ypat = 0; ypat < sc2.size.y; ++ypat) {
       for (uint32_t xpat = 0; xpat < sc2.size.x; ++xpat) {
         // build points

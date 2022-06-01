@@ -587,7 +587,7 @@ void render_bsp_component_gui(ecs::EntityType idx,
     bsp.height = tmpf[1];
 
     if (bsp.cyllinder) {
-      bsp.u = std::max(4u, bsp.u);
+      bsp.u = std::max(3u, bsp.u);
     }
 
     frame_state::changed.push_back(idx);
