@@ -23,10 +23,16 @@ ecs::EntityType add_torus(parametric &&_p, transformation &&_t,
                           torus_params &&_tp, const GLuint program);
 
 ecs::EntityType add_bezier(const GLuint program);
+ecs::EntityType add_bezier_impl(const GLuint program,
+                                const std::vector<ecs::EntityType> &points);
 
 ecs::EntityType add_bspline(const GLuint program);
+ecs::EntityType add_bspline_impl(const GLuint program,
+                                 const std::vector<ecs::EntityType> &points);
 
 ecs::EntityType add_icurve(const GLuint program);
+ecs::EntityType add_icurve_impl(const GLuint program,
+                                const std::vector<ecs::EntityType> &points);
 
 ecs::EntityType add_bezier_surface_builder(transformation &&_t,
                                            const GLuint program);

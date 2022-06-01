@@ -46,30 +46,32 @@ void registry::load_from_scene(const MG1::Scene &scene) {
 
   // bezier curve C0
   for (const auto &bc0 : scene.bezierC0) {
-    remove_all<selected>();
+    std::vector<ecs::EntityType> points;
     for (const auto pidx : bc0.controlPoints) {
-      add_component<selected>(idx_scene_to_ecs[pidx.GetId()], {});
+      points.push_back(idx_scene_to_ecs[pidx.GetId()]);
     }
-    constructors::add_bezier(sm.programs[shader_t::BEZIER_CURVE_SHADER].idx);
+    constructors::add_bezier_impl(
+        sm.programs[shader_t::BEZIER_CURVE_SHADER].idx, points);
   }
 
   // bezier curve C2
   for (const auto &bc2 : scene.bezierC2) {
-    remove_all<selected>();
+    std::vector<ecs::EntityType> points;
     for (const auto pidx : bc2.controlPoints) {
-      add_component<selected>(idx_scene_to_ecs[pidx.GetId()], {});
+      points.push_back(idx_scene_to_ecs[pidx.GetId()]);
     }
-    constructors::add_bspline(sm.programs[shader_t::BSPLINE_CURVE_SHADER].idx);
+    constructors::add_bspline_impl(
+        sm.programs[shader_t::BSPLINE_CURVE_SHADER].idx, points);
   }
 
   // interpolation bezier curve C2
   for (const auto &ic2 : scene.interpolatedC2) {
-    remove_all<selected>();
+    std::vector<ecs::EntityType> points;
     for (const auto pidx : ic2.controlPoints) {
-      add_component<selected>(idx_scene_to_ecs[pidx.GetId()], {});
+      points.push_back(idx_scene_to_ecs[pidx.GetId()]);
     }
-    constructors::add_icurve(
-        sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx);
+    constructors::add_icurve_impl(
+        sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx, points);
   }
 
   // surface C0

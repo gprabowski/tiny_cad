@@ -43,15 +43,10 @@ gl_object get_cursor_geometry(const GLint program) {
   return cursor;
 }
 
-ecs::EntityType add_icurve(const GLuint program) {
-  std::vector<ecs::EntityType> sel_points;
+ecs::EntityType
+add_icurve_impl(const GLuint program,
+                const std::vector<ecs::EntityType> &sel_points) {
   auto &reg = ecs::registry::get_registry();
-  for (auto &[idx, _] : reg.get_map<selected>()) {
-    if (reg.has_component<tag_point>(idx)) {
-      sel_points.push_back(idx);
-    }
-  }
-
   if (sel_points.size() < 2)
     return ecs::null_entity;
 
@@ -83,6 +78,18 @@ ecs::EntityType add_icurve(const GLuint program) {
   g.patch_size = 4;
 
   return b;
+}
+
+ecs::EntityType add_icurve(const GLuint program) {
+  std::vector<ecs::EntityType> sel_points;
+  auto &reg = ecs::registry::get_registry();
+  for (auto &[idx, _] : reg.get_map<selected>()) {
+    if (reg.has_component<tag_point>(idx)) {
+      sel_points.push_back(idx);
+    }
+  }
+
+  return add_icurve_impl(program, sel_points);
 }
 
 ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points,
@@ -272,15 +279,11 @@ ecs::EntityType add_bezier_surface_builder(transformation &&_t,
   return b;
 }
 
-ecs::EntityType add_bspline(const GLuint program) {
+ecs::EntityType
+add_bspline_impl(const GLuint program,
+                 const std::vector<ecs::EntityType> &sel_points) {
   auto &sm = shader_manager::get_manager();
-  std::vector<ecs::EntityType> sel_points;
   auto &reg = ecs::registry::get_registry();
-  for (auto &[idx, _] : reg.get_map<selected>()) {
-    if (reg.has_component<tag_point>(idx)) {
-      sel_points.push_back(idx);
-    }
-  }
 
   if (sel_points.size() < 1)
     return ecs::null_entity;
@@ -328,15 +331,22 @@ ecs::EntityType add_bspline(const GLuint program) {
   return b;
 }
 
-ecs::EntityType add_bezier(const GLuint program) {
-  auto &reg = ecs::registry::get_registry();
-  auto &sm = shader_manager::get_manager();
+ecs::EntityType add_bspline(const GLuint program) {
   std::vector<ecs::EntityType> sel_points;
+  auto &reg = ecs::registry::get_registry();
   for (auto &[idx, _] : reg.get_map<selected>()) {
     if (reg.has_component<tag_point>(idx)) {
       sel_points.push_back(idx);
     }
   }
+  return add_bspline_impl(program, sel_points);
+}
+
+ecs::EntityType
+add_bezier_impl(const GLuint program,
+                const std::vector<ecs::EntityType> &sel_points) {
+  auto &reg = ecs::registry::get_registry();
+  auto &sm = shader_manager::get_manager();
 
   if (sel_points.size() < 1)
     return ecs::null_entity;
@@ -375,6 +385,18 @@ ecs::EntityType add_bezier(const GLuint program) {
   g.patch_size = 4;
 
   return b;
+}
+
+ecs::EntityType add_bezier(const GLuint program) {
+  auto &reg = ecs::registry::get_registry();
+  std::vector<ecs::EntityType> sel_points;
+  for (auto &[idx, _] : reg.get_map<selected>()) {
+    if (reg.has_component<tag_point>(idx)) {
+      sel_points.push_back(idx);
+    }
+  }
+
+  return add_bezier_impl(program, sel_points);
 }
 
 ecs::EntityType add_point(transformation &&_t, const GLuint program) {
