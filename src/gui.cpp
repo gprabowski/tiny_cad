@@ -198,7 +198,7 @@ void ShowDemo_RealtimePlots() {
 }
 
 void start_frame() {
-  static bool show_demo = true;
+  static bool show_demo = false;
   ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
   ImGuiWindowFlags host_window_flags = 0;
   host_window_flags |= ImGuiWindowFlags_NoTitleBar |
@@ -433,12 +433,12 @@ void render_gl_object_gui(gl_object &g,
     g.color = g.selected;
   }
 
-  if (ImGui::SliderFloat4("Outer Tesselation",
-                          glm::value_ptr(g.tesselation_outer), 1.0f, 100.f)) {
-  }
+  float tess[2]{g.tesselation_inner[0], g.tesselation_outer[0]};
 
-  if (ImGui::SliderFloat2("Inner Tesselation",
-                          glm::value_ptr(g.tesselation_inner), 1.0f, 100.f)) {
+  if (ImGui::SliderFloat2("Tesselation Levels", tess, 1.0f, 100.f)) {
+    g.tesselation_inner[0] = g.tesselation_inner[1] = tess[0];
+    g.tesselation_outer[0] = g.tesselation_outer[1] = g.tesselation_outer[2] =
+        g.tesselation_outer[3] = tess[1];
   }
 }
 
@@ -817,8 +817,9 @@ void render_torus_gui(ecs::EntityType idx, torus_params &tp, parametric &p,
     }
 
     if (ImGui::Button("Delete")) {
-      reg.delete_entity(idx);
+      frame_state::deleted.push_back(idx);
     }
+
     ImGui::TreePop();
   }
 }
@@ -931,6 +932,48 @@ void render_figure_select_gui() {
       frame_state::deleted.push_back(idx);
     }
   }
+  auto &s = reg.get_map<selected>();
+  if (s.size() == 2 && reg.has_component<tag_point>(s.begin()->first) &&
+      reg.has_component<tag_point>((++s.begin())->first)) {
+    if (ImGui::Button("Collapse")) {
+      auto id1 = s.begin()->first;
+      auto id2 = (++s.begin())->first;
+
+      auto &t1 = reg.get_component<transformation>(id1);
+      auto &t2 = reg.get_component<transformation>(id2);
+      // collapse two points into each other
+
+      if (!reg.has_component<relationship>(id2)) {
+        t1.translation = (t1.translation + t2.translation) * 0.5f;
+        frame_state::deleted.push_back(id2);
+        frame_state::changed.push_back(id1);
+      }
+
+      else if (!reg.has_component<relationship>(id1)) {
+        t2.translation = (t1.translation + t2.translation) * 0.5f;
+        frame_state::deleted.push_back(id1);
+        frame_state::changed.push_back(id2);
+      } else {
+        // they both have relationships
+        // transfer all relationships to t1
+        auto &r1 = reg.get_component<relationship>(id1);
+        auto &r2 = reg.get_component<relationship>(id2);
+
+        for (auto p : r2.parents) {
+          r1.parents.push_back(p);
+          auto &prel = reg.get_component<relationship>(p);
+          std::replace(prel.children.begin(), prel.children.end(), id2, id1);
+        }
+
+        r1.indestructible_counter += r2.indestructible_counter;
+        r2.indestructible_counter = 0;
+        r2.parents.clear();
+        t1.translation = (t1.translation + t2.translation) * 0.5f;
+        frame_state::deleted.push_back(id2);
+        frame_state::changed.push_back(id1);
+      }
+    }
+  }
   ImGui::End();
 }
 
@@ -944,6 +987,7 @@ void render_cursor_gui() {
       "Interpolation Spline",
       "Bezier Surface",
       "B-Spline Surface",
+      "Gregory Patch",
   };
 
   auto &reg = ecs::registry::get_registry();
@@ -973,6 +1017,8 @@ void render_cursor_gui() {
         p.current_shape = cursor_params::cursor_shape::bsurface;
       } else if (dmode == 6) {
         p.current_shape = cursor_params::cursor_shape::bspsurface;
+      } else if (dmode == 7) {
+        p.current_shape = cursor_params::cursor_shape::gregory;
       }
     }
 
@@ -1057,6 +1103,17 @@ void render_popups() {
                              ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::Text("The file you have pointed to is corrupted or wrongly "
                 "formatted!\n\n");
+    ImGui::Separator();
+
+    if (ImGui::Button("OK", ImVec2(120, 0))) {
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+  }
+
+  if (ImGui::BeginPopupModal("Hole Not Found", NULL,
+                             ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::Text("These patches don't have a proper hole!\n\n");
     ImGui::Separator();
 
     if (ImGui::Button("OK", ImVec2(120, 0))) {

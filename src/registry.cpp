@@ -82,7 +82,7 @@ void registry::load_from_scene(const MG1::Scene &scene) {
 
     auto samples =
         glm::vec2{sc0.patches[0].samples.x, sc0.patches[0].samples.y};
-    if (sc0.size.x < 2) {
+    if (sc0.uWrapped && sc0.size.x < 2) {
       reset();
       ImGui::OpenPopup("File Corrupted");
       return;

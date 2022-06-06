@@ -654,4 +654,173 @@ ecs::EntityType add_bspline_surface_builder(transformation &&_t,
 
   return b;
 }
+
+enum class cycle_edge { top, right, bottom, left };
+
+ecs::EntityType add_gregory(const GLuint program) {
+  std::vector<ecs::EntityType> sel_figures;
+  auto &reg = ecs::registry::get_registry();
+  if (reg.get_map<selected>().size() != 3) {
+    return ecs::null_entity;
+  }
+
+  for (auto &[idx, _] : reg.get_map<selected>()) {
+    if (!reg.has_component<bezier_surface_params>(idx)) {
+      return ecs::null_entity;
+    }
+    sel_figures.push_back(idx);
+  }
+  // here we know for sure that we have 3 bezier patches selected
+  auto &bsp1 = reg.get_component<bezier_surface_params>(sel_figures[0]);
+  auto &bsp2 = reg.get_component<bezier_surface_params>(sel_figures[1]);
+  auto &bsp3 = reg.get_component<bezier_surface_params>(sel_figures[2]);
+
+  if (bsp1.u != 1 || bsp1.v != 1 || bsp2.u != 1 || bsp2.v != 1 || bsp3.u != 1 ||
+      bsp3.v != 1) {
+    return ecs::null_entity;
+  }
+
+  // now verify whether a path exists
+  auto &rel1 = reg.get_component<relationship>(sel_figures[0]);
+  auto &rc1 = rel1.children;
+  auto &rel2 = reg.get_component<relationship>(sel_figures[1]);
+  auto &rc2 = rel2.children;
+  auto &rel3 = reg.get_component<relationship>(sel_figures[2]);
+  auto &rc3 = rel3.children;
+
+  std::array<ecs::EntityType, 4> cor1{rc1[0], rc1[3], rc1[12], rc1[15]},
+      cor2{rc2[0], rc2[3], rc2[12], rc2[15]},
+      cor3{rc3[0], rc3[3], rc3[12], rc3[15]};
+
+  // warunkiem na istnienie cyklu jest
+  // 1. wspólny jeden wierzchołek między rc1 i rc2
+  std::vector<ecs::EntityType> common12(4);
+  std::sort(cor1.begin(), cor1.end());
+  std::sort(cor2.begin(), cor2.end());
+  std::sort(cor3.begin(), cor3.end());
+
+  auto ls = std::set_intersection(cor1.begin(), cor1.end(), cor2.begin(), cor2.end(),
+                        common12.begin());
+  common12.resize(ls - common12.begin());
+
+  if (common12.size() == 0) {
+    return ecs::null_entity;
+  }
+  // 2. wspólny jeden wierzchołek między rc2 i rc3
+  std::vector<ecs::EntityType> common23(4);
+  ls = std::set_intersection(cor2.begin(), cor2.end(), cor3.begin(), cor3.end(),
+                        common23.begin());
+  common23.resize(ls - common23.begin());
+  if (common23.size() == 0) {
+    return ecs::null_entity;
+  }
+  // 3. wspólny jeden wierzchołek między rc1 i rc3
+  std::vector<ecs::EntityType> common31(4);
+  ls = std::set_intersection(cor3.begin(), cor3.end(), cor1.begin(), cor1.end(),
+                        common31.begin());
+  common31.resize(ls - common31.begin());
+  if (common31.size() == 0) {
+    return ecs::null_entity;
+  }
+
+  // upewnij się że każdy płatek ma poprawnie zdefiniowaną parę dwóch
+  // punktów dzielonych z pozostałymi, z czego
+  struct double_entity {
+    ecs::EntityType a, b;
+  };
+
+  auto is_diag = [&](auto id1, auto id2, auto &cor) -> bool {
+    if ((id1 == cor[0] && id2 == cor[15]) || (id1 == cor[3] && id2 == cor[12]) ||
+        (id2 == cor[0] && id1 == cor[15]) || (id2 == cor[3] && id1 == cor[12])) {
+      return true;
+    }
+    return false;
+  };
+
+  std::vector<double_entity> final_1, final_2, final_3;
+  for (auto &f : common31) {
+    for (auto &g : common12) {
+      if (f == g || is_diag(f, g, rc1)) {
+        continue;
+      }
+      final_1.push_back({f, g});
+    }
+  }
+
+  for (auto &f : common12) {
+    for (auto &g : common23) {
+      if (f == g || is_diag(f, g, rc2)) {
+        continue;
+      }
+      final_2.push_back({f, g});
+    }
+  }
+
+  for (auto &f : common23) {
+    for (auto &g : common31) {
+      if (f == g || is_diag(f, g, rc3)) {
+        continue;
+      }
+      final_3.push_back({f, g});
+    }
+  }
+
+  // find paths from 1 to 2 to 3 to 1
+  //
+  struct path {
+    ecs::EntityType a, b, c;
+  };
+
+  std::vector<path> paths;
+  for (auto [f1, g1] : final_1) {
+    for (auto [f2, g2] : final_2) {
+      for (auto [f3, g3] : final_3) {
+        if (g1 == f2 && g2 == f3 && g3 == f1) {
+          paths.push_back({f1, g1, g2});
+        }
+      }
+    }
+  }
+
+  if (paths.size()) {
+    auto &sm = shader_manager::get_manager();
+    const auto t = reg.add_entity();
+    reg.add_component<transformation>(t, {});
+    reg.add_component<gl_object>(t, {});
+    reg.add_component<tag_visible>(t, {});
+
+    auto &tr = reg.get_component<transformation>(t);
+    tr.rotation + tr.rotation;
+    auto &g = reg.get_component<gl_object>(t);
+    g.program = sm.programs[shader_t::GENERAL_SHADER].idx;
+    g.dmode = gl_object::draw_mode::triangles;
+
+    for (auto p : paths) {
+      auto &t1 = reg.get_component<transformation>(p.a);
+      auto &t2 = reg.get_component<transformation>(p.b);
+      auto &t3 = reg.get_component<transformation>(p.c);
+
+      g.indices.push_back(g.points.size());
+      g.points.push_back(glm::vec4(t1.translation, 1.0f));
+      g.indices.push_back(g.points.size());
+      g.points.push_back(glm::vec4(t2.translation, 1.0f));
+      g.indices.push_back(g.points.size());
+      g.points.push_back(glm::vec4(t3.translation, 1.0f));
+
+      g.indices.push_back(g.points.size());
+      g.points.push_back(glm::vec4(t1.translation, 1.0f));
+      g.indices.push_back(g.points.size());
+      g.points.push_back(glm::vec4(t3.translation, 1.0f));
+      g.indices.push_back(g.points.size());
+      g.points.push_back(glm::vec4(t2.translation, 1.0f));
+    }
+
+    systems::reset_gl_objects(g);
+
+    return t;
+  }
+
+  ImGui::OpenPopup("Hole Not Found");
+  return ecs::null_entity;
+}
 } // namespace constructors
