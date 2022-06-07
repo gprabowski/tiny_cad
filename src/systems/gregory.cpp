@@ -175,11 +175,11 @@ void regenerate_gregory(ecs::EntityType idx) {
 
     auto res1 = find_two_d(_a0_1, _b0_1, _a2_1, _b2_1);
 
-    p[20 + 7 * i] = p[21 + 7 * i] + res1.u;
-    p[39 + 3 * i] = p[40 + 3 * i] + res1.v;
+    p[20 + 7 * i] = p[21 + 7 * i] - res1.u;
+    p[39 + 3 * i] = p[40 + 3 * i] - res1.v;
 
-    p[22 + 7 * i] = p[21 + 7 * i] - res1.u;
-    p[41 + 3 * i] = p[40 + 3 * i] - res1.v;
+    p[22 + 7 * i] = p[21 + 7 * i] + res1.u;
+    p[41 + 3 * i] = p[40 + 3 * i] + res1.v;
 
     for (int k = 1; k < 7; ++k) {
       dg.indices.push_back(k - 1 + 6 * i);
