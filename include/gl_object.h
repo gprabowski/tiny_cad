@@ -15,9 +15,9 @@ struct gl_object {
   std::vector<glm::vec4> points;
   std::vector<unsigned int> indices;
 
-  glm::vec4 color{0.0f, 0.0f, 1.0f, 1.0f};
-  glm::vec4 primary{0.0f, 0.0f, 1.0f, 1.0f};
-  glm::vec4 selected{1.0f, 0.0f, 0.0f, 1.0f};
+  glm::vec4 color{0.9, 0.9, 0.9f, 1.0f};
+  glm::vec4 primary{0.9, 0.9, 0.9f, 1.0f};
+  glm::vec4 selected{1.0f, 0.4f, 0.4f, 1.0f};
 
   glm::vec4 tesselation_outer{4, 4, 4, 4};
   glm::vec2 tesselation_inner{4, 4};

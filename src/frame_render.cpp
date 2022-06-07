@@ -12,7 +12,9 @@ namespace sys = systems;
 
 namespace render {
 void begin_frame(uint64_t &b) {
-  static glm::vec4 clear_color = {0.0f, 0.0f, 0.0f, 1.00f};
+  static glm::vec4 clear_color = {47.f / 255.f, 53.f / 255.f, 57.f / 255.f,
+                                  1.00f};
+
   b = glfwGetTimerValue();
   glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
                clear_color.z * clear_color.w, clear_color.w);

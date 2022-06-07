@@ -106,7 +106,8 @@ void update_cursor() {
 }
 
 void render_app() {
-  static ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
+  static glm::vec4 clear_color = {38.f / 255.f, 38.f / 255.f, 38.f / 255.f,
+                                  1.00f};
   glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
                clear_color.z * clear_color.w, clear_color.w);
   glClearDepth(1.0f);

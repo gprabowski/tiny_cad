@@ -127,6 +127,8 @@ void common_ubo_setup(std::shared_ptr<GLFWwindow> w) {
 }
 
 void ogl_setup(std::shared_ptr<GLFWwindow> w) {
+  static glm::vec4 clear_color = {47.f / 255.f, 53.f / 255.f, 57.f / 255.f,
+                                  1.00f};
 #ifndef RELEASE_MODE
   glEnable(GL_DEBUG_OUTPUT);
   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -147,7 +149,7 @@ void ogl_setup(std::shared_ptr<GLFWwindow> w) {
   int actualWindowWidth, actualWindowHeight;
   glfwGetWindowSize(w.get(), &actualWindowWidth, &actualWindowHeight);
   glViewport(0, 0, actualWindowWidth, actualWindowHeight);
-  glClearColor(0.1f, 0.3f, 0.2f, 1.0f);
+  glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 }
 
 std::shared_ptr<GLFWwindow> init_all(const char *caption) {
@@ -184,6 +186,7 @@ std::shared_ptr<GLFWwindow> init_all(const char *caption) {
   sm.add(shader_t::BEZIER_PATCH_SHADER, "resources/bezier_patch");
   sm.add(shader_t::BSPLINE_PATCH_SHADER, "resources/bspline_patch");
   sm.add(shader_t::GREGORY_SHADER, "resources/gregory");
+  sm.add(shader_t::GRID_SHADER, "resources/grid");
 
   constructors::setup_initial_geometry();
   gui::setup_gui(w);

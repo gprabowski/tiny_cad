@@ -17,6 +17,7 @@ enum class shader_t {
   BEZIER_PATCH_SHADER,
   BSPLINE_PATCH_SHADER,
   GREGORY_SHADER,
+  GRID_SHADER,
 };
 
 struct shader {

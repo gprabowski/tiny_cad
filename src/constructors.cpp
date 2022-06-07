@@ -26,6 +26,26 @@ ecs::EntityType add_cursor(transformation &&_t, gl_object &&_g) {
   return t;
 }
 
+ecs::EntityType add_grid() {
+  auto &reg = ecs::registry::get_registry();
+  auto &sm = shader_manager::get_manager();
+  const auto t = reg.add_entity();
+  reg.add_component<transformation>(t, {});
+  reg.add_component<gl_object>(t, {});
+  reg.add_component<tag_visible>(t, {});
+
+  auto &g = reg.get_component<gl_object>(t);
+  g.points = {glm::vec4(-1.0, 0.0, -1.0, 1.0), glm::vec4(1.0, 0.0, -1.0, 1.0),
+              glm::vec4(1.0, 0.0, 1.0, 1.0), glm::vec4(-1.0, 0.0, 1.0, 1.0)};
+  g.indices = {0, 1, 2, 2, 3, 0};
+  g.dmode = gl_object::draw_mode::triangles;
+  g.program = sm.programs[shader_t::GRID_SHADER].idx;
+
+  systems::reset_gl_objects(g);
+
+  return t;
+}
+
 gl_object get_cursor_geometry(const GLint program) {
   gl_object cursor;
   cursor.points = {{0.0f, 0.0f, 0.0f, 1.0f},  {1.0f, 0.0f, 0.0f, 1.0f},
@@ -108,8 +128,6 @@ ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points,
   reg.add_component<tag_visible>(builder, {});
 
   auto &g = reg.get_component<gl_object>(builder);
-  g.primary = {255.f / 255.f, 69.f / 255.f, 0.f, 1.0f};
-  g.selected = {0.f, 255.f / 255.f, 171.f / 255.f, 1.0f};
   g.color = g.primary;
   g.program = sm.programs[shader_t::BEZIER_PATCH_SHADER].idx;
   g.tesselation_inner = {samples[0], samples[0]};
@@ -270,8 +288,6 @@ ecs::EntityType add_bezier_surface_builder(transformation &&_t,
   g.color = g.primary;
 
   g.dmode = gl_object::draw_mode::lines;
-  g.primary = {255.f / 255.f, 69.f / 255.f, 0.f, 1.0f};
-  g.selected = {0.f, 255.f / 255.f, 171.f / 255.f, 1.0f};
   g.color = g.primary;
 
   systems::regenerate_bezier_surface_builder(b);
@@ -436,9 +452,6 @@ ecs::EntityType add_virtual_point(transformation &&_t, const GLuint program) {
   g.points.push_back({0.0f, 0.0f, 0.0f, 1.0f});
   g.indices.push_back(0u);
   g.dmode = gl_object::draw_mode::points;
-  g.color = {0.0f, 1.0f, 0.0f, 1.0f};
-  g.primary = {0.0f, 1.0f, 0.0f, 1.0f};
-  g.selected = {1.0f, 1.0f, 0.0f, 1.0f};
 
   systems::reset_gl_objects(g);
 
@@ -496,6 +509,7 @@ void setup_initial_geometry() {
   add_cursor(transformation{},
              get_cursor_geometry(sm.programs[shader_t::CURSOR_SHADER].idx));
   add_center_of_weight({}, sm.programs[shader_t::POINT_SHADER].idx);
+  add_grid();
 }
 
 ecs::EntityType add_bspline_surface(std::vector<ecs::EntityType> &points,
