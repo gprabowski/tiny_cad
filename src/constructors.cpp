@@ -699,8 +699,8 @@ ecs::EntityType add_gregory(const GLuint program) {
   std::sort(cor2.begin(), cor2.end());
   std::sort(cor3.begin(), cor3.end());
 
-  auto ls = std::set_intersection(cor1.begin(), cor1.end(), cor2.begin(), cor2.end(),
-                        common12.begin());
+  auto ls = std::set_intersection(cor1.begin(), cor1.end(), cor2.begin(),
+                                  cor2.end(), common12.begin());
   common12.resize(ls - common12.begin());
 
   if (common12.size() == 0) {
@@ -709,7 +709,7 @@ ecs::EntityType add_gregory(const GLuint program) {
   // 2. wspólny jeden wierzchołek między rc2 i rc3
   std::vector<ecs::EntityType> common23(4);
   ls = std::set_intersection(cor2.begin(), cor2.end(), cor3.begin(), cor3.end(),
-                        common23.begin());
+                             common23.begin());
   common23.resize(ls - common23.begin());
   if (common23.size() == 0) {
     return ecs::null_entity;
@@ -717,7 +717,7 @@ ecs::EntityType add_gregory(const GLuint program) {
   // 3. wspólny jeden wierzchołek między rc1 i rc3
   std::vector<ecs::EntityType> common31(4);
   ls = std::set_intersection(cor3.begin(), cor3.end(), cor1.begin(), cor1.end(),
-                        common31.begin());
+                             common31.begin());
   common31.resize(ls - common31.begin());
   if (common31.size() == 0) {
     return ecs::null_entity;
@@ -730,11 +730,41 @@ ecs::EntityType add_gregory(const GLuint program) {
   };
 
   auto is_diag = [&](auto id1, auto id2, auto &cor) -> bool {
-    if ((id1 == cor[0] && id2 == cor[15]) || (id1 == cor[3] && id2 == cor[12]) ||
-        (id2 == cor[0] && id1 == cor[15]) || (id2 == cor[3] && id1 == cor[12])) {
+    if ((id1 == cor[0] && id2 == cor[15]) ||
+        (id1 == cor[3] && id2 == cor[12]) ||
+        (id2 == cor[0] && id1 == cor[15]) ||
+        (id2 == cor[3] && id1 == cor[12])) {
       return true;
     }
     return false;
+  };
+
+  auto get_between = [&](auto id1, auto id2,
+                         auto &cor) -> std::vector<ecs::EntityType> {
+    std::vector<ecs::EntityType> ret;
+    if (id1 == cor[0] && id2 == cor[3]) {
+      ret = {cor[0], cor[1], cor[2], cor[3], cor[4], cor[5], cor[6], cor[7]};
+    } else if (id1 == cor[3] && id2 == cor[0]) {
+      ret = {cor[3], cor[2], cor[1], cor[0], cor[7], cor[6], cor[5], cor[4]};
+    } else if (id1 == cor[3] && id2 == cor[15]) {
+      ret = {cor[3], cor[7], cor[11], cor[15],
+             cor[2], cor[6], cor[10], cor[14]};
+    } else if (id1 == cor[15] && id2 == cor[3]) {
+      ret = {cor[15], cor[11], cor[7], cor[3],
+             cor[14], cor[10], cor[6], cor[2]};
+    } else if (id1 == cor[12] && id2 == cor[15]) {
+      ret = {cor[12], cor[13], cor[14], cor[15],
+             cor[8],  cor[9],  cor[10], cor[11]};
+    } else if (id1 == cor[15] && id2 == cor[12]) {
+      ret = {cor[15], cor[14], cor[13], cor[12],
+             cor[11], cor[10], cor[9],  cor[8]};
+    } else if (id1 == cor[0] && id2 == cor[12]) {
+      ret = {cor[0], cor[4], cor[8], cor[12], cor[1], cor[5], cor[9], cor[13]};
+    } else if (id1 == cor[12] && id2 == cor[0]) {
+      ret = {cor[12], cor[8], cor[4], cor[0], cor[13], cor[9], cor[5], cor[1]};
+    }
+
+    return ret;
   };
 
   std::vector<double_entity> final_1, final_2, final_3;
@@ -784,40 +814,73 @@ ecs::EntityType add_gregory(const GLuint program) {
 
   if (paths.size()) {
     auto &sm = shader_manager::get_manager();
-    const auto t = reg.add_entity();
-    reg.add_component<transformation>(t, {});
-    reg.add_component<gl_object>(t, {});
-    reg.add_component<tag_visible>(t, {});
-
-    auto &tr = reg.get_component<transformation>(t);
-    tr.rotation + tr.rotation;
-    auto &g = reg.get_component<gl_object>(t);
-    g.program = sm.programs[shader_t::GENERAL_SHADER].idx;
-    g.dmode = gl_object::draw_mode::triangles;
 
     for (auto p : paths) {
-      auto &t1 = reg.get_component<transformation>(p.a);
-      auto &t2 = reg.get_component<transformation>(p.b);
-      auto &t3 = reg.get_component<transformation>(p.c);
+      const auto t = reg.add_entity();
+      reg.add_component<transformation>(t, {});
+      reg.add_component<gl_object>(t, {});
+      reg.add_component<tag_gregory>(t, {});
+      reg.add_component<tag_visible>(t, {});
+      reg.add_component<tag_parent>(t, {});
+      reg.add_component<relationship>(t, {});
+      reg.add_component<tag_figure>(t, {"Gregory Patch #" + std::to_string(t)});
 
-      g.indices.push_back(g.points.size());
-      g.points.push_back(glm::vec4(t1.translation, 1.0f));
-      g.indices.push_back(g.points.size());
-      g.points.push_back(glm::vec4(t2.translation, 1.0f));
-      g.indices.push_back(g.points.size());
-      g.points.push_back(glm::vec4(t3.translation, 1.0f));
+      auto &tr = reg.get_component<transformation>(t);
+      tr.rotation + tr.rotation;
+      auto &g = reg.get_component<gl_object>(t);
+      g.program = sm.programs[shader_t::GREGORY_SHADER].idx;
+      g.dmode = gl_object::draw_mode::patches;
+      g.patch_size = 20;
+      auto fp1 = get_between(p.a, p.b, rc1);
+      auto fp2 = get_between(p.b, p.c, rc2);
+      auto fp3 = get_between(p.c, p.a, rc3);
 
-      g.indices.push_back(g.points.size());
-      g.points.push_back(glm::vec4(t1.translation, 1.0f));
-      g.indices.push_back(g.points.size());
-      g.points.push_back(glm::vec4(t3.translation, 1.0f));
-      g.indices.push_back(g.points.size());
-      g.points.push_back(glm::vec4(t2.translation, 1.0f));
+      auto &rel = reg.get_component<relationship>(t);
+      rel.indestructible_relation = true;
+
+      for (auto l : {fp1, fp2, fp3}) {
+        for (auto id : l) {
+          if (reg.has_component<relationship>(id)) {
+            auto &r = reg.get_component<relationship>(id);
+            r.parents.push_back(t);
+            r.indestructible_counter++;
+          } else {
+            reg.add_component<relationship>(id, {{t}, {}});
+            auto &r = reg.get_component<relationship>(id);
+            r.indestructible_counter++;
+          }
+          rel.children.push_back(id);
+        }
+      }
+
+      rel1.parents.push_back(t);
+      rel1.indestructible_counter++;
+      rel.children.push_back(sel_figures[0]);
+
+      rel2.parents.push_back(t);
+      rel2.indestructible_counter++;
+      rel.children.push_back(sel_figures[1]);
+
+      rel3.parents.push_back(t);
+      rel3.indestructible_counter++;
+      rel.children.push_back(sel_figures[2]);
+
+      auto &tg = reg.get_component<tag_gregory>(t);
+
+      const auto gregory_derivatives = reg.add_entity();
+      reg.add_component<gl_object>(gregory_derivatives, gl_object{program});
+      reg.add_component<transformation>(gregory_derivatives, {});
+      auto &db_g = reg.get_component<gl_object>(gregory_derivatives);
+      db_g.program = sm.programs[shader_t::GENERAL_SHADER].idx;
+      db_g.dmode = gl_object::draw_mode::lines;
+
+      tg.derivatives = gregory_derivatives;
+
+      systems::regenerate(t);
+      systems::reset_gl_objects(g);
     }
 
-    systems::reset_gl_objects(g);
-
-    return t;
+    return ecs::null_entity;
   }
 
   ImGui::OpenPopup("Hole Not Found");

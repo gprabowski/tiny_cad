@@ -136,6 +136,8 @@ void ogl_setup(std::shared_ptr<GLFWwindow> w) {
 #endif
 
   // glEnable(GL_CULL_FACE);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_LINE_SMOOTH);
   glEnable(GL_BLEND);
@@ -181,6 +183,7 @@ std::shared_ptr<GLFWwindow> init_all(const char *caption) {
   sm.add(shader_t::MERGE_SHADER, "resources/merge");
   sm.add(shader_t::BEZIER_PATCH_SHADER, "resources/bezier_patch");
   sm.add(shader_t::BSPLINE_PATCH_SHADER, "resources/bspline_patch");
+  sm.add(shader_t::GREGORY_SHADER, "resources/gregory");
 
   constructors::setup_initial_geometry();
   gui::setup_gui(w);

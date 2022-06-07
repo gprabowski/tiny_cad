@@ -14,6 +14,7 @@ set(SOURCES
     systems/gizmo.cpp  
     systems/gl_systems.cpp 
     systems/points.cpp 
+    systems/gregory.cpp 
     systems/systems.cpp	
     systems/torus.cpp
     systems/bezier_surface.cpp

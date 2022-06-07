@@ -16,6 +16,7 @@ enum class shader_t {
   MERGE_SHADER,
   BEZIER_PATCH_SHADER,
   BSPLINE_PATCH_SHADER,
+  GREGORY_SHADER,
 };
 
 struct shader {

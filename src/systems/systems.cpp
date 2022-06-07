@@ -34,6 +34,8 @@ void regenerate(ecs::EntityType idx) {
     regenerate_bspline_surface_builder(idx);
   } else if (reg.has_component<bspline_surface_params>(idx)) {
     regenerate_bspline_surface(idx);
+  } else if (reg.has_component<tag_gregory>(idx)) {
+    regenerate_gregory(idx);
   }
 }
 

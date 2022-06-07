@@ -529,6 +529,19 @@ void render_bspline_component_gui(bspline &bsp) {
   }
 }
 
+void render_gregory_component_gui(tag_gregory &tg) {
+  static auto &reg = ecs::registry::get_registry();
+  bool visible_derivatives = reg.has_component<tag_visible>(tg.derivatives);
+
+  if (ImGui::Checkbox("Derivative lines", &visible_derivatives)) {
+    if (visible_derivatives) {
+      reg.add_component<tag_visible>(tg.derivatives, {});
+    } else {
+      reg.remove_component<tag_visible>(tg.derivatives);
+    }
+  }
+}
+
 void render_bsp_component_gui(ecs::EntityType idx, bezier_surface_params &bsp) {
   std::array<int, 2> tmpi{static_cast<int>(bsp.u), static_cast<int>(bsp.v)};
   std::array<float, 2> tmpf{bsp.width, bsp.height};
@@ -635,6 +648,23 @@ void render_bspline_gui(tag_figure &fc, gl_object &g, relationship &rel,
         g, {gl_object::draw_mode::points, gl_object::draw_mode::patches});
 
     render_bspline_component_gui(bsp);
+    render_relationship_gui(idx, rel);
+    render_parent_gui(idx);
+  });
+}
+
+void render_gregory_gui(tag_figure &fc, gl_object &g, relationship &rel,
+                        ecs::EntityType idx) {
+  auto &reg = ecs::registry::get_registry();
+
+  render_figure_gui(idx, fc, [&]() {
+    auto &g = reg.get_component<gl_object>(idx);
+    auto &tg = reg.get_component<tag_gregory>(idx);
+
+    render_gl_object_gui(
+        g, {gl_object::draw_mode::points, gl_object::draw_mode::patches});
+
+    render_gregory_component_gui(tg);
     render_relationship_gui(idx, rel);
     render_parent_gui(idx);
   });
@@ -894,6 +924,11 @@ void render_selected_edit_gui() {
       auto &g = reg.get_component<gl_object>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
       render_bspline_surface_gui(fc, bsp, g, idx);
+    } else if (reg.has_component<tag_gregory>(idx)) {
+      auto &g = reg.get_component<gl_object>(idx);
+      auto &fc = reg.get_component<tag_figure>(idx);
+      auto &rel = reg.get_component<relationship>(idx);
+      render_gregory_gui(fc, g, rel, idx);
     }
   }
   ImGui::End();
@@ -1073,10 +1108,11 @@ static void ShowExampleMenuFile() {
     ImGui::EndMenu();
   }
 
-  // Here we demonstrate appending again to the "Options" menu (which we already
-  // created above) Of course in this demo it is a little bit silly that this
-  // function calls BeginMenu("Options") twice. In a real code-base using it
-  // would make senses to use this feature from very different code locations.
+  // Here we demonstrate appending again to the "Options" menu (which we
+  // already created above) Of course in this demo it is a little bit silly
+  // that this function calls BeginMenu("Options") twice. In a real code-base
+  // using it would make senses to use this feature from very different code
+  // locations.
   if (ImGui::BeginMenu("Options")) // <-- Append!
   {
     static bool b = true;
