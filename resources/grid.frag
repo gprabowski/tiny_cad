@@ -18,7 +18,7 @@ float max2(vec2 v) {
 
 in vec2 uv;
 
-float gridSize = 100.0f;
+float gridSize = 600.0f;
 float gridCellSize = 0.05f;
 
 vec4 gridColorThin = vec4(0.4, 0.4, 0.4, 1.0);
@@ -59,5 +59,7 @@ void main() {
 
     c.a *= lod2a > 0.0 ? lod2a : lod1a > 0.0 ? lod1a : (lod0a * (1.0 - lodFade));
     c.a *= opacityFalloff;
+    if(c.a < 0.2)
+        discard;
     frag_color = c;
 }
