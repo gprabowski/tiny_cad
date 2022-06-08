@@ -887,6 +887,8 @@ ecs::EntityType add_gregory(const GLuint program) {
       auto &db_g = reg.get_component<gl_object>(gregory_derivatives);
       db_g.program = sm.programs[shader_t::GENERAL_SHADER].idx;
       db_g.dmode = gl_object::draw_mode::lines;
+      db_g.primary = {0.3f, 0.3f, 1.0f, 1.0f};
+      db_g.color = db_g.primary;
 
       tg.derivatives = gregory_derivatives;
 
