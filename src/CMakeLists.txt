@@ -19,10 +19,12 @@ set(SOURCES
     systems/torus.cpp
     systems/bezier_surface.cpp
     systems/bspline_surface.cpp
+    systems/intersections.cpp
     framebuffer.cpp
     frame_render.cpp
     frame_update.cpp
     shader_manager.cpp
+    sampler.cpp
 )
 
 add_executable(tiny_cad)

@@ -1,12 +1,13 @@
 #pragma once
 
-#include "torus.h"
 #include <ecs.h>
 #include <gl_object.h>
 #include <input_state.h>
 #include <memory>
 #include <parametric.h>
 #include <registry.h>
+#include <sampler.h>
+#include <torus.h>
 #include <vector>
 
 #define GLFW_INCLUDE_NONE
@@ -52,7 +53,8 @@ void reset_gl_objects(gl_object &g);
 void set_model_uniform(const transformation &t);
 void update_changed_relationships();
 void delete_entities();
-
 void regenerate(ecs::EntityType idx);
+
+ecs::EntityType intersect(sampler &first, sampler &second);
 
 } // namespace systems

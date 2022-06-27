@@ -27,7 +27,6 @@ void find_combination(glm::vec3 a, glm::vec3 b, glm::vec3 res, float &u,
                       float &v) {
   glm::mat3 ext{a, b, res};
   ext = glm::transpose(ext);
-  // pivot first row
   // gauss first row
   ext[0] = ext[0] / ext[0][0];
   ext[1] = ext[1] - ext[0] * (ext[1][0] / ext[0][0]);

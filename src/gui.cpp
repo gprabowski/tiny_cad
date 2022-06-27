@@ -1023,6 +1023,7 @@ void render_cursor_gui() {
       "Bezier Surface",
       "B-Spline Surface",
       "Gregory Patch",
+      "Intersection"
   };
 
   auto &reg = ecs::registry::get_registry();
@@ -1054,6 +1055,8 @@ void render_cursor_gui() {
         p.current_shape = cursor_params::cursor_shape::bspsurface;
       } else if (dmode == 7) {
         p.current_shape = cursor_params::cursor_shape::gregory;
+      } else if (dmode == 8) {
+        p.current_shape = cursor_params::cursor_shape::intersection;
       }
     }
 

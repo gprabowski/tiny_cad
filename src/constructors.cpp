@@ -1,7 +1,9 @@
+#include "torus.h"
 #include <bezier_surface.h>
 #include <constructors.h>
 #include <log.h>
 #include <relationship.h>
+#include <sampler.h>
 #include <shader_manager.h>
 #include <systems.h>
 
@@ -902,4 +904,21 @@ ecs::EntityType add_gregory(const GLuint program) {
   ImGui::OpenPopup("Hole Not Found");
   return ecs::null_entity;
 }
+
+ecs::EntityType add_intersection(const GLuint program) {
+  std::vector<ecs::EntityType> sel_figures;
+  auto &reg = ecs::registry::get_registry();
+  if (reg.get_map<selected>().size() != 2) {
+    return ecs::null_entity;
+  }
+
+  const auto first = reg.get_map<selected>().begin()->first;
+  const auto second = (++reg.get_map<selected>().begin())->first;
+
+  auto first_sampler = get_sampler(first);
+  auto second_sampler = get_sampler(second);
+
+  return systems::intersect(first_sampler, second_sampler);
+}
+
 } // namespace constructors

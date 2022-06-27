@@ -36,6 +36,8 @@ ecs::EntityType add_icurve_impl(const GLuint program,
 
 ecs::EntityType add_gregory(const GLuint program);
 
+ecs::EntityType add_intersection(const GLuint program);
+
 ecs::EntityType add_bezier_surface_builder(transformation &&_t,
                                            const GLuint program);
 

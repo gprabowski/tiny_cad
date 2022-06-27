@@ -9,6 +9,7 @@ struct cursor_params {
     icurve = 4,
     bsurface = 5,
     bspsurface = 6,
-    gregory = 7
+    gregory = 7,
+    intersection = 8
   } current_shape{point};
 };
