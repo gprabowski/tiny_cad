@@ -673,6 +673,7 @@ void render_gregory_gui(tag_figure &fc, gl_object &g, relationship &rel,
 void render_bezier_surface_gui(tag_figure &fc, bezier_surface_params &bsp,
                                gl_object &g, ecs::EntityType idx) {
   render_figure_gui(idx, fc, [=]() {
+    static float v[2] {0.0f, 0.0f};
     auto &reg = ecs::registry::get_registry();
     auto &rel = reg.get_component<relationship>(idx);
     auto &g = reg.get_component<gl_object>(idx);
@@ -687,6 +688,13 @@ void render_bezier_surface_gui(tag_figure &fc, bezier_surface_params &bsp,
       } else {
         reg.remove_component<tag_visible>(bsp.bezier_polygon);
       }
+    }
+
+    if(ImGui::SliderFloat2("Sampler", v, 0.0f, 1.0f)) {
+        auto samp = get_sampler(idx);
+        auto pos = samp.sample(v[0], v[1]);
+        auto &ctr = reg.get_component<transformation>(reg.get_map<cursor_params>().begin()->first);
+        ctr.translation = pos;
     }
   });
 }
