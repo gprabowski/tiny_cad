@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <utility>
@@ -25,6 +26,7 @@
 #include <constant_matrices.h>
 #include <constructors.h>
 #include <frame_state.h>
+#include <frame_update.h>
 #include <framebuffer.h>
 #include <gl_object.h>
 #include <gui.h>
@@ -673,7 +675,7 @@ void render_gregory_gui(tag_figure &fc, gl_object &g, relationship &rel,
 void render_bezier_surface_gui(tag_figure &fc, bezier_surface_params &bsp,
                                gl_object &g, ecs::EntityType idx) {
   render_figure_gui(idx, fc, [=]() {
-    static float v[2] {0.0f, 0.0f};
+    static float v[2]{0.0f, 0.0f};
     auto &reg = ecs::registry::get_registry();
     auto &rel = reg.get_component<relationship>(idx);
     auto &g = reg.get_component<gl_object>(idx);
@@ -690,11 +692,12 @@ void render_bezier_surface_gui(tag_figure &fc, bezier_surface_params &bsp,
       }
     }
 
-    if(ImGui::SliderFloat2("Sampler", v, 0.0f, 1.0f)) {
-        auto samp = get_sampler(idx);
-        auto pos = samp.sample(v[0], v[1]);
-        auto &ctr = reg.get_component<transformation>(reg.get_map<cursor_params>().begin()->first);
-        ctr.translation = pos;
+    if (ImGui::SliderFloat2("Sampler", v, 0.0f, 1.0f)) {
+      auto samp = get_sampler(idx);
+      auto pos = samp.sample(v[0], v[1]);
+      auto &ctr = reg.get_component<transformation>(
+          reg.get_map<cursor_params>().begin()->first);
+      ctr.translation = pos;
     }
   });
 }
@@ -862,6 +865,23 @@ void render_torus_gui(ecs::EntityType idx, torus_params &tp, parametric &p,
   }
 }
 
+void render_selection_rect() {
+  auto &s = input_state::get_input_state();
+  auto &reg = ecs::registry::get_registry();
+  if (s.mouse_selecting) {
+    const auto sel_rect = reg.get_map<tags_selection_rect>().begin()->first;
+    auto &t = reg.get_component<transformation>(sel_rect);
+    auto &gl = reg.get_component<gl_object>(sel_rect);
+    glUseProgram(gl.program);
+    update::refresh_identity();
+    systems::set_model_uniform(t);
+    glVertexAttrib4f(1, gl.color.r, gl.color.g, gl.color.b, gl.color.a);
+    systems::render_gl(gl);
+    update::refresh_impl(frame_state::col_mat, frame_state::view,
+                         frame_state::proj);
+  }
+}
+
 void end_frame() {
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -1022,17 +1042,15 @@ void render_figure_select_gui() {
 
 void render_cursor_gui() {
   static int dmode = 1;
-  static std::vector<std::string> combovalues{
-      "Torus",
-      "Point",
-      "Bezier Curve C0",
-      "B-Spline",
-      "Interpolation Spline",
-      "Bezier Surface",
-      "B-Spline Surface",
-      "Gregory Patch",
-      "Intersection"
-  };
+  static std::vector<std::string> combovalues{"Torus",
+                                              "Point",
+                                              "Bezier Curve C0",
+                                              "B-Spline",
+                                              "Interpolation Spline",
+                                              "Bezier Surface",
+                                              "B-Spline Surface",
+                                              "Gregory Patch",
+                                              "Intersection"};
 
   auto &reg = ecs::registry::get_registry();
 

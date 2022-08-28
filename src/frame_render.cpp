@@ -49,6 +49,7 @@ void render_window_gui() {
   gui::render_selected_edit_gui();
   gui::render_cursor_gui();
 }
+
 void render_viewport() {
   // display
   static auto &fb = framebuffer::get();
@@ -71,6 +72,7 @@ void render_viewport() {
     fb.set_regular();
     glViewport(0, 0, frame_state::content_area.x, frame_state::content_area.y);
     sys::render_app();
+    gui::render_selection_rect();
     fb.unbind();
   } else {
     fb.bind();

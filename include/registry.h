@@ -25,7 +25,7 @@
 
 namespace ecs {
 
-constexpr int num_components = 22;
+constexpr int num_components = 23;
 
 template <typename C> using ComponentStorage = std::map<EntityType, C>;
 
@@ -68,18 +68,21 @@ template <> struct com_id<bezier_surface_params> : com_id_impl<18> {};
 template <> struct com_id<tag_bspline_surface_builder> : com_id_impl<19> {};
 template <> struct com_id<bspline_surface_params> : com_id_impl<20> {};
 template <> struct com_id<tag_gregory> : com_id_impl<21> {};
+template <> struct com_id<tags_selection_rect> : com_id_impl<22> {};
 
 template <typename T> constexpr component_bitset get_com_bit() {
   return 1ull << com_id<T>::value;
 };
 
 template <int ID> struct type_from_id {
-  using type = typename select<
-      ID, parametric, transformation, gl_object, torus_params, tag_figure,
-      cursor_params, tag_point, selected, bezierc, relationship, tag_parent,
-      bspline, tag_virtual, tag_visible, tag_clickable, tag_center_of_weight,
-      icurve, tag_bezier_surface_builder, bezier_surface_params,
-      tag_bspline_surface_builder, bspline_surface_params, tag_gregory>::type;
+  using type =
+      typename select<ID, parametric, transformation, gl_object, torus_params,
+                      tag_figure, cursor_params, tag_point, selected, bezierc,
+                      relationship, tag_parent, bspline, tag_virtual,
+                      tag_visible, tag_clickable, tag_center_of_weight, icurve,
+                      tag_bezier_surface_builder, bezier_surface_params,
+                      tag_bspline_surface_builder, bspline_surface_params,
+                      tag_gregory, tags_selection_rect>::type;
 };
 
 template <int ID> using type_from_id_t = typename type_from_id<ID>::type;
@@ -112,7 +115,8 @@ struct registry : component_owner<parametric>,
                   component_owner<bezier_surface_params>,
                   component_owner<tag_bspline_surface_builder>,
                   component_owner<bspline_surface_params>,
-                  component_owner<tag_gregory> {
+                  component_owner<tag_gregory>,
+                  component_owner<tags_selection_rect> {
 
   std::unordered_map<EntityType, component_bitset> entities;
 

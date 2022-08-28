@@ -1,3 +1,5 @@
+#include <iostream>
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -40,6 +42,20 @@ void setup_globals(const ImVec2 &s) {
 
   frame_state::view = view;
   frame_state::proj = proj;
+}
+
+void refresh_identity() {
+  static auto &sm = shader_manager::get_manager();
+  static const auto identity = glm::mat4(1.f);
+  glBindBufferBase(GL_UNIFORM_BUFFER, sm.common_ubo_block_loc, sm.common_ubo);
+  float *common_ubo_ptr = (float *)glMapNamedBufferRange(
+      sm.common_ubo, 0, 3 * 16 * sizeof(float),
+      GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+  memcpy(&common_ubo_ptr[0], glm::value_ptr(identity), sizeof(float) * 16);
+  memcpy(&common_ubo_ptr[16], glm::value_ptr(identity), sizeof(float) * 16);
+  memcpy(&common_ubo_ptr[32], glm::value_ptr(identity), sizeof(float) * 16);
+  glUnmapNamedBuffer(sm.common_ubo);
+  glBindBuffer(GL_UNIFORM_BUFFER, sm.common_ubo);
 }
 
 void refresh_impl(glm::mat4 &col, glm::mat4 &view, glm::mat4 &proj) {
@@ -105,9 +121,38 @@ void refresh_ubos_right() {
   refresh_impl(frame_state::col_mat_right, rview, rproj);
 }
 
+inline glm::vec2 get_ndc(const glm::vec2 &v) {
+  return {2 * (((v.x - frame_state::content_pos.x) /
+                static_cast<float>(frame_state::content_area.x)) -
+               0.5f),
+          -2 * (((v.y - frame_state::content_pos.y) /
+                 static_cast<float>(frame_state::content_area.y)) -
+                0.5f)};
+}
+
 void per_frame_update() {
+  static auto &is = input_state::get_input_state();
+  static auto &r = ecs::registry::get_registry();
+
   systems::update_changed_relationships();
   systems::delete_entities();
+
+  if (is.mouse_selecting) {
+    GLFWwindow *backup_current_context = glfwGetCurrentContext();
+    double x, y;
+    glfwGetCursorPos(backup_current_context, &x, &y);
+
+    const auto ndc_last = get_ndc({x, y});
+    const auto ndc_start =
+        get_ndc({is.selection_start.x, is.selection_start.y});
+
+    const auto sel_rect = r.get_map<tags_selection_rect>().begin()->first;
+    auto &t = r.get_component<transformation>(sel_rect);
+    t.translation = glm::vec3{ndc_start.x, ndc_start.y, 0.f};
+
+    const auto dist = ndc_last - ndc_start;
+    t.scale = {dist.x, dist.y, 1.f};
+  }
 }
 
 } // namespace update

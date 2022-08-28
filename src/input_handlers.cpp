@@ -5,6 +5,8 @@
 #include <shader_manager.h>
 #include <systems.h>
 
+#include <iostream>
+
 namespace handlers {
 
 inline void add_current_shape_at_cursor() {
@@ -48,8 +50,8 @@ inline void add_current_shape_at_cursor() {
     new_shape =
         constructors::add_gregory(sm.programs[shader_t::GENERAL_SHADER].idx);
   } else if (cp.current_shape == cursor_params::cursor_shape::intersection) {
-    new_shape =
-        constructors::add_intersection(sm.programs[shader_t::GENERAL_SHADER].idx);
+    new_shape = constructors::add_intersection(
+        sm.programs[shader_t::GENERAL_SHADER].idx);
   }
 
   if (reg.get_map<selected>().size() == 1) {
@@ -137,35 +139,52 @@ inline bool intersect(const glm::vec3 &ray_orig, const glm::vec3 &dir,
   return d2 <= radius2;
 }
 
+inline glm::vec2 get_ndc(const glm::vec2 &v) {
+  return {2 * (((v.x - frame_state::content_pos.x) /
+                static_cast<float>(frame_state::content_area.x)) -
+               0.5f),
+          -2 * (((v.y - frame_state::content_pos.y) /
+                 static_cast<float>(frame_state::content_area.y)) -
+                0.5f)};
+}
+
+inline bool is_between(const glm::vec2 &p, const glm::vec2 st,
+                       const glm::vec2 end) {
+  const auto is_bet = [](float p, float a, float b) {
+    return ((p >= a && p <= b) || (p >= b && p <= a));
+  };
+  return is_bet(p.x, st.x, end.x) && is_bet(p.y, st.y, end.y);
+}
+
 void handle_mouse() {
   auto &reg = ecs::registry::get_registry();
   auto &state = input_state::get_input_state();
 
   if (state.mouse_just_pressed[input_state::mouse_button::left] &&
-      state.pressed[GLFW_KEY_LEFT_CONTROL]) {
+      state.pressed[GLFW_KEY_LEFT_CONTROL] && !state.mouse_selecting) {
+    state.selection_start = state.last_mouse;
+    state.mouse_selecting = true;
+    const auto sel_id = reg.get_map<tags_selection_rect>().begin()->first;
+    auto &tr = reg.get_component<transformation>(sel_id);
+    tr.scale = {0.f, 0.f, 0.f};
+  } else if (state.mouse_selecting &&
+             !state.mouse_pressed[input_state::mouse_button::left]) {
+    state.mouse_selecting = false;
 
     state.mouse_just_pressed.reset(input_state::mouse_button::left);
 
-    const auto ndc_x = 2 * (((state.last_mouse.x - frame_state::content_pos.x) /
-                             static_cast<float>(frame_state::content_area.x)) -
-                            0.5f);
-    const auto ndc_y =
-        (-2) * ((state.last_mouse.y - frame_state::content_pos.y) /
-                    static_cast<float>(frame_state::content_area.y) -
-                0.5f);
+    auto ndc_last = get_ndc({state.last_mouse.x, state.last_mouse.y});
+    auto ndc_start =
+        get_ndc({state.selection_start.x, state.selection_start.y});
 
-    glm::vec4 ndc_dir{ndc_x, ndc_y, -1, 1};
-
-    glm::vec4 world_p = glm::inverse(frame_state::proj) * ndc_dir;
-    world_p = world_p / world_p.z;
-    world_p = glm::inverse(frame_state::view) * world_p;
-    world_p = world_p / world_p.w;
-
-    auto dir = glm::normalize(glm::vec3(world_p) - state.cam_pos);
-
+    int added{0};
     for (auto &[idx, _] : reg.get_map<tag_clickable>()) {
       auto &t = reg.get_component<transformation>(idx);
-      if (intersect(state.cam_pos, dir, t.translation, 1.f)) {
+      glm::vec4 pos = frame_state::proj * frame_state::view *
+                      glm::vec4{t.translation, 1.0f};
+      pos /= pos.w;
+      if (is_between({pos.x, pos.y}, ndc_start, ndc_last)) {
+        ++added;
         if (reg.has_component<selected>(idx)) {
           reg.remove_component<selected>(idx);
           return;
@@ -178,12 +197,12 @@ void handle_mouse() {
           reg.remove_all<selected>();
         }
         reg.add_component<selected>(idx, {});
-
-        return;
       }
     }
 
-    reg.remove_all<selected>();
+    if (added == 0) {
+      reg.remove_all<selected>();
+    }
   }
 }
 

@@ -48,6 +48,30 @@ ecs::EntityType add_grid() {
   return t;
 }
 
+ecs::EntityType add_selection_rect() {
+  auto &reg = ecs::registry::get_registry();
+  auto &sm = shader_manager::get_manager();
+  const auto t = reg.add_entity();
+  reg.add_component<transformation>(t, {});
+  reg.add_component<gl_object>(t, {});
+  reg.add_component<tags_selection_rect>(t, {});
+
+  auto &g = reg.get_component<gl_object>(t);
+  g.points = {glm::vec4(0.0, 0.0, 0.f, 1.0), glm::vec4(1.0, 0.0, 0.f, 1.0),
+              glm::vec4(1.0, 1.0, 0.f, 1.0), glm::vec4(0.0, 1.0, 0.f, 1.0)};
+  g.indices = {0, 1, 2, 2, 3, 0};
+  g.dmode = gl_object::draw_mode::triangles;
+  g.program = sm.programs[shader_t::GENERAL_SHADER].idx;
+
+  g.color = {1.0f, 1.0f, 1.0f, 0.5f};
+  g.primary = {1.0f, 1.0f, 1.0f, 0.5f};
+  g.selected = {1.0f, 1.0f, 1.0f, 0.5f};
+
+  systems::reset_gl_objects(g);
+
+  return t;
+}
+
 gl_object get_cursor_geometry(const GLint program) {
   gl_object cursor;
   cursor.points = {{0.0f, 0.0f, 0.0f, 1.0f},  {1.0f, 0.0f, 0.0f, 1.0f},
@@ -512,6 +536,7 @@ void setup_initial_geometry() {
              get_cursor_geometry(sm.programs[shader_t::CURSOR_SHADER].idx));
   add_center_of_weight({}, sm.programs[shader_t::POINT_SHADER].idx);
   add_grid();
+  add_selection_rect();
 }
 
 ecs::EntityType add_bspline_surface(std::vector<ecs::EntityType> &points,

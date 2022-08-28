@@ -35,4 +35,6 @@ void render_selected_edit_gui();
 
 void render_cursor_gui();
 
+void render_selection_rect();
+
 } // namespace gui

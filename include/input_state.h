@@ -52,6 +52,8 @@ struct input_state {
 
   std::bitset<1024> pressed{0x0};
   std::bitset<1024> just_pressed{0x0};
+  bool mouse_selecting{false};
+  glm::vec2 selection_start{0.f, 0.f};
   std::bitset<4> mouse_pressed{0};
   std::bitset<4> mouse_just_pressed{0};
 
