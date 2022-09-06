@@ -75,6 +75,33 @@ ecs::EntityType intersect(sampler &first, sampler &second) {
     ss += r.k * width;
     st += r.l * width;
   }
+
+  // get even closer with gradients
+  float dist = 1.f;
+  while(dist > 0.1) {
+    printf("dist : %f\n", dist);
+    auto P = first.sample(su, sv);
+    auto Pu = first.der_u(su, sv);
+    auto Pv = first.der_v(su, sv);
+    auto Q = second.sample(ss, st);
+    auto Qs = second.der_u(ss, st);
+    auto Qt = second.der_v(ss, st);
+
+    dist = glm::length(P - Q);
+    glm::vec4 grad = (-1.f / dist) * glm::vec4{
+      2 * P.x * Pu.x - 2 * Q.x + 2 * Pu.y * P.y - 2 * Q.y + 2 * Pu.z * P.z - 2 * Q.z,
+      2 * P.x * Pv.x - 2 * Q.x + 2 * Pv.y * P.y - 2 * Q.y + 2 * Pv.z * P.z - 2 * Q.z,
+      2 * Q.x * Qs.x - 2 * P.x + 2 * Qs.y * Q.y - 2 * P.y + 2 * Qs.z * Q.z - 2 * P.z,
+      2 * Q.x * Qt.x - 2 * P.x + 2 * Qt.y * Q.y - 2 * P.y + 2 * Qt.z * Q.z - 2 * P.z
+    };
+
+    constexpr float delta = 0.1f;
+    su -= delta * grad.x;
+    sv -= delta * grad.y;
+    ss -= delta * grad.z;
+    st -= delta * grad.w;
+  }
+
   auto pos = first.sample(r.u, r.v);
   transformation t;
   t.translation = pos;
