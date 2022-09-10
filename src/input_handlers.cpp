@@ -23,7 +23,7 @@ inline void add_current_shape_at_cursor() {
     new_shape = constructors::add_torus(
         parametric{
             0.0f, 2 * glm::pi<float>(), 0.0f, 2 * glm::pi<float>(), {20u, 50u}},
-        std::move(t), torus_params{1.f, 2.f},
+        std::move(t), torus_params{2.f, 4.f},
         sm.programs[shader_t::TORUS_SHADER].idx);
   } else if (cp.current_shape == cursor_params::cursor_shape::point) {
     new_shape = constructors::add_point(

@@ -6,20 +6,20 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-int get_bezier_pos(int i, int j, int ii, int jj, bezier_surface_params &bsp) {
+int get_bezier_pos(int i, int j, int ii, int jj, int bspu, bool cyllinder) {
   int ret;
-  if (!bsp.cyllinder) {
+  if (!cyllinder) {
         auto tmp_idx =
-            (3 * ((3 * bsp.u + 1) * j + i) + (3 * bsp.u + 1) * jj + ii);
-        ret = (tmp_idx);
+            (3 * ((3 * bspu + 1) * j + i) + (3 * bspu + 1) * jj + ii);
+        ret = tmp_idx;
   } else {
-        const auto patch_col_offset = 3 * ((3 * bsp.u) * j);
+        const auto patch_col_offset = 3 * ((3 * bspu) * j);
         const auto patch_row_offset = 3 * i;
-        const auto local_col_offset = (3 * bsp.u) * jj;
+        const auto local_col_offset = (3 * bspu) * jj;
         const auto local_row_offset = ii;
         auto tmp_idx = (patch_col_offset + local_col_offset +
-                        (patch_row_offset + local_row_offset) % (bsp.u * 3));
-        ret = (tmp_idx);
+                        (patch_row_offset + local_row_offset) % (bspu * 3));
+        ret = tmp_idx;
   }
 
   return ret;
@@ -138,12 +138,9 @@ sampler get_sampler(ecs::EntityType idx) {
     const auto rot = glm::toMat4(glm::quat(glm::radians(t.rotation)));
 
     const auto model = trans * scale * rot;
+    const auto model_without_trans = scale * rot;
 
     s.sample = [=](float u, float v) -> glm::vec3 {
-      double intpart;
-      u = u > 1.0f ? std::modf(u, &intpart) : u;
-      v = v > 1.0f ? std::modf(v, &intpart) : v;
-
       u = glm::pi<float>() * 2.f * u;
       v = glm::pi<float>() * 2.f * v;
 
@@ -161,10 +158,6 @@ sampler get_sampler(ecs::EntityType idx) {
     };
 
     s.der_u = [=](float u, float v) -> glm::vec3 {
-      double intpart;
-      u = u > 1.0f ? std::modf(u, &intpart) : u;
-      v = v > 1.0f ? std::modf(v, &intpart) : v;
-
       u = glm::pi<float>() * 2.f * u;
       v = glm::pi<float>() * 2.f * v;
 
@@ -174,16 +167,12 @@ sampler get_sampler(ecs::EntityType idx) {
       const auto cos_v = cosf(v);
 
       return glm::vec3(
-          model *
+          model_without_trans *
           glm::vec4{-tp.radii[1] * sin_u - tp.radii[0] * sin_u * cos_v, 0,
-                    tp.radii[1] * cos_u - tp.radii[0] * cos_u * cos_v, 0.0f});
+                    tp.radii[1] * cos_u + tp.radii[0] * cos_u * cos_v, 0.0f});
     };
 
     s.der_v = [=](float u, float v) -> glm::vec3 {
-      double intpart;
-      u = u > 1.0f ? std::modf(u, &intpart) : u;
-      v = v > 1.0f ? std::modf(v, &intpart) : v;
-
       u = glm::pi<float>() * 2.f * u;
       v = glm::pi<float>() * 2.f * v;
 
@@ -193,7 +182,7 @@ sampler get_sampler(ecs::EntityType idx) {
       const auto sin_v = sinf(v);
       const auto cos_v = cosf(v);
 
-      return glm::vec3(model * glm::vec4{-tp.radii[0] * cos_u * sin_v,
+      return glm::vec3(model_without_trans * glm::vec4{-tp.radii[0] * cos_u * sin_v,
                                          tp.radii[0] * cos_v,
                                          -tp.radii[0] * sin_u * sin_v, 0.0f});
     };
@@ -213,97 +202,53 @@ sampler get_sampler(ecs::EntityType idx) {
     }
 
     s.sample = [=](float u, float v) -> glm::vec3 {
-      auto _bsp = bsp;
-      int i, j;
-      double intpart;
-      u = (s.u_wrapped && u > 1.0f) ? std::modf(u, &intpart) : u;
+      const auto _bsp = bsp;
+      unsigned int i, j;
+      float uintpart;
+      float vintpart;
+
+      float lu = (s.u_wrapped && u > 1.0f) ? std::modf(u, &uintpart) : u;
+      float lv = (s.v_wrapped && v > 1.0f) ? std::modf(v, &vintpart) : v;
       // 1. find out which patch parameters belong to
-      i = u * bsp.u;
-      j = v * bsp.v;
+      i = (u == 1.0f) ? bsp.u - 1 : lu * _bsp.u;
+      j = (v == 1.0f) ? bsp.v - 1 : lv * _bsp.v;
 
       // u and v have to be from 0 to 1.0
       // and thus we have to scale them
-      u = bsp.u * (u - i * (1.f / bsp.u));
-      v = bsp.v * (v - j * (1.f / bsp.v));
+      lu = _bsp.u * (lu - i * (1.f / _bsp.u));
+      lv = _bsp.v * (lv - j * (1.f / _bsp.v));
 
       // 2. sample that patch
       std::array<glm::vec3, 16> lp;
       for (int jj = 0; jj < 4; ++jj) {
         for (int ii = 0; ii < 4; ++ii) {
-          lp[jj * 4 + ii] = cpoint_pos[get_bezier_pos(i, j, ii, jj, _bsp)];
+          const auto offset = get_bezier_pos(i, j, ii, jj, _bsp.u, _bsp.cyllinder);
+          lp[jj * 4 + ii] = cpoint_pos[offset];
         }
       }
 
-      auto ctmp1 = casteljau(u, lp[0], lp[1], lp[2], lp[3]);
-      auto ctmp2 = casteljau(u, lp[4], lp[5], lp[6], lp[6]);
-      auto ctmp3 = casteljau(u, lp[8], lp[9], lp[10], lp[11]);
-      auto ctmp4 = casteljau(u, lp[12], lp[13], lp[14], lp[15]);
+      auto ctmp1 = casteljau(lu, lp[0], lp[1], lp[2], lp[3]);
+      auto ctmp2 = casteljau(lu, lp[4], lp[5], lp[6], lp[6]);
+      auto ctmp3 = casteljau(lu, lp[8], lp[9], lp[10], lp[11]);
+      auto ctmp4 = casteljau(lu, lp[12], lp[13], lp[14], lp[15]);
 
-      auto tmp_f = casteljau(v, ctmp1, ctmp2, ctmp3, ctmp4);
+      auto tmp_f = casteljau(lv, ctmp1, ctmp2, ctmp3, ctmp4);
 
       return tmp_f;
     };
 
     s.der_u = [=](float u, float v) -> glm::vec3 {
-      auto _bsp = bsp;
-      int i, j;
-      double intpart;
-      u = (s.u_wrapped && u > 1.0f) ? std::modf(u, &intpart) : u;
-      // 1. find out which patch parameters belong to
-      i = u * bsp.u;
-      j = v * bsp.v;
-
-      // u and v have to be from 0 to 1.0
-      // and thus we have to scale them
-      u = bsp.u * (u - i * (1.f / bsp.u));
-      v = bsp.v * (v - j * (1.f / bsp.v));
-
-      // 2. sample that patch
-      std::array<glm::vec3, 16> lp;
-      for (int jj = 0; jj < 4; ++jj) {
-        for (int ii = 0; ii < 4; ++ii) {
-          lp[jj * 4 + ii] = cpoint_pos[get_bezier_pos(i, j, ii, jj, _bsp)];
-        }
-      }
-      auto ctmp1 = casteljau(u, lp[0], lp[1], lp[2], lp[3]);
-      auto ctmp2 = casteljau(u, lp[4], lp[5], lp[6], lp[6]);
-      auto ctmp3 = casteljau(u, lp[8], lp[9], lp[10], lp[11]);
-      auto ctmp4 = casteljau(u, lp[12], lp[13], lp[14], lp[15]);
-
-      return casteljau(v, 3.f * (ctmp2 - ctmp1), 3.f * (ctmp3 - ctmp2),
-                       3.f * (ctmp4 - ctmp3)) /
-             static_cast<float>(bsp.u);
+      const auto h = 1e-3f;
+      const auto v_o = s.sample(u, v);
+      const auto v_u = s.sample(u + h, v);
+      return (v_u - v_o) * (1.f / h);
     };
 
     s.der_v = [=](float u, float v) -> glm::vec3 {
-      auto _bsp = bsp;
-      int i, j;
-      double intpart;
-      u = (s.u_wrapped && u > 1.0f) ? std::modf(u, &intpart) : u;
-      // 1. find out which patch parameters belong to
-      i = u * bsp.u;
-      j = v * bsp.v;
-
-      // u and v have to be from 0 to 1.0
-      // and thus we have to scale them
-      u = bsp.u * (u - i * (1.f / bsp.u));
-      v = bsp.v * (v - j * (1.f / bsp.v));
-
-      // 2. sample that patch
-      std::array<glm::vec3, 16> lp;
-      for (int jj = 0; jj < 4; ++jj) {
-        for (int ii = 0; ii < 4; ++ii) {
-          lp[jj * 4 + ii] = cpoint_pos[get_bezier_pos(i, j, ii, jj, _bsp)];
-        }
-      }
-      auto v_ctmp1 = casteljau(v, lp[0], lp[4], lp[8], lp[12]);
-      auto v_ctmp2 = casteljau(v, lp[1], lp[5], lp[9], lp[13]);
-      auto v_ctmp3 = casteljau(v, lp[2], lp[6], lp[10], lp[14]);
-      auto v_ctmp4 = casteljau(v, lp[3], lp[7], lp[11], lp[15]);
-
-      return casteljau(u, 3.f * (v_ctmp2 - v_ctmp1), 3.f * (v_ctmp3 - v_ctmp2),
-                       3.f * (v_ctmp4 - v_ctmp3)) /
-             static_cast<float>(bsp.v);
+      const auto h = 1e-3f;
+      const auto v_o = s.sample(u, v);
+      const auto v_v = s.sample(u, v + h);
+      return (v_v - v_o) * (1.f / h);
     };
   }
 
