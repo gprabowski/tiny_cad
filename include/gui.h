@@ -37,4 +37,6 @@ void render_cursor_gui();
 
 void render_selection_rect();
 
+void render_intersection_gui();
+
 } // namespace gui

@@ -8,7 +8,7 @@
 
 namespace systems {
 
-constexpr int subd{4};
+constexpr int subd{8};
 
 // general case solver
 template <typename P_t, typename Q_t>
@@ -64,7 +64,15 @@ ecs::EntityType intersect(sampler &first, sampler &second) {
   auto &sm = shader_manager::get_manager();
   auto &reg = ecs::registry::get_registry();
 
-  auto wrap = [](auto v) {while(v < 0.f) { v += 1.0f; } while(v > 1.f) {v -= 1.0f;} return v;};
+  auto wrap = [](auto v) {
+    while (v < 0.f) {
+      v += 1.0f;
+    }
+    while (v > 1.f) {
+      v -= 1.0f;
+    }
+    return v;
+  };
 
   ecs::EntityType ret{};
 
@@ -85,25 +93,29 @@ ecs::EntityType intersect(sampler &first, sampler &second) {
   // get even closer with gradients
   float dist = 1.f;
   auto iter = 0;
-  while(dist > 1e-3 && iter < 5000) {
+  while (dist > 1e-2 && iter < 5000) {
     ++iter;
     auto P = first.sample(su, sv);
-    auto Pu = first.der_u(su, sv);
-    auto Pv = first.der_v(su, sv);
+    auto Pu = first.der_u_opt(su, sv, P);
+    auto Pv = first.der_v_opt(su, sv, P);
     auto Q = second.sample(ss, st);
-    auto Qs = second.der_u(ss, st);
-    auto Qt = second.der_v(ss, st);
+    auto Qs = second.der_u_opt(ss, st, Q);
+    auto Qt = second.der_v_opt(ss, st, Q);
 
     dist = glm::length(P - Q);
     TINY_CAD_INFO("INTERSECTION_LOG: dist : {0}\n", dist);
-    glm::vec4 grad = glm::length(P - Q) * glm::vec4{
-      2 * P.x * Pu.x - 2 * Pu.x * Q.x + 2 * Pu.y * P.y - 2 * Pu.y * Q.y + 2 * Pu.z * P.z - 2 * Pu.z * Q.z,
-      2 * P.x * Pv.x - 2 * Pv.x * Q.x + 2 * Pv.y * P.y - 2 * Pv.y * Q.y + 2 * Pv.z * P.z - 2 * Pv.z * Q.z,
-      2 * Q.x * Qs.x - 2 * Qs.x * P.x + 2 * Qs.y * Q.y - 2 * Qs.y * P.y + 2 * Qs.z * Q.z - 2 * Qs.z * P.z,
-      2 * Q.x * Qt.x - 2 * Qt.x * P.x + 2 * Qt.y * Q.y - 2 * Qt.y * P.y + 2 * Qt.z * Q.z - 2 * Qt.z * P.z
-    };
+    glm::vec4 grad =
+        glm::length(P - Q) *
+        glm::vec4{2 * P.x * Pu.x - 2 * Pu.x * Q.x + 2 * Pu.y * P.y -
+                      2 * Pu.y * Q.y + 2 * Pu.z * P.z - 2 * Pu.z * Q.z,
+                  2 * P.x * Pv.x - 2 * Pv.x * Q.x + 2 * Pv.y * P.y -
+                      2 * Pv.y * Q.y + 2 * Pv.z * P.z - 2 * Pv.z * Q.z,
+                  2 * Q.x * Qs.x - 2 * Qs.x * P.x + 2 * Qs.y * Q.y -
+                      2 * Qs.y * P.y + 2 * Qs.z * Q.z - 2 * Qs.z * P.z,
+                  2 * Q.x * Qt.x - 2 * Qt.x * P.x + 2 * Qt.y * Q.y -
+                      2 * Qt.y * P.y + 2 * Qt.z * Q.z - 2 * Qt.z * P.z};
 
-    float delta = std::max(1e-8f, 1e-4f / float(std::pow(10, iter / 500)));
+    float delta = std::max(1e-10f, 1e-4f / float(std::pow(10, iter / 500)));
     su -= delta * grad.x;
     sv -= delta * grad.y;
     ss -= delta * grad.z;
@@ -115,83 +127,120 @@ ecs::EntityType intersect(sampler &first, sampler &second) {
       return v;
     };
 
-    if(first.u_wrapped) { su = wrap(su); } else { cap(su); }
-    if(first.v_wrapped) { sv = wrap(sv); } else { cap(sv); }
-    if(second.u_wrapped) { ss = wrap(ss); } else { cap(ss); }
-    if(second.v_wrapped) { st = wrap(st); } else { cap(st); }
-
+    if (first.u_wrapped) {
+      su = wrap(su);
+    } else {
+      cap(su);
+    }
+    if (first.v_wrapped) {
+      sv = wrap(sv);
+    } else {
+      cap(sv);
+    }
+    if (second.u_wrapped) {
+      ss = wrap(ss);
+    } else {
+      cap(ss);
+    }
+    if (second.v_wrapped) {
+      st = wrap(st);
+    } else {
+      cap(st);
+    }
   }
+
   TINY_CAD_INFO("INTERSECTION_LOG: dist : {0}\n", dist);
 
-  std::vector<glm::vec3> points {first.sample(su, sv), second.sample(ss, st)}; 
+  std::vector<glm::vec3> points{first.sample(su, sv), second.sample(ss, st)};
 
-  auto pnormal = [&](auto u, auto v) {return glm::normalize(glm::cross(first.der_u(u, v), first.der_v(u, v))); };
-  auto qnormal = [&](auto s, auto t) {return glm::normalize(glm::cross(second.der_u(s, t), second.der_v(s, t))); };
-  auto get_tangent = [&](auto u, auto v, auto s, auto t) {return glm::normalize(glm::cross(pnormal(u, v), qnormal(s, t)));};
+  auto pnormal = [&](auto u, auto v) {
+    return glm::normalize(glm::cross(first.der_u(u, v), first.der_v(u, v)));
+  };
+  auto qnormal = [&](auto s, auto t) {
+    return glm::normalize(glm::cross(second.der_u(s, t), second.der_v(s, t)));
+  };
+  auto get_tangent = [&](auto u, auto v, auto s, auto t) {
+    return glm::normalize(glm::cross(pnormal(u, v), qnormal(s, t)));
+  };
 
   constexpr float d = 0.01f;
 
   glm::vec4 last_coords = {su, sv, ss, st};
 
-
-  while(true) {
+  auto first_point = points[0];
+  TINY_CAD_INFO("INTERSECTION_LOG: Starting Newtoning\n");
+  while (true) {
     auto P0 = first.sample(last_coords.x, last_coords.y);
 
     glm::vec4 next_coords = last_coords;
-    auto tangent = get_tangent(last_coords.x, last_coords.y, last_coords.z, last_coords.w);
+    auto tangent =
+        get_tangent(last_coords.x, last_coords.y, last_coords.z, last_coords.w);
+
+    auto get_f = [&](auto u, auto v, auto s, auto t) {
+      const auto p1 = first.sample(u, v);
+      const auto q1 = second.sample(s, t);
+      return glm::vec4{p1 - q1, glm::dot(p1 - P0, tangent) - d};
+    };
+
+    auto get_f_opt = [&](auto p1, auto q1) {
+      return glm::vec4{p1 - q1, glm::dot(p1 - P0, tangent) - d};
+    };
+
+    auto get_j = [&](auto u, auto v, auto s, auto t, auto v_o) {
+      const auto h = 1e-3f;
+      const auto q_def = second.sample(s, t);
+      const auto p_def = first.sample(u, v);
+      const auto v1 =
+          (get_f_opt(first.sample(u + h, v), q_def) - v_o) * (1.f / h);
+      const auto v2 =
+          (get_f_opt(first.sample(u, v + h), q_def) - v_o) * (1.f / h);
+      const auto v3 =
+          (get_f_opt(p_def, second.sample(s + h, t)) - v_o) * (1.f / h);
+      const auto v4 =
+          (get_f_opt(p_def, second.sample(s, t + h)) - v_o) * (1.f / h);
+      return glm::inverse(glm::mat4(v1, v2, v3, v4));
+    };
+
+    auto get_newton_decrement = [&](auto u, auto v, auto s, auto t) {
+      auto f = get_f(u, v, s, t);
+      auto inv_j_f = get_j(u, v, s, t, f);
+      return inv_j_f * f;
+    };
 
     // newton away baby
-    for(int i = 0; i < 300; ++i) {
-      auto get_f = [&](auto u, auto v, auto s, auto t) {
-        const auto p1 = first.sample(u, v);
-        const auto q1 = second.sample(s, t);
-        return glm::vec4{p1 - q1, glm::dot(p1 - P0, tangent) - d};
-      };
-
-      auto get_j = [&](auto u, auto v, auto s, auto t) {
-        const auto h = 1e-3f;
-        const auto v_o = get_f(u, v, s, t);
-        auto v1 = (get_f(u + h, v, s, t) - v_o) * (1.f / h);
-        auto v2 = (get_f(u, v + h, s, t) - v_o) * (1.f / h);
-        auto v3 = (get_f(u, v, s + h, t) - v_o) * (1.f / h);
-        auto v4 = (get_f(u, v, s, t + h) - v_o) * (1.f / h);
-        return glm::inverse(glm::mat4(v1, v2, v3, v4));
-      };
-
-      auto get_newton_decrement = [&](auto u, auto v, auto s, auto t) {
-        auto f = get_f(u, v, s, t);
-        auto inv_j_f = get_j(u, v, s, t);
-        return inv_j_f * f; 
-      };
-
-      next_coords -= get_newton_decrement(next_coords.x, next_coords.y, next_coords.z, next_coords.w);
-
-      if(first.u_wrapped) next_coords.x = wrap(next_coords.x);
-      if(first.v_wrapped) next_coords.y = wrap(next_coords.y);
-      if(second.u_wrapped) next_coords.z = wrap(next_coords.z);
-      if(second.v_wrapped) next_coords.w = wrap(next_coords.w);
+    for (int i = 0; i < 100; ++i) {
+      next_coords -= get_newton_decrement(next_coords.x, next_coords.y,
+                                          next_coords.z, next_coords.w);
+      if (first.u_wrapped)
+        next_coords.x = wrap(next_coords.x);
+      if (first.v_wrapped)
+        next_coords.y = wrap(next_coords.y);
+      if (second.u_wrapped)
+        next_coords.z = wrap(next_coords.z);
+      if (second.v_wrapped)
+        next_coords.w = wrap(next_coords.w);
     }
 
     points.push_back(first.sample(next_coords.x, next_coords.y));
     points.push_back(second.sample(next_coords.z, next_coords.w));
 
     last_coords = next_coords;
-    if(points.size() > 2000) {
+    auto last_point = points[points.size() - 1];
+    if (glm::length(first_point - last_point) < d && points.size() > 4) {
       break;
     }
   }
 
-  for(auto& poi : points) {
+  for (auto &poi : points) {
     auto pos = poi;
     transformation t;
     t.translation = pos;
-    ret = constructors::add_point(
-        std::move(t), sm.programs[shader_t::POINT_SHADER].idx);
+    ret = constructors::add_point(std::move(t),
+                                  sm.programs[shader_t::POINT_SHADER].idx);
     auto &gl = reg.get_component<gl_object>(ret);
     gl.color = gl.primary = gl.selected = {0.0f, 1.0f, 0.0f, 1.0f};
   }
 
   return ret;
 }
-
-}
+} // namespace systems

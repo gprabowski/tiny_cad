@@ -48,6 +48,7 @@ void render_window_gui() {
   gui::render_figure_select_gui();
   gui::render_selected_edit_gui();
   gui::render_cursor_gui();
+  gui::render_intersection_gui();
 }
 
 void render_viewport() {

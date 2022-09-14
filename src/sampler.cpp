@@ -9,17 +9,16 @@
 int get_bezier_pos(int i, int j, int ii, int jj, int bspu, bool cyllinder) {
   int ret;
   if (!cyllinder) {
-        auto tmp_idx =
-            (3 * ((3 * bspu + 1) * j + i) + (3 * bspu + 1) * jj + ii);
-        ret = tmp_idx;
+    auto tmp_idx = (3 * ((3 * bspu + 1) * j + i) + (3 * bspu + 1) * jj + ii);
+    ret = tmp_idx;
   } else {
-        const auto patch_col_offset = 3 * ((3 * bspu) * j);
-        const auto patch_row_offset = 3 * i;
-        const auto local_col_offset = (3 * bspu) * jj;
-        const auto local_row_offset = ii;
-        auto tmp_idx = (patch_col_offset + local_col_offset +
-                        (patch_row_offset + local_row_offset) % (bspu * 3));
-        ret = tmp_idx;
+    const auto patch_col_offset = 3 * ((3 * bspu) * j);
+    const auto patch_row_offset = 3 * i;
+    const auto local_col_offset = (3 * bspu) * jj;
+    const auto local_row_offset = ii;
+    auto tmp_idx = (patch_col_offset + local_col_offset +
+                    (patch_row_offset + local_row_offset) % (bspu * 3));
+    ret = tmp_idx;
   }
 
   return ret;
@@ -28,22 +27,22 @@ int get_bezier_pos(int i, int j, int ii, int jj, int bspu, bool cyllinder) {
 int get_bspline_pos(int i, int j, int ii, int jj, bspline_surface_params &bsp) {
   int ret;
   if (!bsp.cyllinder) {
-        const auto patch_col_offset = j * (4 + bsp.u - 1);
-        const auto patch_row_offset = i;
-        const auto local_col_offset = (4 + bsp.u - 1) * (jj);
-        const auto local_row_offset = ii;
-        const auto idx = (patch_col_offset + local_col_offset +
-                          patch_row_offset + local_row_offset);
-        ret = (idx);
+    const auto patch_col_offset = j * (4 + bsp.u - 1);
+    const auto patch_row_offset = i;
+    const auto local_col_offset = (4 + bsp.u - 1) * (jj);
+    const auto local_row_offset = ii;
+    const auto idx = (patch_col_offset + local_col_offset + patch_row_offset +
+                      local_row_offset);
+    ret = (idx);
   } else {
-        const auto patch_col_offset = j * (4 + bsp.u - 1 - 3);
-        const auto patch_row_offset = i;
-        const auto local_col_offset = (4 + bsp.u - 1 - 3) * (jj);
-        const auto local_row_offset = ii;
-        const auto idx =
-            (patch_col_offset + local_col_offset +
-             (patch_row_offset + local_row_offset) % (4 + bsp.u - 1 - 3));
-        ret = idx;
+    const auto patch_col_offset = j * (4 + bsp.u - 1 - 3);
+    const auto patch_row_offset = i;
+    const auto local_col_offset = (4 + bsp.u - 1 - 3) * (jj);
+    const auto local_row_offset = ii;
+    const auto idx =
+        (patch_col_offset + local_col_offset +
+         (patch_row_offset + local_row_offset) % (4 + bsp.u - 1 - 3));
+    ret = idx;
   }
   return ret;
 }
@@ -172,6 +171,10 @@ sampler get_sampler(ecs::EntityType idx) {
                     tp.radii[1] * cos_u + tp.radii[0] * cos_u * cos_v, 0.0f});
     };
 
+    s.der_u_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
+      return s.der_u(u, v);
+    };
+
     s.der_v = [=](float u, float v) -> glm::vec3 {
       u = glm::pi<float>() * 2.f * u;
       v = glm::pi<float>() * 2.f * v;
@@ -182,9 +185,14 @@ sampler get_sampler(ecs::EntityType idx) {
       const auto sin_v = sinf(v);
       const auto cos_v = cosf(v);
 
-      return glm::vec3(model_without_trans * glm::vec4{-tp.radii[0] * cos_u * sin_v,
-                                         tp.radii[0] * cos_v,
-                                         -tp.radii[0] * sin_u * sin_v, 0.0f});
+      return glm::vec3(model_without_trans *
+                       glm::vec4{-tp.radii[0] * cos_u * sin_v,
+                                 tp.radii[0] * cos_v,
+                                 -tp.radii[0] * sin_u * sin_v, 0.0f});
+    };
+
+    s.der_v_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
+      return s.der_v(u, v);
     };
   }
 
@@ -222,13 +230,14 @@ sampler get_sampler(ecs::EntityType idx) {
       std::array<glm::vec3, 16> lp;
       for (int jj = 0; jj < 4; ++jj) {
         for (int ii = 0; ii < 4; ++ii) {
-          const auto offset = get_bezier_pos(i, j, ii, jj, _bsp.u, _bsp.cyllinder);
+          const auto offset =
+              get_bezier_pos(i, j, ii, jj, _bsp.u, _bsp.cyllinder);
           lp[jj * 4 + ii] = cpoint_pos[offset];
         }
       }
 
       auto ctmp1 = casteljau(lu, lp[0], lp[1], lp[2], lp[3]);
-      auto ctmp2 = casteljau(lu, lp[4], lp[5], lp[6], lp[6]);
+      auto ctmp2 = casteljau(lu, lp[4], lp[5], lp[6], lp[7]);
       auto ctmp3 = casteljau(lu, lp[8], lp[9], lp[10], lp[11]);
       auto ctmp4 = casteljau(lu, lp[12], lp[13], lp[14], lp[15]);
 
@@ -241,14 +250,26 @@ sampler get_sampler(ecs::EntityType idx) {
       const auto h = 1e-3f;
       const auto v_o = s.sample(u, v);
       const auto v_u = s.sample(u + h, v);
-      return (v_u - v_o) * (1.f / h);
+      return (v_u - v_o) * (1.f / h) / static_cast<float>(bsp.u);
+    };
+
+    s.der_u_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
+      const auto h = 1e-3f;
+      const auto v_u = s.sample(u + h, v);
+      return (v_u - v_o) * (1.f / h) / static_cast<float>(bsp.u);
     };
 
     s.der_v = [=](float u, float v) -> glm::vec3 {
       const auto h = 1e-3f;
       const auto v_o = s.sample(u, v);
       const auto v_v = s.sample(u, v + h);
-      return (v_v - v_o) * (1.f / h);
+      return (v_v - v_o) * (1.f / h) / static_cast<float>(bsp.v);
+    };
+
+    s.der_v_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
+      const auto h = 1e-3f;
+      const auto v_v = s.sample(u, v + h);
+      return (v_v - v_o) * (1.f / h) / static_cast<float>(bsp.v);
     };
   }
 

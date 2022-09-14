@@ -123,7 +123,7 @@ void common_ubo_setup(std::shared_ptr<GLFWwindow> w) {
   auto &sm = shader_manager::get_manager();
   glCreateBuffers(1, &sm.common_ubo);
   glNamedBufferData(sm.common_ubo, 3 * 16 * sizeof(float), NULL,
-                    GL_STATIC_DRAW);
+                    GL_DYNAMIC_DRAW);
 }
 
 void ogl_setup(std::shared_ptr<GLFWwindow> w) {

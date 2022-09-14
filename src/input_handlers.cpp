@@ -49,9 +49,6 @@ inline void add_current_shape_at_cursor() {
   } else if (cp.current_shape == cursor_params::cursor_shape::gregory) {
     new_shape =
         constructors::add_gregory(sm.programs[shader_t::GENERAL_SHADER].idx);
-  } else if (cp.current_shape == cursor_params::cursor_shape::intersection) {
-    new_shape = constructors::add_intersection(
-        sm.programs[shader_t::GENERAL_SHADER].idx);
   }
 
   if (reg.get_map<selected>().size() == 1) {

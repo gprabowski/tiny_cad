@@ -34,7 +34,7 @@ void reset_gl_objects(gl_object &g) {
   }
   // allocation or reallocation
   glNamedBufferData(g.vbo, sizeof(g.points[0]) * g.points.size(),
-                    g.points.data(), GL_STATIC_DRAW);
+                    g.points.data(), GL_DYNAMIC_DRAW);
 
   if (!glIsBuffer(g.ebo)) {
     glCreateBuffers(1, &g.ebo);
@@ -42,7 +42,7 @@ void reset_gl_objects(gl_object &g) {
 
   // allocation or reallocation
   glNamedBufferData(g.ebo, sizeof(unsigned int) * g.indices.size(),
-                    g.indices.data(), GL_STATIC_DRAW);
+                    g.indices.data(), GL_DYNAMIC_DRAW);
 
   if (!glIsVertexArray(g.vao)) {
     glCreateVertexArrays(1, &g.vao);
