@@ -14,8 +14,10 @@ void render_gl(const gl_object &g) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glDrawElements(GL_LINES, g.indices.size(), GL_UNSIGNED_INT, NULL);
   } else if (g.dmode == gldm::line_strip) {
+    glLineWidth(15.0f);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glDrawElements(GL_LINE_STRIP, g.indices.size(), GL_UNSIGNED_INT, NULL);
+    glLineWidth(1.0f);
   } else if (g.dmode == gldm::patches) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glPatchParameteri(GL_PATCH_VERTICES, g.patch_size);

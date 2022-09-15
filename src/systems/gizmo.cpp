@@ -49,7 +49,7 @@ void apply_group_transform(glm::mat4 &gtrans) {
     glm::vec3 rot;
     glm::vec3 scale;
     for (auto &[idx, _] : reg.get_map<selected>()) {
-      if (!reg.has_component<tag_parent>(idx)) {
+      if (!reg.has_component<tag_parent>(idx) && !reg.has_component<tag_intersection>(idx)) {
         frame_state::changed.push_back(idx);
         iter.push_back(idx);
       }

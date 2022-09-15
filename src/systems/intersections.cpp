@@ -427,9 +427,6 @@ intersection_status find_all_intersection_points(const intersection_params& para
 intersection_status intersect(sampler &first, sampler &second, 
                               const intersection_params& params, bool self_intersection,
                               const glm::vec3& cursor_pos) {
-  auto &sm = shader_manager::get_manager();
-  auto &reg = ecs::registry::get_registry();
-  
   float su{0.0f}, sv{0.0f}, ss{0.0f}, st{0.0f};
 
   // find start point
@@ -452,15 +449,8 @@ intersection_status intersect(sampler &first, sampler &second,
     return newton_status;
   }
 
-  for (auto &poi : points) {
-    auto pos = poi;
-    transformation t;
-    t.translation = pos;
-    auto ret = constructors::add_point(std::move(t),
-                                  sm.programs[shader_t::POINT_SHADER].idx);
-    auto &gl = reg.get_component<gl_object>(ret);
-    gl.color = gl.primary = gl.selected = {0.0f, 1.0f, 0.0f, 1.0f};
-  }
+  // add intersection figure
+  constructors::add_intersection(points);
 
   return intersection_status::success;
 }

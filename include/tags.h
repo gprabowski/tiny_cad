@@ -4,6 +4,8 @@ struct selected {};
 struct tag_point {};
 
 struct tag_parent {};
+struct tag_intersection {};
+
 struct tag_virtual {};
 struct tag_clickable {};
 struct tag_visible {};

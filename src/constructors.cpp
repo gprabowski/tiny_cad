@@ -138,6 +138,18 @@ ecs::EntityType add_icurve(const GLuint program) {
   return add_icurve_impl(program, sel_points);
 }
 
+ecs::EntityType add_icurve(std::vector<glm::vec4>& points, const GLuint program) {
+  static auto &sm = shader_manager::get_manager();
+  std::vector<ecs::EntityType> sel_points;
+  for(auto& p : points) {
+    transformation t;
+    t.translation = glm::vec3(p);
+    sel_points.push_back(add_point(std::move(t), sm.programs[shader_t::GENERAL_SHADER].idx));
+  }
+
+  return add_icurve_impl(program, sel_points);
+}
+
 ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points,
                                    unsigned int patches[2], bool cyllinder,
                                    glm::vec2 &samples) {
@@ -928,6 +940,33 @@ ecs::EntityType add_gregory(const GLuint program) {
 
   ImGui::OpenPopup("Hole Not Found");
   return ecs::null_entity;
+}
+
+ecs::EntityType add_intersection(std::vector<glm::vec3>& points) {
+  auto &reg = ecs::registry::get_registry();
+  auto &sm = shader_manager::get_manager();
+  const auto t = reg.add_entity();
+
+  reg.add_component<tag_figure>(t, tag_figure{"Intersection #" + std::to_string(t)});
+  reg.add_component<transformation>(t, {});
+  reg.add_component<gl_object>(t, {});
+  reg.add_component<tag_visible>(t, {});
+  reg.add_component<tag_intersection>(t, {});
+
+  auto &g = reg.get_component<gl_object>(t);
+  auto idx = 0;
+  for(auto&p : points) {
+    g.points.push_back(glm::vec4(p, 1.0f));
+    g.indices.push_back(idx++);
+  }
+
+  g.dmode = gl_object::draw_mode::line_strip;
+  g.program = sm.programs[shader_t::GENERAL_SHADER].idx;
+  g.color = g.primary = g.selected = {0.0f, 1.0f, 0.0f, 1.0f};
+
+  systems::reset_gl_objects(g);
+
+  return t;
 }
 
 } // namespace constructors

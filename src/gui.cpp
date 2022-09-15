@@ -29,6 +29,7 @@
 #include <frame_update.h>
 #include <framebuffer.h>
 #include <gl_object.h>
+#include <shader_manager.h>
 #include <gui.h>
 #include <sampler.h>
 #include <systems.h>
@@ -911,6 +912,19 @@ void end_frame() {
   }
 }
 
+void render_intersection_line_gui(tag_figure& fc, gl_object& g, ecs::EntityType idx)  {
+  render_figure_gui(idx, fc, [&]() {
+    auto &sm = shader_manager::get_manager();
+    auto &gl = g;
+    render_gl_object_gui(
+        gl, {gl_object::draw_mode::line_strip});
+    if(ImGui::Button("Make Interpolating Spline")) {
+      constructors::add_icurve(g.points, sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx);
+      frame_state::deleted.push_back(idx);
+    }
+  });
+}
+
 void render_selected_edit_gui() {
   auto &reg = ecs::registry::get_registry();
 
@@ -923,6 +937,10 @@ void render_selected_edit_gui() {
       auto &p = reg.get_component<parametric>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
       render_torus_gui(idx, tp, p, g, t, fc);
+    } else if (reg.has_component<tag_intersection>(idx)) {
+      auto &g = reg.get_component<gl_object>(idx);
+      auto &fc = reg.get_component<tag_figure>(idx);
+      render_intersection_line_gui(fc, g, idx);
     } else if (reg.has_component<bezierc>(idx)) {
       auto &g = reg.get_component<gl_object>(idx);
       auto &rel = reg.get_component<relationship>(idx);
@@ -968,8 +986,7 @@ void render_selected_edit_gui() {
       auto &fc = reg.get_component<tag_figure>(idx);
       auto &rel = reg.get_component<relationship>(idx);
       render_gregory_gui(fc, g, rel, idx);
-    }
-  }
+    }   }
   ImGui::End();
 }
 
