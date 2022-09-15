@@ -8,8 +8,6 @@
 
 namespace systems {
 
-constexpr int subd{8};
-
 // general case solver
 template <typename P_t, typename Q_t>
 ecs::EntityType find_intersection(P_t Pfunc, Q_t Qfunc) {
@@ -29,7 +27,17 @@ struct res_tmp {
   float u, v, s, t;
 };
 
-res_tmp get_part(float su1, float sv1, float su2, float sv2, float width,
+inline float wrap(float v) {
+  while (v < 0.f) {
+    v += 1.0f;
+  }
+  while (v > 1.f) {
+    v -= 1.0f;
+  }
+  return v;
+};
+
+res_tmp get_part(int subd, float su1, float sv1, float su2, float sv2, float width,
                  sampler &s1, sampler &s2) {
   // 1. divide into 16 parts the first one
   res_tmp res;
@@ -60,40 +68,27 @@ res_tmp get_part(float su1, float sv1, float su2, float sv2, float width,
   return res;
 }
 
-ecs::EntityType intersect(sampler &first, sampler &second) {
-  auto &sm = shader_manager::get_manager();
-  auto &reg = ecs::registry::get_registry();
-
-  auto wrap = [](auto v) {
-    while (v < 0.f) {
-      v += 1.0f;
-    }
-    while (v > 1.f) {
-      v -= 1.0f;
-    }
-    return v;
-  };
-
-  ecs::EntityType ret{};
-
-  float su{0.0f}, sv{0.0f}, ss{0.0f}, st{0.0f};
+void find_subdivision_start_point(int subd, float& su, float& sv, float& ss, float& st, sampler& first, sampler& second) {
   float width = 1.0f;
   // run loop until you find starting point
   res_tmp r;
   for (int rec = 0; rec < 10; ++rec) {
-    r = get_part(su, sv, ss, st, width, first, second);
+    r = get_part(subd, su, sv, ss, st, width, first, second);
     width = width / subd;
+
     su += r.i * width;
     sv += r.j * width;
-
     ss += r.k * width;
     st += r.l * width;
   }
+}
 
-  // get even closer with gradients
-  float dist = 1.f;
+intersection_status improve_start_point_with_gradients(float& su, float& sv, float& ss, float& st, 
+                                        float start_acceptance, int gradient_iters, float start_delta,
+                                        sampler& first, sampler& second) {
+  float dist = glm::length(first.sample(su, sv) - second.sample(ss, st));
   auto iter = 0;
-  while (dist > 1e-2 && iter < 5000) {
+  while (dist > start_acceptance && iter < gradient_iters) {
     ++iter;
     auto P = first.sample(su, sv);
     auto Pu = first.der_u_opt(su, sv, P);
@@ -103,7 +98,6 @@ ecs::EntityType intersect(sampler &first, sampler &second) {
     auto Qt = second.der_v_opt(ss, st, Q);
 
     dist = glm::length(P - Q);
-    TINY_CAD_INFO("INTERSECTION_LOG: dist : {0}\n", dist);
     glm::vec4 grad =
         glm::length(P - Q) *
         glm::vec4{2 * P.x * Pu.x - 2 * Pu.x * Q.x + 2 * Pu.y * P.y -
@@ -115,102 +109,128 @@ ecs::EntityType intersect(sampler &first, sampler &second) {
                   2 * Q.x * Qt.x - 2 * Qt.x * P.x + 2 * Qt.y * Q.y -
                       2 * Qt.y * P.y + 2 * Qt.z * Q.z - 2 * Qt.z * P.z};
 
-    float delta = std::max(1e-10f, 1e-4f / float(std::pow(10, iter / 500)));
+    float delta = std::max(1e-10f, start_delta / float(std::pow(10, iter / 500)));
     su -= delta * grad.x;
     sv -= delta * grad.y;
     ss -= delta * grad.z;
     st -= delta * grad.w;
 
-    auto cap = [](auto v) {
-      v = std::max(v, 1.0f);
-      v = std::min(v, 0.0f);
-      return v;
-    };
-
     if (first.u_wrapped) {
       su = wrap(su);
-    } else {
-      cap(su);
+    } else if(su > 1.0f || su < 0.0f){
+      return intersection_status::start_point_gradient_edge_error;
     }
     if (first.v_wrapped) {
       sv = wrap(sv);
-    } else {
-      cap(sv);
+    } else if(sv > 1.0f || sv < 0.0f){
+      return intersection_status::start_point_gradient_edge_error;
     }
     if (second.u_wrapped) {
       ss = wrap(ss);
-    } else {
-      cap(ss);
+    } else if(ss > 1.0f || ss < 0.0f){
+      return intersection_status::start_point_gradient_edge_error;
     }
     if (second.v_wrapped) {
       st = wrap(st);
-    } else {
-      cap(st);
+    } else if(st > 1.0f || st < 0.0f){
+      return intersection_status::start_point_gradient_edge_error;
     }
+  } 
+  return intersection_status::success;
+}
+
+intersection_status find_start_point(const intersection_params& params, float& su, float& sv, 
+                                     float& ss, float&st, sampler& first, sampler& second) {
+  find_subdivision_start_point(params.subdivisions, su, sv, ss, st, first, second);
+
+  float dist = glm::length(first.sample(su, sv) - second.sample(ss, st));
+  if(dist > params.subdivisions_acceptance) {
+    return intersection_status::start_point_subdivisions_final_point_error;
   }
 
-  TINY_CAD_INFO("INTERSECTION_LOG: dist : {0}\n", dist);
+  // get even closer with gradients
+  auto gradient_status = improve_start_point_with_gradients(su, sv, ss, st, params.start_acceptance, params.gradient_iters,
+                                                            params.start_delta, first, second);
 
-  std::vector<glm::vec3> points{first.sample(su, sv), second.sample(ss, st)};
+  dist = glm::length(first.sample(su, sv) - second.sample(ss, st));
 
+  if(dist > params.start_acceptance) {
+    return intersection_status::start_point_gradient_final_point_error;
+  }
+
+  return gradient_status;
+}
+
+
+// vector making sure that two points are close,
+// in distance d from previous point and on a tangent plane
+// precomputed version
+inline glm::vec4 get_f_opt(const glm::vec3& p1, const glm::vec3& q1, 
+                    const glm::vec3& P0, const glm::vec3& tangent, 
+                    float delta) {
+  return glm::vec4{p1 - q1, glm::dot(p1 - P0, tangent) - delta};
+};
+
+inline glm::mat4 get_j (const glm::vec3& p_def, const glm::vec3& q_def, 
+            float u, float v, float s, float t,
+            const glm::vec4& v_o, const glm::vec3& P0,
+            const glm::vec3& tangent, sampler& first, 
+            sampler& second, const float delta) {
+  constexpr auto h = 1e-3f;
+  const auto v1 =
+      (get_f_opt(first.sample(u + h, v), q_def, P0, tangent, delta) - v_o) * (1.f / h);
+  const auto v2 =
+      (get_f_opt(first.sample(u, v + h), q_def, P0, tangent, delta) - v_o) * (1.f / h);
+  const auto v3 =
+      (get_f_opt(p_def, second.sample(s + h, t), P0, tangent, delta) - v_o) * (1.f / h);
+  const auto v4 =
+      (get_f_opt(p_def, second.sample(s, t + h), P0, tangent, delta) - v_o) * (1.f / h);
+  return glm::inverse(glm::mat4(v1, v2, v3, v4));
+};
+
+auto get_newton_decrement(float u, float v, float s, float t, 
+                          float delta, sampler& first, sampler& second,
+                          const glm::vec3& tangent, const glm::vec3& P0) {
+  const auto q_def = second.sample(s, t);
+  const auto p_def = first.sample(u, v);
+  auto f = get_f_opt(p_def, q_def, P0, tangent, delta);
+  auto inv_j_f = get_j(p_def, q_def, u, v, s, t, f, P0, tangent, first, second, delta);
+  return inv_j_f * f;
+};
+
+intersection_status find_all_intersection_points(const intersection_params& params, glm::vec4 start_coords,
+                                                 std::vector<glm::vec3>& points, sampler& first, sampler& second) {
+  auto first_point = points[0];
+  // helper functions
   auto pnormal = [&](auto u, auto v) {
     return glm::normalize(glm::cross(first.der_u(u, v), first.der_v(u, v)));
   };
+
   auto qnormal = [&](auto s, auto t) {
     return glm::normalize(glm::cross(second.der_u(s, t), second.der_v(s, t)));
   };
+
   auto get_tangent = [&](auto u, auto v, auto s, auto t) {
     return glm::normalize(glm::cross(pnormal(u, v), qnormal(s, t)));
   };
 
-  constexpr float d = 0.01f;
+  auto last_coords = start_coords;
 
-  glm::vec4 last_coords = {su, sv, ss, st};
-
-  auto first_point = points[0];
-  TINY_CAD_INFO("INTERSECTION_LOG: Starting Newtoning\n");
   while (true) {
     auto P0 = first.sample(last_coords.x, last_coords.y);
 
     glm::vec4 next_coords = last_coords;
-    auto tangent =
+
+    const auto tangent =
         get_tangent(last_coords.x, last_coords.y, last_coords.z, last_coords.w);
-
-    auto get_f = [&](auto u, auto v, auto s, auto t) {
-      const auto p1 = first.sample(u, v);
-      const auto q1 = second.sample(s, t);
-      return glm::vec4{p1 - q1, glm::dot(p1 - P0, tangent) - d};
-    };
-
-    auto get_f_opt = [&](auto p1, auto q1) {
-      return glm::vec4{p1 - q1, glm::dot(p1 - P0, tangent) - d};
-    };
-
-    auto get_j = [&](auto u, auto v, auto s, auto t, auto v_o) {
-      const auto h = 1e-3f;
-      const auto q_def = second.sample(s, t);
-      const auto p_def = first.sample(u, v);
-      const auto v1 =
-          (get_f_opt(first.sample(u + h, v), q_def) - v_o) * (1.f / h);
-      const auto v2 =
-          (get_f_opt(first.sample(u, v + h), q_def) - v_o) * (1.f / h);
-      const auto v3 =
-          (get_f_opt(p_def, second.sample(s + h, t)) - v_o) * (1.f / h);
-      const auto v4 =
-          (get_f_opt(p_def, second.sample(s, t + h)) - v_o) * (1.f / h);
-      return glm::inverse(glm::mat4(v1, v2, v3, v4));
-    };
-
-    auto get_newton_decrement = [&](auto u, auto v, auto s, auto t) {
-      auto f = get_f(u, v, s, t);
-      auto inv_j_f = get_j(u, v, s, t, f);
-      return inv_j_f * f;
-    };
 
     // newton away baby
     for (int i = 0; i < 100; ++i) {
       next_coords -= get_newton_decrement(next_coords.x, next_coords.y,
-                                          next_coords.z, next_coords.w);
+                                          next_coords.z, next_coords.w,
+                                          params.delta, first, second, tangent, P0);
+      // check if we go out of bounds on a 
+      // non wrapping surface
       if (first.u_wrapped)
         next_coords.x = wrap(next_coords.x);
       if (first.v_wrapped)
@@ -221,26 +241,55 @@ ecs::EntityType intersect(sampler &first, sampler &second) {
         next_coords.w = wrap(next_coords.w);
     }
 
+    // Check if Newton is converging
+
     points.push_back(first.sample(next_coords.x, next_coords.y));
     points.push_back(second.sample(next_coords.z, next_coords.w));
 
     last_coords = next_coords;
     auto last_point = points[points.size() - 1];
-    if (glm::length(first_point - last_point) < d && points.size() > 4) {
+
+    if (glm::length(first_point - last_point) < params.delta && points.size() > 4) {
       break;
     }
+  }
+  return intersection_status::success;
+}
+
+
+intersection_status intersect(sampler &first, sampler &second, const intersection_params& params) {
+  auto &sm = shader_manager::get_manager();
+  auto &reg = ecs::registry::get_registry();
+  
+  float su{0.0f}, sv{0.0f}, ss{0.0f}, st{0.0f};
+
+  // find start point
+  auto start_point_status = find_start_point(params, su, sv, ss, st, first, second);
+  if(start_point_status != intersection_status::success) {
+    return start_point_status;
+  }
+
+  // add start point
+  std::vector<glm::vec3> points{first.sample(su, sv), second.sample(ss, st)};
+  glm::vec4 start_coords = {su, sv, ss, st};
+
+  // find the entire intersection
+  auto newton_status = find_all_intersection_points(params, start_coords, points, first, second);
+
+  if(newton_status != intersection_status::success) {
+    return newton_status;
   }
 
   for (auto &poi : points) {
     auto pos = poi;
     transformation t;
     t.translation = pos;
-    ret = constructors::add_point(std::move(t),
+    auto ret = constructors::add_point(std::move(t),
                                   sm.programs[shader_t::POINT_SHADER].idx);
     auto &gl = reg.get_component<gl_object>(ret);
     gl.color = gl.primary = gl.selected = {0.0f, 1.0f, 0.0f, 1.0f};
   }
 
-  return ret;
+  return intersection_status::success;
 }
 } // namespace systems

@@ -55,6 +55,31 @@ void update_changed_relationships();
 void delete_entities();
 void regenerate(ecs::EntityType idx);
 
-ecs::EntityType intersect(sampler &first, sampler &second);
+enum class intersection_status {
+  success,
+  start_point_gradient_edge_error,
+  start_point_gradient_final_point_error,
+  start_point_subdivisions_final_point_error,
+  start_point_gradient_error,
+  other_error
+};
+
+struct intersection_params {
+    int subdivisions = 8;
+    int gradient_iters = 1000;
+    float start_delta = 1e-4f;
+    float start_acceptance = 1e-2f;
+    float subdivisions_acceptance = 1e-1f;
+
+    int newton_iters = 300;
+    float newton_acceptance = 1e-2;
+    float cycle_acceptance = 1e-2;
+    float delta = 1e-2;
+
+    bool start_from_cursor{false};
+    float cursor_dist = 0.1f;
+};
+
+intersection_status intersect(sampler &first, sampler &second, const intersection_params& params);
 
 } // namespace systems

@@ -36,6 +36,7 @@
 
 namespace gui {
 
+
 template <class Enum>
 constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept {
   return static_cast<std::underlying_type_t<Enum>>(e);
@@ -1242,6 +1243,7 @@ void render_main_menu() {
 
 void render_intersection_gui() {
   bool should_render{true};
+  static systems::intersection_params params;
   auto &reg = ecs::registry::get_registry();
 
   auto is_intersectable = [&](auto idx) {
@@ -1265,54 +1267,46 @@ void render_intersection_gui() {
     std::string title = "Intersection Creator";
     ImGui::Begin(title.c_str());
 
-    static int subdivisions = 8;
-    static int gradient_iters = 1000;
-    static float start_delta = 1e-4f;
-    static float start_acceptance = 1e-5f;
 
-    static int newton_iters = 300;
-    static float newton_acceptance = 1e-2;
-    static float cycle_acceptance = 1e-2;
-    static float delta = 1e-2;
-
-    static bool start_from_cursor{false};
-    static float cursor_dist = 0.1f;
-
-    if (ImGui::SliderInt("Starting Subdivisions", &subdivisions, 0, 50)) {
+    if (ImGui::SliderInt("Starting Subdivisions", &params.subdivisions, 0, 50)) {
     }
 
-    if (ImGui::SliderInt("Gradient Iterations", &gradient_iters, 0, 5000)) {
+    if (ImGui::SliderInt("Gradient Iterations", &params.gradient_iters, 0, 5000)) {
     }
 
-    if (ImGui::SliderFloat("Starting Delta", &start_delta, 0.f, 1.f)) {
+    if (ImGui::SliderFloat("Starting Delta", &params.start_delta, 0.f, 1.f)) {
     }
 
-    if (ImGui::SliderFloat("Starting Acceptance", &start_acceptance, 0.f,
+    if (ImGui::SliderFloat("Starting Acceptance", &params.start_acceptance, 0.f,
                            1.f)) {
     }
 
-    if (ImGui::SliderInt("Newton Iterations", &newton_iters, 1, 1000)) {
+    if (ImGui::SliderFloat("Starting Subdivisions Acceptance", &params.subdivisions_acceptance, 0.f,
+                           1.f)) {
     }
 
-    if (ImGui::SliderFloat("Newton Acceptance", &newton_acceptance, 0.f, 1.f)) {
+    if (ImGui::SliderInt("Newton Iterations", &params.newton_iters, 1, 1000)) {
     }
 
-    if (ImGui::SliderFloat("Cycle Acceptance", &cycle_acceptance, 0.f, 1.f)) {
+    if (ImGui::SliderFloat("Newton Acceptance", &params.newton_acceptance, 0.f, 1.f)) {
     }
 
-    if (ImGui::SliderFloat("New Point Delta", &delta, 0.f, 1.f)) {
+    if (ImGui::SliderFloat("Cycle Acceptance", &params.cycle_acceptance, 0.f, 1.f)) {
     }
 
-    if (ImGui::Checkbox("Start from Cursor", &start_from_cursor)) {
+    if (ImGui::SliderFloat("New Point Delta", &params.delta, 0.f, 1.f)) {
     }
 
-    if (ImGui::SliderFloat("Cursor Distance", &cursor_dist, 0.f, 100.f)) {
+    if (ImGui::Checkbox("Start from Cursor", &params.start_from_cursor)) {
+    }
+
+    if (ImGui::SliderFloat("Cursor Distance", &params.cursor_dist, 0.f, 100.f)) {
     }
 
     if (ImGui::Button("Intersect")) {
       sampler first_sampler = get_sampler(first);
       sampler second_sampler = get_sampler(second);
-      systems::intersect(first_sampler, second_sampler);
+      systems::intersect(first_sampler, second_sampler, params);
     }
 
     ImGui::End();
