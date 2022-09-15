@@ -1253,7 +1253,14 @@ void render_main_menu() {
 void render_intersection_gui() {
   bool should_render{true};
   static systems::intersection_params params;
+  static std::string status_text {"empty"};
+
   auto &reg = ecs::registry::get_registry();
+  const auto num_sel = reg.get_map<selected>().size();
+
+  if (num_sel != 1 && num_sel != 2) {
+    return;
+  }
 
   auto is_intersectable = [&](auto idx) {
     return (reg.has_component<torus_params>(idx) ||
@@ -1261,12 +1268,11 @@ void render_intersection_gui() {
             reg.has_component<bspline_surface_params>(idx));
   };
 
-  if (reg.get_map<selected>().size() != 2) {
-    return;
-  }
+
+  bool self_intersection = (num_sel == 1);
 
   const ecs::EntityType first = reg.get_map<selected>().begin()->first;
-  const ecs::EntityType second = (++reg.get_map<selected>().begin())->first;
+  const ecs::EntityType second = self_intersection ? first : (++reg.get_map<selected>().begin())->first;
 
   if (!is_intersectable(first) || !is_intersectable(second)) {
     should_render = false;
@@ -1277,7 +1283,10 @@ void render_intersection_gui() {
     ImGui::Begin(title.c_str());
 
 
-    if (ImGui::SliderInt("Starting Subdivisions", &params.subdivisions, 0, 50)) {
+    if (ImGui::SliderInt("Starting Subdivisions", &params.subdivisions, 1, 1000)) {
+    }
+
+    if (ImGui::SliderInt("Subdivisions Iterations", &params.subdivisions_iterations, 1, 1000)) {
     }
 
     if (ImGui::SliderInt("Gradient Iterations", &params.gradient_iters, 0, 5000)) {
@@ -1313,10 +1322,27 @@ void render_intersection_gui() {
     }
 
     if (ImGui::Button("Intersect")) {
+      auto &ctr = reg.get_component<transformation>(
+          reg.get_map<cursor_params>().begin()->first);
+      glm::vec3 cursor_pos = ctr.translation;
       sampler first_sampler = get_sampler(first);
       sampler second_sampler = get_sampler(second);
-      systems::intersect(first_sampler, second_sampler, params);
+      auto res = systems::intersect(first_sampler, second_sampler, params, self_intersection, cursor_pos);
+      using is = systems::intersection_status;
+      switch(res) {
+        case is::self_intersection_error: {status_text = "self_intersection_error";} break;
+        case is::start_point_gradient_edge_error: {status_text = "start_point_gradient_edge_error";} break;
+        case is::start_point_gradient_final_point_error: {status_text = "start_point_gradient_final_point_error";} break;
+        case is::start_point_subdivisions_final_point_error: {status_text = "start_point_subdivisions_final_point_error";} break;
+        case is::start_point_gradient_error: {status_text = "start_point_gradient_error";} break;
+        case is::newton_edge_error: {status_text = "newton_edge_error";} break;
+        case is::success: {status_text = "success";} break;
+        case is::other_error: {status_text = "other_error";} break;
+        case is::nan_error: {status_text = "nan_error";} break;
+      }
     }
+
+    ImGui::Text("%s", status_text.c_str());
 
     ImGui::End();
   }

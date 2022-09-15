@@ -3,6 +3,7 @@
 #include <registry.h>
 #include <shader_manager.h>
 #include <systems.h>
+#include <random>
 
 #include <log.h>
 
@@ -37,6 +38,72 @@ inline float wrap(float v) {
   return v;
 };
 
+
+void find_closest_to_cursor(float& u, float&v, float&s, float&t, 
+                            const glm::vec3& cursor_pos,
+                            sampler& first, sampler&second, 
+                            bool self_intersection) {
+  float smallest_p = glm::length(first.sample(u, v) - cursor_pos);
+  float smallest_q = glm::length(second.sample(s, t) - cursor_pos);
+
+  constexpr int iter = 100;
+  for (int i = 0; i < iter; ++i) {
+    for (int j = 0; j < iter; ++j) {
+      float u_1 = i * 1.f / iter;
+      float v_1 = j * 1.f / iter;
+
+      auto pos1 = first.sample(u_1, v_1);
+      auto pos2 = second.sample(u_1, v_1);
+
+      auto tmp_res_p = glm::length(pos1 - cursor_pos);
+      if(!(self_intersection && (std::abs(u_1 - s) < 0.2 && std::abs(v_1 - t) < 0.2))) {
+        if (tmp_res_p < smallest_p) {
+          u = u_1; 
+          v = v_1;
+          smallest_p = tmp_res_p;
+        }
+      }
+
+      auto tmp_res_q = glm::length(pos2 - cursor_pos);
+      if(!(self_intersection && (std::abs(u_1 - u) < 0.2 && std::abs(v_1 - v) < 0.2))) {
+        if (tmp_res_q < smallest_q) {
+          s = u_1; 
+          t = v_1;
+          smallest_q = tmp_res_q;
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < iter; ++i) {
+    for (int j = 0; j < iter; ++j) {
+      float u_1 = i * 1.f / (iter * iter);
+      float v_1 = j * 1.f / (iter * iter);
+
+      auto pos1 = first.sample(u + u_1, v + v_1);
+      auto pos2 = second.sample(s + u_1, t + v_1);
+
+      auto tmp_res_p = glm::length(pos1 - cursor_pos);
+      if(!(self_intersection && (std::abs(u + u_1 - s) < 0.2 && std::abs(v + v_1 - t) < 0.2))) {
+        if (tmp_res_p < smallest_p) {
+          u += u_1; 
+          v += v_1;
+          smallest_p = tmp_res_p;
+        }
+      }
+
+      auto tmp_res_q = glm::length(pos2 - cursor_pos);
+      if(!(self_intersection && (std::abs(s + u_1 - u) < 0.2 && std::abs(t + v_1 - v) < 0.2))) {
+        if (tmp_res_q < smallest_q) {
+          s += u_1; 
+          t += v_1;
+          smallest_q = tmp_res_q;
+        }
+      }
+    }
+  }
+}
+
 res_tmp get_part(int subd, float su1, float sv1, float su2, float sv2, float width,
                  sampler &s1, sampler &s2) {
   // 1. divide into 16 parts the first one
@@ -45,6 +112,10 @@ res_tmp get_part(int subd, float su1, float sv1, float su2, float sv2, float wid
 
   float _res = glm::length(s1.sample(su1, sv1) - s2.sample(su2, sv2));
   res = {0, 0, 0, 0, _res, su1, sv1, su2, sv2};
+
+  auto is_out_of_bounds = [](auto v) {
+    return v < 0.0f || v > 1.0f;
+  };
 
   for (int i = 0; i < subd; ++i) {
     for (int j = 0; j < subd; ++j) {
@@ -56,7 +127,15 @@ res_tmp get_part(int subd, float su1, float sv1, float su2, float sv2, float wid
           float u_2 = su2 + granularity * k + granularity * 0.5f;
           float v_2 = sv2 + granularity * l + granularity * 0.5f;
 
-          auto tmp_res = glm::length(s1.sample(u_1, v_1) - s2.sample(u_2, v_2));
+          if(is_out_of_bounds(u_1)) continue;
+          if(is_out_of_bounds(u_2)) continue;
+          if(is_out_of_bounds(v_1)) continue;
+          if(is_out_of_bounds(v_2)) continue;
+
+          auto pos1 = s1.sample(u_1, v_1);
+          auto pos2 = s2.sample(u_2, v_2);
+
+          auto tmp_res = glm::length(pos1 - pos2);
           if (tmp_res < res.dist) {
             res = {i, j, k, l, tmp_res, u_1, v_1, u_2, v_2};
           }
@@ -64,16 +143,43 @@ res_tmp get_part(int subd, float su1, float sv1, float su2, float sv2, float wid
       }
     }
   }
-
   return res;
 }
 
-void find_subdivision_start_point(int subd, float& su, float& sv, float& ss, float& st, sampler& first, sampler& second) {
+void find_subdivision_start_point(int subd, int subd_iter, 
+                                  float& su, float& sv, float& ss, float& st, 
+                                  sampler& first, sampler& second, bool self_intersection) {
   float width = 1.0f;
   // run loop until you find starting point
   res_tmp r;
-  for (int rec = 0; rec < 10; ++rec) {
+  for (int rec = 0; rec < subd_iter; ++rec) {
     r = get_part(subd, su, sv, ss, st, width, first, second);
+
+    width = width / subd;
+
+    su += r.i * width;
+    sv += r.j * width;
+    ss += r.k * width;
+    st += r.l * width;
+  }
+}
+
+void find_cursor_start_point(int subd, int subd_iter, float& su, float& sv, float& ss, float& st, 
+                                  sampler& first, sampler& second, 
+                                  const glm::vec3& cursor_pos, float cursor_dist, bool self_intersection) {
+  float width = 1.0f;
+  // run loop until you find starting point
+  find_closest_to_cursor(su, sv, ss, st, cursor_pos, first, second, self_intersection);
+
+  width = 0.05f;
+  su -= width / 2;
+  sv -= width / 2;
+  ss -= width / 2;
+  st -= width / 2;
+  res_tmp r;
+  for (int rec = 0; rec < subd_iter; ++rec) {
+    r = get_part(subd, su, sv, ss, st, width, first, second);
+
     width = width / subd;
 
     su += r.i * width;
@@ -140,21 +246,38 @@ intersection_status improve_start_point_with_gradients(float& su, float& sv, flo
 }
 
 intersection_status find_start_point(const intersection_params& params, float& su, float& sv, 
-                                     float& ss, float&st, sampler& first, sampler& second) {
-  find_subdivision_start_point(params.subdivisions, su, sv, ss, st, first, second);
+                                     float& ss, float&st, sampler& first, sampler& second,
+                                     bool self_intersection, const glm::vec3& cursor_pos) {
+  if(params.start_from_cursor) {
+    find_cursor_start_point(params.subdivisions, params.subdivisions_iterations, 
+                            su, sv, ss, st, first, second, cursor_pos, 
+                            params.cursor_dist, self_intersection);
+  } else {
+    find_subdivision_start_point(params.subdivisions, params.subdivisions_iterations, su, sv, ss, st, first, second, self_intersection);
+  }
 
-  float dist = glm::length(first.sample(su, sv) - second.sample(ss, st));
+  auto p_test = first.sample(su, sv);
+  auto q_test = second.sample(ss, st);
+  float dist = glm::length(p_test - q_test);
   if(dist > params.subdivisions_acceptance) {
+    TINY_CAD_INFO("INTERSECTION_LOG: (dist: {6}) ({7} {8})<{0}, {1}, {2}> ({9} {10})<{3}, {4}, {5}>",
+                  p_test.x, p_test.y, p_test.z, q_test.x, q_test.y, q_test.z, dist,
+                  su, sv, ss, st);
     return intersection_status::start_point_subdivisions_final_point_error;
   }
 
   // get even closer with gradients
   auto gradient_status = improve_start_point_with_gradients(su, sv, ss, st, params.start_acceptance, params.gradient_iters,
-                                                            params.start_delta, first, second);
+                                                              params.start_delta, first, second);
 
-  dist = glm::length(first.sample(su, sv) - second.sample(ss, st));
+  p_test = first.sample(su, sv);
+  q_test = second.sample(ss, st);
+  dist = glm::length(p_test - q_test);
 
   if(dist > params.start_acceptance) {
+    TINY_CAD_INFO("INTERSECTION_LOG: (dist: {6}) ({7} {8})<{0}, {1}, {2}> ({9} {10})<{3}, {4}, {5}>",
+                  p_test.x, p_test.y, p_test.z, q_test.x, q_test.y, q_test.z, dist,
+                  su, sv, ss, st);
     return intersection_status::start_point_gradient_final_point_error;
   }
 
@@ -209,7 +332,7 @@ inline glm::vec3 get_tangent(float u, float v, float s, float t, sampler& first,
   return glm::normalize(glm::cross(pnormal(u, v), qnormal(s, t)));
 }
 
-inline void extend_start_point(std::vector<glm::vec3>& points, const glm::vec4& start_coords, 
+inline intersection_status extend_start_point(std::vector<glm::vec3>& points, const glm::vec4& start_coords, 
                                float delta, sampler& first, sampler& second,
                                const intersection_params& params) {
   auto first_point = points[0];
@@ -262,9 +385,18 @@ inline void extend_start_point(std::vector<glm::vec3>& points, const glm::vec4& 
         (glm::length(first.sample(next_coords.x, next_coords.y) - second.sample(next_coords.z, next_coords.w)) > std::abs(delta))) {
       break;
     }
-    points.push_back(first.sample(next_coords.x, next_coords.y));
+
+
+    auto pos = first.sample(next_coords.x, next_coords.y);
+
+    if(std::isnan(pos.x) || std::isnan(pos.y) || std::isnan(pos.z)) {
+      return intersection_status::nan_error;
+    }
+
+    points.push_back(pos);
     last_coords = next_coords;
   }
+  return intersection_status::success;
 }
 
 intersection_status find_all_intersection_points(const intersection_params& params, glm::vec4 start_coords,
@@ -272,7 +404,10 @@ intersection_status find_all_intersection_points(const intersection_params& para
   auto first_point = points[0];
 
   // find first line of points (or cycle)
-  extend_start_point(points, start_coords, params.delta, first, second, params);
+  auto extension_status = extend_start_point(points, start_coords, params.delta, first, second, params);
+  if(extension_status != intersection_status::success) {
+    return extension_status;
+  }
   auto last_point = points[points.size() - 1];
 
   const bool cycle_found = (glm::length(first_point - last_point) < std::abs(params.delta) && points.size() > 4);
@@ -289,14 +424,19 @@ intersection_status find_all_intersection_points(const intersection_params& para
 }
 
 
-intersection_status intersect(sampler &first, sampler &second, const intersection_params& params) {
+intersection_status intersect(sampler &first, sampler &second, 
+                              const intersection_params& params, bool self_intersection,
+                              const glm::vec3& cursor_pos) {
   auto &sm = shader_manager::get_manager();
   auto &reg = ecs::registry::get_registry();
   
   float su{0.0f}, sv{0.0f}, ss{0.0f}, st{0.0f};
 
   // find start point
-  auto start_point_status = find_start_point(params, su, sv, ss, st, first, second);
+  auto start_point_status = find_start_point(params, su, sv, ss, st, first, second, self_intersection, cursor_pos);
+  if(self_intersection && std::abs(su - ss) < 0.01 && std::abs(sv - st) < 0.01) {
+    return intersection_status::self_intersection_error;
+  }
   if(start_point_status != intersection_status::success) {
     return start_point_status;
   }

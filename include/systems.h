@@ -57,16 +57,19 @@ void regenerate(ecs::EntityType idx);
 
 enum class intersection_status {
   success,
+  self_intersection_error,
   start_point_gradient_edge_error,
   start_point_gradient_final_point_error,
   start_point_subdivisions_final_point_error,
   start_point_gradient_error,
   newton_edge_error,
+  nan_error,
   other_error
 };
 
 struct intersection_params {
     int subdivisions = 8;
+    int subdivisions_iterations = 10;
     int gradient_iters = 1000;
     float start_delta = 1e-4f;
     float start_acceptance = 1e-2f;
@@ -81,6 +84,8 @@ struct intersection_params {
     float cursor_dist = 0.1f;
 };
 
-intersection_status intersect(sampler &first, sampler &second, const intersection_params& params);
+intersection_status intersect(sampler &first, sampler &second, 
+                              const intersection_params& params, bool self_intersection,
+                              const glm::vec3& cursor_pos);
 
 } // namespace systems
