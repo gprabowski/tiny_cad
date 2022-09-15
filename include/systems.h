@@ -61,6 +61,7 @@ enum class intersection_status {
   start_point_gradient_final_point_error,
   start_point_subdivisions_final_point_error,
   start_point_gradient_error,
+  newton_edge_error,
   other_error
 };
 
@@ -71,7 +72,7 @@ struct intersection_params {
     float start_acceptance = 1e-2f;
     float subdivisions_acceptance = 1e-1f;
 
-    int newton_iters = 300;
+    int newton_iters = 100;
     float newton_acceptance = 1e-2;
     float cycle_acceptance = 1e-2;
     float delta = 1e-2;

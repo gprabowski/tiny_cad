@@ -190,18 +190,14 @@ inline glm::mat4 get_j (const glm::vec3& p_def, const glm::vec3& q_def,
 
 auto get_newton_decrement(float u, float v, float s, float t, 
                           float delta, sampler& first, sampler& second,
-                          const glm::vec3& tangent, const glm::vec3& P0) {
-  const auto q_def = second.sample(s, t);
-  const auto p_def = first.sample(u, v);
+                          const glm::vec3& tangent, const glm::vec3& P0, 
+                          const glm::vec3& p_def, const glm::vec3& q_def) {
   auto f = get_f_opt(p_def, q_def, P0, tangent, delta);
   auto inv_j_f = get_j(p_def, q_def, u, v, s, t, f, P0, tangent, first, second, delta);
   return inv_j_f * f;
 };
 
-intersection_status find_all_intersection_points(const intersection_params& params, glm::vec4 start_coords,
-                                                 std::vector<glm::vec3>& points, sampler& first, sampler& second) {
-  auto first_point = points[0];
-  // helper functions
+inline glm::vec3 get_tangent(float u, float v, float s, float t, sampler& first, sampler& second) {
   auto pnormal = [&](auto u, auto v) {
     return glm::normalize(glm::cross(first.der_u(u, v), first.der_v(u, v)));
   };
@@ -210,49 +206,85 @@ intersection_status find_all_intersection_points(const intersection_params& para
     return glm::normalize(glm::cross(second.der_u(s, t), second.der_v(s, t)));
   };
 
-  auto get_tangent = [&](auto u, auto v, auto s, auto t) {
-    return glm::normalize(glm::cross(pnormal(u, v), qnormal(s, t)));
-  };
+  return glm::normalize(glm::cross(pnormal(u, v), qnormal(s, t)));
+}
 
+inline void extend_start_point(std::vector<glm::vec3>& points, const glm::vec4& start_coords, 
+                               float delta, sampler& first, sampler& second,
+                               const intersection_params& params) {
+  auto first_point = points[0];
   auto last_coords = start_coords;
-
-  while (true) {
+  auto iter = 0;
+  while (iter < 10000) {
+    ++iter;
     auto P0 = first.sample(last_coords.x, last_coords.y);
-
     glm::vec4 next_coords = last_coords;
-
     const auto tangent =
-        get_tangent(last_coords.x, last_coords.y, last_coords.z, last_coords.w);
+        get_tangent(last_coords.x, last_coords.y, last_coords.z, last_coords.w, first, second);
 
     // newton away baby
-    for (int i = 0; i < 100; ++i) {
+    auto q_def = second.sample(next_coords.z, next_coords.w);
+    auto p_def = first.sample(next_coords.x, next_coords.y);
+    for (int i = 0; i < params.newton_iters; ++i) {
       next_coords -= get_newton_decrement(next_coords.x, next_coords.y,
                                           next_coords.z, next_coords.w,
-                                          params.delta, first, second, tangent, P0);
-      // check if we go out of bounds on a 
-      // non wrapping surface
-      if (first.u_wrapped)
+                                          delta, first, second, tangent, P0, p_def, q_def);
+      if (first.u_wrapped) {
         next_coords.x = wrap(next_coords.x);
-      if (first.v_wrapped)
+      }
+      if (first.v_wrapped) {
         next_coords.y = wrap(next_coords.y);
-      if (second.u_wrapped)
+      }
+      if (second.u_wrapped) {
         next_coords.z = wrap(next_coords.z);
-      if (second.v_wrapped)
+      }
+      if (second.v_wrapped) {
         next_coords.w = wrap(next_coords.w);
+      }
+      if(glm::length(p_def - q_def) < params.newton_acceptance) {
+        break; 
+      }
+    }
+
+    auto last_point = points[points.size() - 1];
+
+    // check if cycle 
+    if(glm::length(first_point - last_point) < std::abs(delta) && points.size() > 4) {
+      points.push_back(first_point);
+      break;
     }
 
     // Check if Newton is converging
-
-    points.push_back(first.sample(next_coords.x, next_coords.y));
-    points.push_back(second.sample(next_coords.z, next_coords.w));
-
-    last_coords = next_coords;
-    auto last_point = points[points.size() - 1];
-
-    if (glm::length(first_point - last_point) < params.delta && points.size() > 4) {
+    if((next_coords.x > 1.0f || next_coords.x < 0.0f) ||
+        (next_coords.y > 1.0f || next_coords.y < 0.0f) ||
+        (next_coords.z > 1.0f || next_coords.z < 0.0f) ||
+        (next_coords.w > 1.0f || next_coords.w < 0.0f) ||
+        (glm::length(first.sample(next_coords.x, next_coords.y) - second.sample(next_coords.z, next_coords.w)) > std::abs(delta))) {
       break;
     }
+    points.push_back(first.sample(next_coords.x, next_coords.y));
+    last_coords = next_coords;
   }
+}
+
+intersection_status find_all_intersection_points(const intersection_params& params, glm::vec4 start_coords,
+                                                 std::vector<glm::vec3>& points, sampler& first, sampler& second) {
+  auto first_point = points[0];
+
+  // find first line of points (or cycle)
+  extend_start_point(points, start_coords, params.delta, first, second, params);
+  auto last_point = points[points.size() - 1];
+
+  const bool cycle_found = (glm::length(first_point - last_point) < std::abs(params.delta) && points.size() > 4);
+
+  // no cycle, we need to do reverse delta now
+  std::vector<glm::vec3> tmp_points {first_point};
+  if(!cycle_found) {
+    extend_start_point(tmp_points, start_coords, -params.delta, first, second, params);
+  }
+
+  // combine two parts
+  points.insert(points.begin(), tmp_points.rbegin(), tmp_points.rend());
   return intersection_status::success;
 }
 

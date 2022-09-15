@@ -288,14 +288,17 @@ sampler get_sampler(ecs::EntityType idx) {
     s.sample = [=](float u, float v) -> glm::vec3 {
       auto _bsp = bsp;
       int i, j;
-      double intpart;
-      u = (s.u_wrapped && u > 1.0f) ? std::modf(u, &intpart) : u;
-      // 1. find out which patch parameters belong to
-      i = u * bsp.u;
-      j = v * bsp.v;
 
-      u = bsp.u * (u - i * (1.f / bsp.u));
-      v = bsp.v * (v - j * (1.f / bsp.v));
+      float lu = u;
+      float lv = v;
+      // 1. find out which patch parameters belong to
+      i = (u == 1.0f) ? bsp.u - 1 : lu * _bsp.u;
+      j = (v == 1.0f) ? bsp.v - 1 : lv * _bsp.v;
+
+      // u and v have to be from 0 to 1.0
+      // and thus we have to scale them
+      lu = _bsp.u * (lu - i * (1.f / _bsp.u));
+      lv = _bsp.v * (lv - j * (1.f / _bsp.v));
 
       // 2. sample that patch
       std::array<glm::vec3, 16> lp;
@@ -305,72 +308,40 @@ sampler get_sampler(ecs::EntityType idx) {
         }
       }
 
-      auto ctmp1 = deboor(v, lp[12], lp[8], lp[4], lp[0]);
-      auto ctmp2 = deboor(v, lp[13], lp[9], lp[5], lp[1]);
-      auto ctmp3 = deboor(v, lp[14], lp[10], lp[6], lp[2]);
-      auto ctmp4 = deboor(v, lp[15], lp[11], lp[7], lp[3]);
+      auto ctmp1 = deboor(lv, lp[0], lp[4], lp[8], lp[12]);
+      auto ctmp2 = deboor(lv, lp[1], lp[5], lp[9], lp[13]);
+      auto ctmp3 = deboor(lv, lp[2], lp[6], lp[10], lp[14]);
+      auto ctmp4 = deboor(lv, lp[3], lp[7], lp[11], lp[15]);
 
-      auto tmp_f = deboor(u, ctmp1, ctmp2, ctmp3, ctmp4);
+      auto tmp_f = deboor(lu, ctmp1, ctmp2, ctmp3, ctmp4);
 
       return tmp_f;
     };
 
     s.der_u = [=](float u, float v) -> glm::vec3 {
-      auto _bsp = bsp;
-      int i, j;
-      double intpart;
-      u = (s.u_wrapped && u > 1.0f) ? std::modf(u, &intpart) : u;
-      // 1. find out which patch parameters belong to
-      i = u * bsp.u;
-      j = v * bsp.v;
+      const auto h = 1e-3f;
+      const auto v_o = s.sample(u, v);
+      const auto v_u = s.sample(u + h, v);
+      return (v_u - v_o) * (1.f / h) / static_cast<float>(bsp.u);
+    };
 
-      u = bsp.u * (u - i * (1.f / bsp.u));
-      v = bsp.v * (v - j * (1.f / bsp.v));
-
-      // 2. sample that patch
-      std::array<glm::vec3, 16> lp;
-      for (int jj = 0; jj < 4; ++jj) {
-        for (int ii = 0; ii < 4; ++ii) {
-          lp[jj * 4 + ii] = cpoint_pos[get_bspline_pos(i, j, ii, jj, _bsp)];
-        }
-      }
-
-      auto ctmp1 = deboor(v, lp[12], lp[8], lp[4], lp[0]);
-      auto ctmp2 = deboor(v, lp[13], lp[9], lp[5], lp[1]);
-      auto ctmp3 = deboor(v, lp[14], lp[10], lp[6], lp[2]);
-      auto ctmp4 = deboor(v, lp[15], lp[11], lp[7], lp[3]);
-
-      return deboor(u, {(ctmp2 - ctmp1), (ctmp3 - ctmp2), (ctmp4 - ctmp3)}) /
-             static_cast<float>(bsp.u);
+    s.der_u_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
+      const auto h = 1e-3f;
+      const auto v_u = s.sample(u + h, v);
+      return (v_u - v_o) * (1.f / h) / static_cast<float>(bsp.u);
     };
 
     s.der_v = [=](float u, float v) -> glm::vec3 {
-      auto _bsp = bsp;
-      int i, j;
-      double intpart;
-      u = (s.u_wrapped && u > 1.0f) ? std::modf(u, &intpart) : u;
-      // 1. find out which patch parameters belong to
-      i = u * bsp.u;
-      j = v * bsp.v;
+      const auto h = 1e-3f;
+      const auto v_o = s.sample(u, v);
+      const auto v_v = s.sample(u, v + h);
+      return (v_v - v_o) * (1.f / h) / static_cast<float>(bsp.v);
+    };
 
-      u = bsp.u * (u - i * (1.f / bsp.u));
-      v = bsp.v * (v - j * (1.f / bsp.v));
-
-      // 2. sample that patch
-      std::array<glm::vec3, 16> lp;
-      for (int jj = 0; jj < 4; ++jj) {
-        for (int ii = 0; ii < 4; ++ii) {
-          lp[jj * 4 + ii] = cpoint_pos[get_bspline_pos(i, j, ii, jj, _bsp)];
-        }
-      }
-
-      auto ctmp1 = deboor(u, lp[12], lp[13], lp[14], lp[15]);
-      auto ctmp2 = deboor(u, lp[8], lp[9], lp[10], lp[11]);
-      auto ctmp3 = deboor(u, lp[4], lp[5], lp[6], lp[7]);
-      auto ctmp4 = deboor(u, lp[0], lp[1], lp[2], lp[3]);
-
-      return deboor(v, {(ctmp2 - ctmp1), (ctmp3 - ctmp2), (ctmp4 - ctmp3)}) /
-             static_cast<float>(bsp.v);
+    s.der_v_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
+      const auto h = 1e-3f;
+      const auto v_v = s.sample(u, v + h);
+      return (v_v - v_o) * (1.f / h) / static_cast<float>(bsp.v);
     };
   }
 
