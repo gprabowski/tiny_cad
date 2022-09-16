@@ -119,7 +119,7 @@ void render_visible_entities() {
     if(reg.has_component<bspline_surface_params>(idx)) {
       set_bspline_uniforms(idx);  
     }
-    glVertexAttrib4f(1, gl.color.r, gl.color.g, gl.color.b, gl.color.a);
+    glVertexAttrib4f(8, gl.color.r, gl.color.g, gl.color.b, gl.color.a);
     systems::render_gl(gl);
   }
 }

@@ -535,6 +535,8 @@ ecs::EntityType add_torus(parametric &&_p, transformation &&_t,
   auto &tp = reg.get_component<torus_params>(t);
   auto &p = reg.get_component<parametric>(t);
 
+  g.vtype = gl_object::vertex_t::point_tex,
+
   systems::generate_torus_points(tp, p, g.points);
   systems::generate_torus_lines(p, g.points, g.indices);
   systems::reset_gl_objects(g);

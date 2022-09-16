@@ -1,6 +1,7 @@
 #version 460
 
 layout(location = 0) in vec4 pos;
+layout(location = 1) in vec2 uv;
 layout(location = 8) in vec4 col;
 
 layout (std140) uniform common_block {
@@ -12,8 +13,10 @@ layout (std140) uniform common_block {
 uniform mat4 model;
 
 out vec4 color;
+out vec2 torus_uv;
 
 void main() {
-    gl_Position = pos;
+    gl_Position = proj * view * model * pos;
     color = col_mat * col;
+    torus_uv = uv;
 }

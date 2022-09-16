@@ -46,12 +46,22 @@ void Bresenham(float _xa, float _ya, float _xb, float _yb, F putpixel)
 }
 
 template<int Size>
-inline bool is_valid_coord(const std::pair<int, int>& c) {
+inline bool is_valid_coord(bool xwrapped, bool ywrapped, std::pair<int, int>& c) {
+  if(xwrapped) {
+    if(c.first < 0) c.first += Size;
+    if(c.first >= Size) c.first -= Size;
+  }
+
+  if(ywrapped) {
+    if(c.second < 0) c.second += Size;
+    if(c.second >= Size) c.second -= Size;
+  }
+
   return !(c.first < 0 || c.first >= Size || c.second < 0 || c.second >= Size);
 }
 
 template<int TexSize, typename Getter, typename Setter>
-void flood_fill(Getter get, Setter set) {
+void flood_fill(bool xwrapped, bool ywrapped, Getter get, Setter set) {
   int x = 0; int y = 0;
   // find starting point
   if(get(0, 0) > 0.5f) {
@@ -70,21 +80,25 @@ void flood_fill(Getter get, Setter set) {
   while(!coord_queue.empty()) {
     auto [curr_x, curr_y] = coord_queue.front();
     coord_queue.pop();
-    if(is_valid_coord<TexSize>({curr_x - 1, curr_y}) && (get(curr_x - 1, curr_y) < 0.5f)) {
-      set(curr_x - 1, curr_y, 1.f);
-      coord_queue.push(std::make_pair(curr_x - 1, curr_y));
+    auto coord = std::make_pair(curr_x - 1, curr_y);
+    if(is_valid_coord<TexSize>(xwrapped, ywrapped, coord) && (get(coord.first, coord.second) < 0.5f)) {
+      set(coord.first, coord.second, 1.f);
+      coord_queue.push(coord);
     }
-    if(is_valid_coord<TexSize>({curr_x + 1, curr_y}) && (get(curr_x + 1, curr_y) < 0.5f)) {
-      set(curr_x + 1, curr_y, 1.f);
-      coord_queue.push(std::make_pair(curr_x + 1, curr_y));
+    coord = std::make_pair(curr_x + 1, curr_y);
+    if(is_valid_coord<TexSize>(xwrapped, ywrapped, coord) && (get(coord.first, coord.second) < 0.5f)) {
+      set(coord.first, coord.second, 1.f);
+      coord_queue.push(coord);
     }
-    if(is_valid_coord<TexSize>({curr_x, curr_y - 1}) && (get(curr_x, curr_y - 1) < 0.5f)) {
-      set(curr_x, curr_y - 1, 1.f);
-      coord_queue.push(std::make_pair(curr_x, curr_y - 1));
+    coord = std::make_pair(curr_x, curr_y - 1);
+    if(is_valid_coord<TexSize>(xwrapped, ywrapped, coord) && (get(coord.first, coord.second) < 0.5f)) {
+      set(coord.first, coord.second, 1.f);
+      coord_queue.push(coord);
     }
-    if(is_valid_coord<TexSize>({curr_x, curr_y + 1}) && (get(curr_x, curr_y + 1) < 0.5f)) {
-      set(curr_x, curr_y + 1, 1.f);
-      coord_queue.push(std::make_pair(curr_x, curr_y + 1));
+    coord = std::make_pair(curr_x, curr_y + 1);
+    if(is_valid_coord<TexSize>(xwrapped, ywrapped, coord) && (get(coord.first, coord.second) < 0.5f)) {
+      set(coord.first, coord.second, 1.f);
+      coord_queue.push(coord);
     }
   }
 }
@@ -602,7 +616,7 @@ intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_
     }
 
     // flood fill
-    flood_fill<texture_size>(get_pixel, set_pixel);
+    flood_fill<texture_size>(first.u_wrapped, first.v_wrapped, get_pixel, set_pixel);
 
     glTextureSubImage2D(tex[0], 0, 0, 0, texture_size, texture_size, GL_RED, GL_FLOAT, tex_cpu.data());
     gl1.trim_texture = tex[0];
@@ -631,7 +645,7 @@ intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_
     }
 
     // flood fill
-    flood_fill<texture_size>(get_pixel, set_pixel);
+    flood_fill<texture_size>(second.u_wrapped, second.v_wrapped, get_pixel, set_pixel);
 
     glTextureSubImage2D(tex[1], 0, 0, 0, texture_size, texture_size, GL_RED, GL_FLOAT, tex_cpu.data());
     gl2.trim_texture = tex[1];

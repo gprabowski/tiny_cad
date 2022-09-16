@@ -75,14 +75,14 @@ void reset_gl_objects(gl_object &g) {
     glVertexArrayVertexBuffer(g.vao, 0, g.vbo, 0, 2 * sizeof(g.points[0]));
     glVertexArrayElementBuffer(g.vao, g.ebo);
     glEnableVertexArrayAttrib(g.vao, 0);
-    glEnableVertexArrayAttrib(g.vao, 1);
+    glEnableVertexArrayAttrib(g.vao, 8);
 
     glVertexArrayAttribFormat(g.vao, 0, 4, GL_FLOAT, GL_FALSE, 0);
-    glVertexArrayAttribFormat(g.vao, 1, 4, GL_FLOAT, GL_FALSE,
+    glVertexArrayAttribFormat(g.vao, 8, 4, GL_FLOAT, GL_FALSE,
                               sizeof(glm::vec4));
 
     glVertexArrayAttribBinding(g.vao, 0, 0);
-    glVertexArrayAttribBinding(g.vao, 1, 0);
+    glVertexArrayAttribBinding(g.vao, 8, 0);
   } break;
 
   default:

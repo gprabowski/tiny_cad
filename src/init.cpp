@@ -176,7 +176,7 @@ std::shared_ptr<GLFWwindow> init_all(const char *caption) {
   auto &sm = shader_manager::get_manager();
   // read in all shaders
   sm.add(shader_t::GENERAL_SHADER, "resources/general");
-  sm.add(shader_t::TORUS_SHADER, "resources/general");
+  sm.add(shader_t::TORUS_SHADER, "resources/torus");
   sm.add(shader_t::POINT_SHADER, "resources/general");
   sm.add(shader_t::BEZIER_CURVE_SHADER, "resources/bezier");
   sm.add(shader_t::BSPLINE_CURVE_SHADER, "resources/bspline");

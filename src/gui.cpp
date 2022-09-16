@@ -887,7 +887,7 @@ void render_selection_rect() {
     glUseProgram(gl.program);
     update::refresh_identity();
     systems::set_model_uniform(t);
-    glVertexAttrib4f(1, gl.color.r, gl.color.g, gl.color.b, gl.color.a);
+    glVertexAttrib4f(8, gl.color.r, gl.color.g, gl.color.b, gl.color.a);
     systems::render_gl(gl);
     update::refresh_impl(frame_state::col_mat, frame_state::view,
                          frame_state::proj);
