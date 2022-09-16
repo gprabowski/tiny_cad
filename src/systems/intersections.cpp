@@ -203,13 +203,12 @@ void find_closest_to_cursor(float& u, float&v, float&s, float&t,
 }
 
 res_tmp get_part(int subd, float su1, float sv1, float su2, float sv2, float width,
-                 sampler &s1, sampler &s2) {
+                 sampler &s1, sampler &s2, bool self_intersection) {
   // 1. divide into 16 parts the first one
   res_tmp res;
   float granularity = width / subd;
 
-  float _res = glm::length(s1.sample(su1, sv1) - s2.sample(su2, sv2));
-  res = {0, 0, 0, 0, _res, su1, sv1, su2, sv2};
+  res = {0, 0, 0, 0, 1e10f, su1, sv1, su2, sv2};
 
   auto is_out_of_bounds = [](auto v) {
     return v < 0.0f || v > 1.0f;
@@ -230,12 +229,13 @@ res_tmp get_part(int subd, float su1, float sv1, float su2, float sv2, float wid
           if(is_out_of_bounds(v_1)) continue;
           if(is_out_of_bounds(v_2)) continue;
 
-          auto pos1 = s1.sample(u_1, v_1);
-          auto pos2 = s2.sample(u_2, v_2);
-
-          auto tmp_res = glm::length(pos1 - pos2);
-          if (tmp_res < res.dist) {
-            res = {i, j, k, l, tmp_res, u_1, v_1, u_2, v_2};
+          if(!(self_intersection && (std::abs(u_1 - u_2) < 0.2 && std::abs(v_1 - v_2) < 0.2))) {
+            auto pos1 = s1.sample(u_1, v_1);
+            auto pos2 = s2.sample(u_2, v_2);
+            auto tmp_res = glm::length(pos1 - pos2);
+            if (tmp_res < res.dist) {
+              res = {i, j, k, l, tmp_res, u_1, v_1, u_2, v_2};
+            }
           }
         }
       }
@@ -251,7 +251,7 @@ void find_subdivision_start_point(int subd, int subd_iter,
   // run loop until you find starting point
   res_tmp r;
   for (int rec = 0; rec < subd_iter; ++rec) {
-    r = get_part(subd, su, sv, ss, st, width, first, second);
+    r = get_part(subd, su, sv, ss, st, width, first, second, self_intersection);
 
     width = width / subd;
 
@@ -276,7 +276,7 @@ void find_cursor_start_point(int subd, int subd_iter, float& su, float& sv, floa
   st -= width / 2;
   res_tmp r;
   for (int rec = 0; rec < subd_iter; ++rec) {
-    r = get_part(subd, su, sv, ss, st, width, first, second);
+    r = get_part(subd, su, sv, ss, st, width, first, second, false);
 
     width = width / subd;
 
