@@ -1394,6 +1394,7 @@ void render_intersection_gui() {
         case is::success: {status_text = "success";} break;
         case is::other_error: {status_text = "other_error";} break;
         case is::nan_error: {status_text = "nan_error";} break;
+        case is::already_has_intersection_error: {status_text = "already_has_intersection_error";} break;
       }
     }
 

@@ -64,7 +64,8 @@ enum class intersection_status {
   start_point_gradient_error,
   newton_edge_error,
   nan_error,
-  other_error
+  other_error,
+  already_has_intersection_error
 };
 
 struct intersection_params {

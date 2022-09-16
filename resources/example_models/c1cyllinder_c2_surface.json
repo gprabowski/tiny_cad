@@ -2,34 +2,34 @@
 	"geometry": [
 		{
 			"objectType": "torus",
-			"id": 348,
-			"name": "torus #348",
+			"id": 342,
+			"name": "torus #342",
 			"smallRadius": 2.0,
 			"largeRadius": 4.0,
 			"position": {
-				"x": 32.32101058959961,
-				"y": 24.573087692260742,
-				"z": 9.96609878540039
+				"x": 8.835773468017578,
+				"y": 24.739459991455078,
+				"z": 1.0780197381973267
 			},
 			"rotation": {
 				"x": 0.0,
-				"y": 0.0,
-				"z": -86.29546356201172
+				"y": -0.0,
+				"z": 0.0
 			},
 			"scale": {
 				"x": 0.9999964237213135,
-				"y": 0.9999964237213135,
+				"y": 1.0,
 				"z": 1.0
 			},
 			"samples": {
-				"x": 50,
-				"y": 20
+				"x": 20,
+				"y": 50
 			}
 		},
 		{
 			"objectType": "bezierSurfaceC0",
-			"name": "Bezier Surface #342",
-			"id": 342,
+			"name": "Bezier Surface #343",
+			"id": 343,
 			"patches": [
 				{
 					"objectType": "bezierPatchC0",
@@ -1518,8 +1518,8 @@
 		},
 		{
 			"objectType": "bezierSurfaceC0",
-			"name": "Bezier Surface #344",
-			"id": 344,
+			"name": "Bezier Surface #345",
+			"id": 345,
 			"patches": [
 				{
 					"objectType": "bezierPatchC0",
@@ -1769,8 +1769,8 @@
 		},
 		{
 			"objectType": "bezierSurfaceC2",
-			"name": "B-Spline Surface #346",
-			"id": 346,
+			"name": "B-Spline Surface #347",
+			"id": 347,
 			"patches": [
 				{
 					"objectType": "bezierPatchC2",

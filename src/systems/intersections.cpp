@@ -526,6 +526,11 @@ intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_
   auto &reg = ecs::registry::get_registry();
   float su{0.0f}, sv{0.0f}, ss{0.0f}, st{0.0f};
 
+  if(reg.get_component<gl_object>(first_idx).trim_texture.has_value() ||
+     reg.get_component<gl_object>(second_idx).trim_texture.has_value()) {
+    return intersection_status::already_has_intersection_error;
+  }
+
   // find start point
   auto start_point_status = find_start_point(params, su, sv, ss, st, first, second, self_intersection, cursor_pos);
   if(self_intersection && std::abs(su - ss) < 0.01 && std::abs(sv - st) < 0.01) {
