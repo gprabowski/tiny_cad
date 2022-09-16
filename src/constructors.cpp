@@ -942,7 +942,7 @@ ecs::EntityType add_gregory(const GLuint program) {
   return ecs::null_entity;
 }
 
-ecs::EntityType add_intersection(std::vector<glm::vec3>& points) {
+ecs::EntityType add_intersection(std::vector<glm::vec3>& points, ecs::EntityType first, ecs::EntityType second) {
   auto &reg = ecs::registry::get_registry();
   auto &sm = shader_manager::get_manager();
   const auto t = reg.add_entity();
@@ -950,8 +950,14 @@ ecs::EntityType add_intersection(std::vector<glm::vec3>& points) {
   reg.add_component<tag_figure>(t, tag_figure{"Intersection #" + std::to_string(t)});
   reg.add_component<transformation>(t, {});
   reg.add_component<gl_object>(t, {});
+  reg.add_component<tag_parent>(t, {});
+  reg.add_component<relationship>(t, {});
   reg.add_component<tag_visible>(t, {});
   reg.add_component<tag_intersection>(t, {});
+
+  auto &r = reg.get_component<relationship>(t);
+  r.children.push_back(first);
+  r.children.push_back(second);
 
   auto &g = reg.get_component<gl_object>(t);
   auto idx = 0;

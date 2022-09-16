@@ -912,8 +912,10 @@ void end_frame() {
   }
 }
 
-void render_intersection_line_gui(tag_figure& fc, gl_object& g, ecs::EntityType idx)  {
+void render_intersection_line_gui(tag_figure& fc, gl_object& g, relationship& r, ecs::EntityType idx)  {
+
   render_figure_gui(idx, fc, [&]() {
+    auto &reg = ecs::registry::get_registry();
     auto &sm = shader_manager::get_manager();
     auto &gl = g;
     render_gl_object_gui(
@@ -921,6 +923,28 @@ void render_intersection_line_gui(tag_figure& fc, gl_object& g, ecs::EntityType 
     if(ImGui::Button("Make Interpolating Spline")) {
       constructors::add_icurve(g.points, sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx);
       frame_state::deleted.push_back(idx);
+    }
+    if(r.children.size() == 2) {
+
+      auto tex1 = reg.get_component<gl_object>(r.children[0]).trim_texture.value();
+      auto f1 = reg.get_component<tag_figure>(r.children[0]).name;
+
+      std::string title = std::string("Intersection of ") + f1;
+      ImGui::Begin(title.c_str());
+      auto s = ImGui::GetContentRegionAvail();
+      ImGui::Image((void *)(uint64_t)tex1, s, {0, 1}, {1, 0});
+
+      ImGui::End();
+
+      auto tex2 = reg.get_component<gl_object>(r.children[1]).trim_texture.value();
+      auto f2 = reg.get_component<tag_figure>(r.children[1]).name;
+
+      title = std::string("Intersection of ") + f2;
+      ImGui::Begin(title.c_str());
+      s = ImGui::GetContentRegionAvail();
+      ImGui::Image((void *)(uint64_t)tex2, s, {0, 1}, {1, 0});
+
+      ImGui::End();
     }
   });
 }
@@ -940,7 +964,8 @@ void render_selected_edit_gui() {
     } else if (reg.has_component<tag_intersection>(idx)) {
       auto &g = reg.get_component<gl_object>(idx);
       auto &fc = reg.get_component<tag_figure>(idx);
-      render_intersection_line_gui(fc, g, idx);
+      auto &r = reg.get_component<relationship>(idx);
+      render_intersection_line_gui(fc, g, r, idx);
     } else if (reg.has_component<bezierc>(idx)) {
       auto &g = reg.get_component<gl_object>(idx);
       auto &rel = reg.get_component<relationship>(idx);
@@ -1344,7 +1369,7 @@ void render_intersection_gui() {
       glm::vec3 cursor_pos = ctr.translation;
       sampler first_sampler = get_sampler(first);
       sampler second_sampler = get_sampler(second);
-      auto res = systems::intersect(first_sampler, second_sampler, params, self_intersection, cursor_pos);
+      auto res = systems::intersect(first, second, first_sampler, second_sampler, params, self_intersection, cursor_pos);
       using is = systems::intersection_status;
       switch(res) {
         case is::self_intersection_error: {status_text = "self_intersection_error";} break;

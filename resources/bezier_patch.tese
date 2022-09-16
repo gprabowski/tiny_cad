@@ -8,7 +8,10 @@ layout (std140) uniform common_block {
 };
 
 in vec4 tes_colors[];
+in int primitive_ids[];
 out vec4 color;
+out vec2 uv_coords;
+flat out int primitive_id;
 
 vec3 casteljau(float t, inout vec3 a, inout vec3 b, inout vec3 c, inout vec3 d) {
     vec3 e = (1.0 - t) * a + t * b;
@@ -52,4 +55,7 @@ void main() {
     gl_Position = proj * view * vec4(result, 1.0);
 
     color = tes_colors[0];
+    uv_coords = vec2(u, v);
+
+    primitive_id = primitive_ids[0];
 }

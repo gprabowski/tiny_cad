@@ -4,8 +4,6 @@
 #include <shader_manager.h>
 #include <systems.h>
 #include <random>
-#include <queue>
-#include <utility>
 
 #include <log.h>
 
@@ -43,50 +41,6 @@ void Bresenham(float _xa, float _ya, float _xb, float _yb, F putpixel)
 	   }
 	   putpixel(x, y, 1.f);
 	}
-}
-
-template<int Size>
-inline bool is_valid_coord(const std::pair<int, int>& c) {
-  return !(c.first < 0 || c.first >= Size || c.second < 0 || c.second >= Size);
-}
-
-template<int TexSize, typename Getter, typename Setter>
-void flood_fill(Getter get, Setter set) {
-  int x = 0; int y = 0;
-  // find starting point
-  if(get(0, 0) > 0.5f) {
-    for(int i = 0; i < TexSize * TexSize; ++i) {
-      const int tmp_x = i % TexSize;
-      const int tmp_y = i / TexSize;
-      if(get(tmp_x, tmp_y) < 0.5f) {
-        x = tmp_x; y = tmp_y; break;
-      }
-    }
-  }
-
-  std::queue<std::pair<int, int>> coord_queue;
-  set(x, y, 1.f);
-  coord_queue.push(std::make_pair(x, y));
-  while(!coord_queue.empty()) {
-    auto [curr_x, curr_y] = coord_queue.front();
-    coord_queue.pop();
-    if(is_valid_coord<TexSize>({curr_x - 1, curr_y}) && (get(curr_x - 1, curr_y) < 0.5f)) {
-      set(curr_x - 1, curr_y, 1.f);
-      coord_queue.push(std::make_pair(curr_x - 1, curr_y));
-    }
-    if(is_valid_coord<TexSize>({curr_x + 1, curr_y}) && (get(curr_x + 1, curr_y) < 0.5f)) {
-      set(curr_x + 1, curr_y, 1.f);
-      coord_queue.push(std::make_pair(curr_x + 1, curr_y));
-    }
-    if(is_valid_coord<TexSize>({curr_x, curr_y - 1}) && (get(curr_x, curr_y - 1) < 0.5f)) {
-      set(curr_x, curr_y - 1, 1.f);
-      coord_queue.push(std::make_pair(curr_x, curr_y - 1));
-    }
-    if(is_valid_coord<TexSize>({curr_x, curr_y + 1}) && (get(curr_x, curr_y + 1) < 0.5f)) {
-      set(curr_x, curr_y + 1, 1.f);
-      coord_queue.push(std::make_pair(curr_x, curr_y + 1));
-    }
-  }
 }
 
 // general case solver
@@ -544,38 +498,36 @@ intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_
     GLuint tex[2];
     glCreateTextures(GL_TEXTURE_2D, 2, tex);
 
-    constexpr int texture_size = 512;
-
     // color
-    glTextureParameteri(tex[0], GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTextureParameteri(tex[0], GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTextureParameteri(tex[0], GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTextureParameteri(tex[0], GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTextureParameteri(tex[0], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTextureParameteri(tex[0], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureStorage2D(tex[0], 1, GL_R8, texture_size, texture_size);
+    glTextureStorage2D(tex[0], 1, GL_R8, 1024, 1024);
 
-    glTextureParameteri(tex[1], GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTextureParameteri(tex[1], GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTextureParameteri(tex[1], GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTextureParameteri(tex[1], GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTextureParameteri(tex[1], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTextureParameteri(tex[1], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureStorage2D(tex[1], 1, GL_R8, texture_size, texture_size);
+    glTextureStorage2D(tex[1], 1, GL_R8, 1024, 1024);
 
     float clear = 0.f;
-    glClearTexSubImage(tex[0], 0, 0, 0, 0, texture_size, texture_size, 1, GL_RED, GL_FLOAT, &clear);
-    glClearTexSubImage(tex[1], 0, 0, 0, 0, texture_size, texture_size, 1, GL_RED, GL_FLOAT, &clear);
+    glClearTexSubImage(tex[0], 0, 0, 0, 0, 1024, 1024, 1, GL_RED, GL_FLOAT, &clear);
+    glClearTexSubImage(tex[1], 0, 0, 0, 0, 1024, 1024, 1, GL_RED, GL_FLOAT, &clear);
 
     // fill texture with lines
-    std::array<float, texture_size * texture_size> tex_cpu;
+    std::array<float, 1024 * 1024> tex_cpu;
     tex_cpu.fill(0.f);
 
     auto set_pixel = [&](int x, int y, float val) {
-      if(x >= texture_size || y >= texture_size) {
+      if(x > 1023 || y > 1023) {
         return;
       }
-      tex_cpu[y * texture_size + x] = val;
+      tex_cpu[y * 1024 + x] = val;
     };
 
     auto get_pixel = [&](int x, int y) {
-      return tex_cpu[y * texture_size + x];
+      return tex_cpu[y * 1024 + x];
     };
 
     // BRASENHAM FILLING HERE
@@ -585,26 +537,25 @@ intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_
       auto first_c = glm::vec4{wrap(fc1.x), wrap(fc1.y), wrap(fc1.z), wrap(fc1.w)};
       auto second_c = coords[seg];
 
-      Bresenham<texture_size>(first_c.x, first_c.y, second_c.x, second_c.y, set_pixel);
+      Bresenham<1024>(first_c.x, first_c.y, second_c.x, second_c.y, set_pixel);
       if(needs_wrapping(second_c.x) || needs_wrapping(second_c.y)) {
         if(second_c.x < 0.f) {
-          Bresenham<texture_size>(first_c.x + 1.f, first_c.y, second_c.x + 1.f, second_c.y, set_pixel);
+          Bresenham<1024>(first_c.x + 1.f, first_c.y, second_c.x + 1.f, second_c.y, set_pixel);
         } else if(second_c.x > 1.f) {
-          Bresenham<texture_size>(first_c.x - 1.f, first_c.y, second_c.x - 1.f, second_c.y, set_pixel);
+          Bresenham<1024>(first_c.x - 1.f, first_c.y, second_c.x - 1.f, second_c.y, set_pixel);
         }
 
         if(second_c.y < 0.f) {
-          Bresenham<texture_size>(first_c.x, first_c.y + 1.f, second_c.x, second_c.y + 1.f, set_pixel);
+          Bresenham<1024>(first_c.x, first_c.y + 1.f, second_c.x, second_c.y + 1.f, set_pixel);
         } else if(second_c.y > 1.f) {
-          Bresenham<texture_size>(first_c.x, first_c.y - 1.f, second_c.x, second_c.y - 1.f, set_pixel);
+          Bresenham<1024>(first_c.x, first_c.y - 1.f, second_c.x, second_c.y - 1.f, set_pixel);
         }
       }
     }
 
     // flood fill
-    flood_fill<texture_size>(get_pixel, set_pixel);
 
-    glTextureSubImage2D(tex[0], 0, 0, 0, texture_size, texture_size, GL_RED, GL_FLOAT, tex_cpu.data());
+    glTextureSubImage2D(tex[0], 0, 0, 0, 1024, 1024, GL_RED, GL_FLOAT, tex_cpu.data());
     gl1.trim_texture = tex[0];
 
     // SECOND TEXTURE
@@ -614,26 +565,25 @@ intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_
       auto first_c = glm::vec4{wrap(fc1.x), wrap(fc1.y), wrap(fc1.z), wrap(fc1.w)};
       auto second_c = coords[seg];
 
-      Bresenham<texture_size>(first_c.z, first_c.w, second_c.z, second_c.w, set_pixel);
+      Bresenham<1024>(first_c.z, first_c.w, second_c.z, second_c.w, set_pixel);
       if(needs_wrapping(second_c.z) || needs_wrapping(second_c.w)) {
         if(second_c.z < 0.f) {
-          Bresenham<texture_size>(first_c.z + 1.f, first_c.w, second_c.z + 1.f, second_c.w, set_pixel);
+          Bresenham<1024>(first_c.z + 1.f, first_c.w, second_c.z + 1.f, second_c.w, set_pixel);
         } else if(second_c.z > 1.f) {
-          Bresenham<texture_size>(first_c.z - 1.f, first_c.w, second_c.z - 1.f, second_c.w, set_pixel);
+          Bresenham<1024>(first_c.z - 1.f, first_c.w, second_c.z - 1.f, second_c.w, set_pixel);
         }
 
         if(second_c.w < 0.f) {
-          Bresenham<texture_size>(first_c.z, first_c.w + 1.f, second_c.z, second_c.w + 1.f, set_pixel);
+          Bresenham<1024>(first_c.z, first_c.w + 1.f, second_c.z, second_c.w + 1.f, set_pixel);
         } else if(second_c.w > 1.f) {
-          Bresenham<texture_size>(first_c.z, first_c.w - 1.f, second_c.z, second_c.w - 1.f, set_pixel);
+          Bresenham<1024>(first_c.z, first_c.w - 1.f, second_c.z, second_c.w - 1.f, set_pixel);
         }
       }
     }
 
     // flood fill
-    flood_fill<texture_size>(get_pixel, set_pixel);
 
-    glTextureSubImage2D(tex[1], 0, 0, 0, texture_size, texture_size, GL_RED, GL_FLOAT, tex_cpu.data());
+    glTextureSubImage2D(tex[1], 0, 0, 0, 1024, 1024, GL_RED, GL_FLOAT, tex_cpu.data());
     gl2.trim_texture = tex[1];
   }
 

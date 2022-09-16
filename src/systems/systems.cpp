@@ -64,6 +64,45 @@ void set_tesselation_uniform(const gl_object &g) {
                glm::value_ptr(g.tesselation_inner));
 }
 
+void set_trimming_uniform(const gl_object &g) {
+  GLint program;
+  glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+
+  // 1. is it ON (1.0) or off (0.0)
+  // 2. Is it regular (0.0)NO (1.0)YES
+  glm::vec4 vals {g.trim_texture.has_value() ? 1.f : 0.f, 1.f, 0.f, 0.f};
+
+  glUniform4fv(glGetUniformLocation(program, "trim_info"), 1,
+               glm::value_ptr(vals));
+
+  if(g.trim_texture.has_value()) {
+    glBindTextureUnit(2, g.trim_texture.value());
+    glUniform1i(glGetUniformLocation(program, "trim_texture"), 2);
+  }
+}
+
+void set_bezier_uniforms(ecs::EntityType idx) {
+  static auto &reg = ecs::registry::get_registry();
+  auto& bez = reg.get_component<bezier_surface_params>(idx);
+
+  GLint program;
+  glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+
+  glUniform1i(glGetUniformLocation(program, "patches_x"), bez.u);
+  glUniform1i(glGetUniformLocation(program, "patches_y"), bez.v);
+}
+
+void set_bspline_uniforms(ecs::EntityType idx) {
+  static auto &reg = ecs::registry::get_registry();
+  auto& bsp = reg.get_component<bspline_surface_params>(idx);
+
+  GLint program;
+  glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+
+  glUniform1i(glGetUniformLocation(program, "patches_x"), bsp.u);
+  glUniform1i(glGetUniformLocation(program, "patches_y"), bsp.v);
+}
+
 void render_visible_entities() {
   auto &reg = ecs::registry::get_registry();
 
@@ -73,6 +112,13 @@ void render_visible_entities() {
     glUseProgram(gl.program);
     systems::set_model_uniform(t);
     set_tesselation_uniform(gl);
+    set_trimming_uniform(gl);
+    if(reg.has_component<bezier_surface_params>(idx)) {
+      set_bezier_uniforms(idx);  
+    }
+    if(reg.has_component<bspline_surface_params>(idx)) {
+      set_bspline_uniforms(idx);  
+    }
     glVertexAttrib4f(1, gl.color.r, gl.color.g, gl.color.b, gl.color.a);
     systems::render_gl(gl);
   }

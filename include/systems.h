@@ -84,7 +84,7 @@ struct intersection_params {
     float cursor_dist = 0.1f;
 };
 
-intersection_status intersect(sampler &first, sampler &second, 
+intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_idx, sampler &first, sampler &second, 
                               const intersection_params& params, bool self_intersection,
                               const glm::vec3& cursor_pos);
 

@@ -286,11 +286,15 @@ sampler get_sampler(ecs::EntityType idx) {
     }
 
     s.sample = [=](float u, float v) -> glm::vec3 {
+      float uintpart;
+      float vintpart;
+
       auto _bsp = bsp;
       int i, j;
 
-      float lu = u;
-      float lv = v;
+      float lu = (s.u_wrapped && u > 1.0f) ? std::modf(u, &uintpart) : u;
+      float lv = (s.v_wrapped && v > 1.0f) ? std::modf(v, &vintpart) : v;
+
       // 1. find out which patch parameters belong to
       i = (u == 1.0f) ? bsp.u - 1 : lu * _bsp.u;
       j = (v == 1.0f) ? bsp.v - 1 : lv * _bsp.v;

@@ -7,6 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <vector>
+#include <optional>
 
 struct gl_object {
   GLuint program;
@@ -21,6 +22,8 @@ struct gl_object {
 
   glm::vec4 tesselation_outer{4, 4, 4, 4};
   glm::vec2 tesselation_inner{4, 4};
+
+  std::optional<GLuint> trim_texture;
 
   enum class draw_mode : int {
     points = 0,
