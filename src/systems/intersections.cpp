@@ -561,14 +561,14 @@ intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_
     constexpr int texture_size = 512;
 
     // color
-    glTextureParameteri(tex[0], GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTextureParameteri(tex[0], GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTextureParameteri(tex[0], GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(tex[0], GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTextureParameteri(tex[0], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTextureParameteri(tex[0], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTextureStorage2D(tex[0], 1, GL_R8, texture_size, texture_size);
 
-    glTextureParameteri(tex[1], GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTextureParameteri(tex[1], GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTextureParameteri(tex[1], GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(tex[1], GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTextureParameteri(tex[1], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTextureParameteri(tex[1], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTextureStorage2D(tex[1], 1, GL_R8, texture_size, texture_size);
@@ -620,6 +620,7 @@ intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_
 
     glTextureSubImage2D(tex[0], 0, 0, 0, texture_size, texture_size, GL_RED, GL_FLOAT, tex_cpu.data());
     gl1.trim_texture = tex[0];
+    gl1.trimming_info = {1.0f, 1.0f, 0.0f, 0.0f};
 
     // SECOND TEXTURE
     tex_cpu.fill(0.f);
@@ -649,6 +650,7 @@ intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_
 
     glTextureSubImage2D(tex[1], 0, 0, 0, texture_size, texture_size, GL_RED, GL_FLOAT, tex_cpu.data());
     gl2.trim_texture = tex[1];
+    gl2.trimming_info = {1.0f, 1.0f, 0.0f, 0.0f};
   }
 
   return intersection_status::success;

@@ -445,6 +445,17 @@ void render_gl_object_gui(gl_object &g,
     g.tesselation_outer[0] = g.tesselation_outer[1] = g.tesselation_outer[2] =
         g.tesselation_outer[3] = tess[1];
   }
+
+  // Trimming
+  if (g.trim_texture.has_value()) {
+    std::string trim_msg = (g.trimming_info.x > 0.5f) ? "Switch Trimming OFF" : "Switch Trimming ON";
+    if(ImGui::Button(trim_msg.c_str())){
+      g.trimming_info.x = (g.trimming_info.x > 0.5f) ? 0.f : 1.f;
+    }
+    if(ImGui::Button("Flip Sides")){
+      g.trimming_info.y = (g.trimming_info.y > 0.5f) ? 0.f : 1.f;
+    }
+  }
 }
 
 void render_relationship_gui(ecs::EntityType idx, relationship &r) {
@@ -872,6 +883,8 @@ void render_torus_gui(ecs::EntityType idx, torus_params &tp, parametric &p,
     if (ImGui::Button("Delete")) {
       frame_state::deleted.push_back(idx);
     }
+
+    render_gl_object_gui(g, {gl_object::draw_mode::lines});
 
     ImGui::TreePop();
   }

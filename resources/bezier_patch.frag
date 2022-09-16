@@ -13,15 +13,17 @@ uniform int patches_x;
 uniform int patches_y;
 
 void main() {
-    if(trim_info.x > 0.5) {
-      int x_idx = primitive_id % patches_x;
-      int y_idx = primitive_id / patches_x;
+  if(trim_info.x > 0.5) {
+    int x_idx = primitive_id % patches_x;
+    int y_idx = primitive_id / patches_x;
 
-      vec2 final_uv = vec2(uv_coords.x * 1.0/patches_x, uv_coords.y * 1.0/patches_y);
-      final_uv = final_uv + vec2(x_idx * 1.0/patches_x, y_idx * 1.0/patches_y);
+    vec2 final_uv = vec2(uv_coords.x * 1.0/patches_x, uv_coords.y * 1.0/patches_y);
+    final_uv = final_uv + vec2(x_idx * 1.0/patches_x, y_idx * 1.0/patches_y);
 
-      if(texture(trim_texture, final_uv).r < 0.5) 
-        discard;
+    float texr = texture(trim_texture, final_uv).r;
+    if(((trim_info.y > 0.5) && (texr < 0.5)) || ((trim_info.y < 0.5) && (texr > 0.5))) {
+      discard;
     }
-    frag_color = color;
+  }
+  frag_color = color;
 }

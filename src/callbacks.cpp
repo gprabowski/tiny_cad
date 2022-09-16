@@ -67,7 +67,7 @@ void reorient_camera(double xpos, double ypos) {
   yoffset *= sensitivity;
 
   s.yaw += xoffset;
-  s.pitch = std::clamp<float>(s.pitch + yoffset, -90, 90);
+  s.pitch = std::clamp<float>(s.pitch + yoffset, -89, 89);
   glm::vec3 direction;
   direction.x = cos(glm::radians(s.yaw)) * cos(glm::radians(s.pitch));
   direction.y = sin(glm::radians(s.pitch));

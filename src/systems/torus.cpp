@@ -21,15 +21,9 @@ bool generate_torus_points(const torus_params &s, const parametric &p,
                                  0.f, 0.f});
     }
   }
-  unsigned int i = 0u;
-  unsigned int j = 0u;
-  out_vertices.emplace_back(sample_torus(s,
-                                         p.u_min + u_diff * i * u_inv_div,
-                                         p.v_min + v_diff * j * v_inv_div));
 
-  out_vertices.emplace_back(glm::vec4{static_cast<float>(i) / p.samples[0],
-                             static_cast<float>(j) / p.samples[1],
-                             0.f, 0.f});
+  out_vertices.emplace_back(out_vertices[0]);
+  out_vertices.emplace_back(glm::vec4{1.f, 1.f, 0.f, 0.f});
 
   return true;
 }

@@ -23,6 +23,9 @@ struct gl_object {
   glm::vec4 tesselation_outer{4, 4, 4, 4};
   glm::vec2 tesselation_inner{4, 4};
 
+  // 1. is it ON (1.0) or off (0.0)
+  // 2. Is it regular (0.0)NO (1.0)YES
+  glm::vec4 trimming_info {0.f, 1.f, 0.f, 0.f};
   std::optional<GLuint> trim_texture;
 
   enum class draw_mode : int {
