@@ -25,6 +25,7 @@ set(SOURCES
     frame_update.cpp
     shader_manager.cpp
     sampler.cpp
+    paths.cpp
 )
 
 add_executable(tiny_cad)

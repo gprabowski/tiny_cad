@@ -29,14 +29,14 @@
 #include <frame_update.h>
 #include <framebuffer.h>
 #include <gl_object.h>
-#include <shader_manager.h>
 #include <gui.h>
+#include <paths.hpp>
 #include <sampler.h>
+#include <shader_manager.h>
 #include <systems.h>
 #include <torus.h>
 
 namespace gui {
-
 
 template <class Enum>
 constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept {
@@ -188,7 +188,7 @@ void ShowDemo_RealtimePlots() {
     ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 16.f);
     ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
     ImPlot::PlotShaded("Frame time in ms", &sdata1.Data[0].x, &sdata1.Data[0].y,
-                       sdata1.Data.size(), -INFINITY, sdata1.Offset,
+                       sdata1.Data.size(), -INFINITY, 0, sdata1.Offset,
                        2 * sizeof(float));
     ImPlot::EndPlot();
   }
@@ -197,7 +197,7 @@ void ShowDemo_RealtimePlots() {
     ImPlot::SetupAxisLimits(ImAxis_X1, 0, history, ImGuiCond_Always);
     ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 100);
     ImPlot::PlotLine("FPS", &rdata1.Data[0].x, &rdata1.Data[0].y,
-                     rdata1.Data.size(), 0, 2 * sizeof(float));
+                     rdata1.Data.size(), 0, 0, 2 * sizeof(float));
     ImPlot::EndPlot();
   }
 }
@@ -254,6 +254,8 @@ void render_general_settings() {
 
   ImGui::Begin("General Settings");
 
+  ImGui::Checkbox("Show Heightmap", &s.show_height);
+
   static input_state::gizmo_mode gmode{input_state::gizmo_mode::universal};
 
   ImGui::Text("Controls");
@@ -283,10 +285,16 @@ void render_general_settings() {
   }
 
   ImGui::Text("Rendering");
+  ImGui::Checkbox("Use Orthographic", &s.use_ortho);
+
   ImGui::SliderFloat("Near Clip", &s.clip_near, 0.00001f, 1.0f);
   ImGui::SliderFloat("Far Clip", &s.clip_near, s.clip_near + 0.00001f,
                      10000.0f);
   ImGui::SliderFloat("FOV Y", &s.fov_y, 0, 90);
+
+  ImGui::SliderFloat("Ortho X", &s.ortho_x, 0.5f, 1000.0f);
+  ImGui::SliderFloat("Ortho Y", &s.ortho_y, 0.5f, 1000.0f);
+  ImGui::SliderFloat("Ortho Z", &s.ortho_z, 0.5f, 1000.0f);
 
   ImGui::Text(" ");
   ImGui::End();
@@ -448,11 +456,12 @@ void render_gl_object_gui(gl_object &g,
 
   // Trimming
   if (g.trim_texture.has_value()) {
-    std::string trim_msg = (g.trimming_info.x > 0.5f) ? "Switch Trimming OFF" : "Switch Trimming ON";
-    if(ImGui::Button(trim_msg.c_str())){
+    std::string trim_msg = (g.trimming_info.x > 0.5f) ? "Switch Trimming OFF"
+                                                      : "Switch Trimming ON";
+    if (ImGui::Button(trim_msg.c_str())) {
       g.trimming_info.x = (g.trimming_info.x > 0.5f) ? 0.f : 1.f;
     }
-    if(ImGui::Button("Flip Sides")){
+    if (ImGui::Button("Flip Sides")) {
       g.trimming_info.y = (g.trimming_info.y > 0.5f) ? 0.f : 1.f;
     }
   }
@@ -925,35 +934,41 @@ void end_frame() {
   }
 }
 
-void render_intersection_line_gui(tag_figure& fc, gl_object& g, relationship& r, ecs::EntityType idx)  {
+void render_intersection_line_gui(tag_figure &fc, gl_object &g, relationship &r,
+                                  ecs::EntityType idx) {
 
   render_figure_gui(idx, fc, [&]() {
     auto &reg = ecs::registry::get_registry();
     auto &sm = shader_manager::get_manager();
     auto &gl = g;
-    render_gl_object_gui(
-        gl, {gl_object::draw_mode::line_strip});
-    if(ImGui::Button("Make Interpolating Spline")) {
-      constructors::add_icurve(g.points, sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx);
+    render_gl_object_gui(gl, {gl_object::draw_mode::line_strip});
+    if (ImGui::Button("Make Interpolating Spline")) {
+      constructors::add_icurve(
+          g.points, sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx);
       frame_state::deleted.push_back(idx);
     }
-    if(r.children.size() == 2) {
 
-      auto tex1 = reg.get_component<gl_object>(r.children[0]).trim_texture.value();
+    if (r.children.size() == 2 && r.children[0] != r.children[1]) {
+      auto tex1 =
+          reg.get_component<gl_object>(r.children[0]).trim_texture.value();
       auto f1 = reg.get_component<tag_figure>(r.children[0]).name;
+      auto tex2 =
+          reg.get_component<gl_object>(r.children[1]).trim_texture.value();
+      auto f2 = reg.get_component<tag_figure>(r.children[1]).name;
 
-      std::string title = std::string("Intersection of ") + f1;
-      ImGui::Begin(title.c_str());
+      const std::string title1 = std::string("First Intersectant: ") + f1;
+      const std::string title2 = std::string("Second Intersectant: ") + f2;
+
+      ImGui::Text("%s", title1.c_str());
+      ImGui::Text("%s", title2.c_str());
+
+      ImGui::Begin("First Parameter Space");
       auto s = ImGui::GetContentRegionAvail();
       ImGui::Image((void *)(uint64_t)tex1, s, {0, 1}, {1, 0});
 
       ImGui::End();
 
-      auto tex2 = reg.get_component<gl_object>(r.children[1]).trim_texture.value();
-      auto f2 = reg.get_component<tag_figure>(r.children[1]).name;
-
-      title = std::string("Intersection of ") + f2;
-      ImGui::Begin(title.c_str());
+      ImGui::Begin("Second Parameter Space");
       s = ImGui::GetContentRegionAvail();
       ImGui::Image((void *)(uint64_t)tex2, s, {0, 1}, {1, 0});
 
@@ -1024,7 +1039,8 @@ void render_selected_edit_gui() {
       auto &fc = reg.get_component<tag_figure>(idx);
       auto &rel = reg.get_component<relationship>(idx);
       render_gregory_gui(fc, g, rel, idx);
-    }   }
+    }
+  }
   ImGui::End();
 }
 
@@ -1170,6 +1186,11 @@ static void ShowExampleMenuFile() {
         "SaveModelChoice", "Choose Model Filename", ".json,", ".");
   }
 
+  if (ImGui::MenuItem("Generate Paths", "Ctrl+P")) {
+    ImGuiFileDialog::Instance()->OpenDialog("GeneratePathsChoice",
+                                            "Choose Paths Filename", "", ".");
+  }
+
   ImGui::Separator();
   if (ImGui::BeginMenu("Options")) {
     static bool enabled = true;
@@ -1303,12 +1324,66 @@ void render_main_menu() {
     }
     ImGuiFileDialog::Instance()->Close();
   }
+
+  if (ImGuiFileDialog::Instance()->Display("GeneratePathsChoice")) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+      std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+      // action
+      // 1. render into hiher res
+      static auto &fb = framebuffer::get();
+      static auto &is = input_state::get_input_state();
+      static auto &desc = fb.get_desc();
+
+      is.use_ortho = true;
+      is.cam_pos = {0.f, 20.f, 0.f};
+      is.cam_front = {0.f, -1.f, 0.f};
+
+      glViewport(0, 0, 8000, 8000);
+
+      desc.width = 8000;
+      desc.height = 8000;
+      fb.invalidate();
+
+      update::setup_globals(ImGui::GetContentRegionAvail());
+      update::refresh_ubos();
+      fb.bind();
+      fb.set_regular();
+
+      static glm::vec4 clear_color = {38.f / 255.f, 38.f / 255.f, 38.f / 255.f,
+                                      1.00f};
+      glm::vec4 zero{0.f, 0.f, 0.f, 1.f};
+      glClearDepth(1.0f);
+
+      glClear(GL_DEPTH_BUFFER_BIT);
+      glClearTexImage(fb.get_height_att(), 0, GL_RGBA, GL_FLOAT,
+                      glm::value_ptr(zero));
+
+      glClearTexImage(fb.get_color_att(), 0, GL_RGBA, GL_FLOAT,
+                      glm::value_ptr(clear_color));
+
+      systems::render_app(true);
+      fb.unbind();
+      fb.switch_heights();
+
+      std::vector<glm::vec4> pixels_vec(8000 * 8000);
+      std::vector<float> pixels(8000 * 8000);
+      glGetTextureImage(fb.current_height.value(), 0, GL_RGBA, GL_FLOAT,
+                        pixels_vec.size() * sizeof(glm::vec4),
+                        pixels_vec.data());
+
+      for (int idx = 0; idx < 8000 * 8000; ++idx) {
+        pixels[idx] = pixels_vec[idx].r;
+      }
+      paths::generate_first_stage(pixels.data(), 8000, 150, filePathName);
+      ImGuiFileDialog::Instance()->Close();
+    }
+  }
 }
 
 void render_intersection_gui() {
   bool should_render{true};
   static systems::intersection_params params;
-  static std::string status_text {"empty"};
+  static std::string status_text{"empty"};
 
   auto &reg = ecs::registry::get_registry();
   const auto num_sel = reg.get_map<selected>().size();
@@ -1323,11 +1398,11 @@ void render_intersection_gui() {
             reg.has_component<bspline_surface_params>(idx));
   };
 
-
   bool self_intersection = (num_sel == 1);
 
   const ecs::EntityType first = reg.get_map<selected>().begin()->first;
-  const ecs::EntityType second = self_intersection ? first : (++reg.get_map<selected>().begin())->first;
+  const ecs::EntityType second =
+      self_intersection ? first : (++reg.get_map<selected>().begin())->first;
 
   if (!is_intersectable(first) || !is_intersectable(second)) {
     should_render = false;
@@ -1337,14 +1412,16 @@ void render_intersection_gui() {
     std::string title = "Intersection Creator";
     ImGui::Begin(title.c_str());
 
-
-    if (ImGui::SliderInt("Starting Subdivisions", &params.subdivisions, 1, 1000)) {
+    if (ImGui::SliderInt("Starting Subdivisions", &params.subdivisions, 1,
+                         1000)) {
     }
 
-    if (ImGui::SliderInt("Subdivisions Iterations", &params.subdivisions_iterations, 1, 1000)) {
+    if (ImGui::SliderInt("Subdivisions Iterations",
+                         &params.subdivisions_iterations, 1, 1000)) {
     }
 
-    if (ImGui::SliderInt("Gradient Iterations", &params.gradient_iters, 0, 5000)) {
+    if (ImGui::SliderInt("Gradient Iterations", &params.gradient_iters, 0,
+                         5000)) {
     }
 
     if (ImGui::SliderFloat("Starting Delta", &params.start_delta, 0.f, 1.f)) {
@@ -1354,17 +1431,19 @@ void render_intersection_gui() {
                            1.f)) {
     }
 
-    if (ImGui::SliderFloat("Starting Subdivisions Acceptance", &params.subdivisions_acceptance, 0.f,
-                           1.f)) {
+    if (ImGui::SliderFloat("Starting Subdivisions Acceptance",
+                           &params.subdivisions_acceptance, 0.f, 1.f)) {
     }
 
     if (ImGui::SliderInt("Newton Iterations", &params.newton_iters, 1, 1000)) {
     }
 
-    if (ImGui::SliderFloat("Newton Acceptance", &params.newton_acceptance, 0.f, 1.f)) {
+    if (ImGui::SliderFloat("Newton Acceptance", &params.newton_acceptance, 0.f,
+                           1.f)) {
     }
 
-    if (ImGui::SliderFloat("Cycle Acceptance", &params.cycle_acceptance, 0.f, 1.f)) {
+    if (ImGui::SliderFloat("Cycle Acceptance", &params.cycle_acceptance, 0.f,
+                           1.f)) {
     }
 
     if (ImGui::SliderFloat("New Point Delta", &params.delta, 0.f, 1.f)) {
@@ -1373,7 +1452,8 @@ void render_intersection_gui() {
     if (ImGui::Checkbox("Start from Cursor", &params.start_from_cursor)) {
     }
 
-    if (ImGui::SliderFloat("Cursor Distance", &params.cursor_dist, 0.f, 100.f)) {
+    if (ImGui::SliderFloat("Cursor Distance", &params.cursor_dist, 0.f,
+                           100.f)) {
     }
 
     if (ImGui::Button("Intersect")) {
@@ -1382,19 +1462,41 @@ void render_intersection_gui() {
       glm::vec3 cursor_pos = ctr.translation;
       sampler first_sampler = get_sampler(first);
       sampler second_sampler = get_sampler(second);
-      auto res = systems::intersect(first, second, first_sampler, second_sampler, params, self_intersection, cursor_pos);
+      auto res =
+          systems::intersect(first, second, first_sampler, second_sampler,
+                             params, self_intersection, cursor_pos);
       using is = systems::intersection_status;
-      switch(res) {
-        case is::self_intersection_error: {status_text = "self_intersection_error";} break;
-        case is::start_point_gradient_edge_error: {status_text = "start_point_gradient_edge_error";} break;
-        case is::start_point_gradient_final_point_error: {status_text = "start_point_gradient_final_point_error";} break;
-        case is::start_point_subdivisions_final_point_error: {status_text = "start_point_subdivisions_final_point_error";} break;
-        case is::start_point_gradient_error: {status_text = "start_point_gradient_error";} break;
-        case is::newton_edge_error: {status_text = "newton_edge_error";} break;
-        case is::success: {status_text = "success";} break;
-        case is::other_error: {status_text = "other_error";} break;
-        case is::nan_error: {status_text = "nan_error";} break;
-        case is::already_has_intersection_error: {status_text = "already_has_intersection_error";} break;
+      switch (res) {
+      case is::self_intersection_error: {
+        status_text = "self_intersection_error";
+      } break;
+      case is::start_point_gradient_edge_error: {
+        status_text = "start_point_gradient_edge_error";
+      } break;
+      case is::start_point_gradient_final_point_error: {
+        status_text = "start_point_gradient_final_point_error";
+      } break;
+      case is::start_point_subdivisions_final_point_error: {
+        status_text = "start_point_subdivisions_final_point_error";
+      } break;
+      case is::start_point_gradient_error: {
+        status_text = "start_point_gradient_error";
+      } break;
+      case is::newton_edge_error: {
+        status_text = "newton_edge_error";
+      } break;
+      case is::success: {
+        status_text = "success";
+      } break;
+      case is::other_error: {
+        status_text = "other_error";
+      } break;
+      case is::nan_error: {
+        status_text = "nan_error";
+      } break;
+      case is::already_has_intersection_error: {
+        status_text = "already_has_intersection_error";
+      } break;
       }
     }
 

@@ -138,13 +138,15 @@ ecs::EntityType add_icurve(const GLuint program) {
   return add_icurve_impl(program, sel_points);
 }
 
-ecs::EntityType add_icurve(std::vector<glm::vec4>& points, const GLuint program) {
+ecs::EntityType add_icurve(std::vector<glm::vec4> &points,
+                           const GLuint program) {
   static auto &sm = shader_manager::get_manager();
   std::vector<ecs::EntityType> sel_points;
-  for(auto& p : points) {
+  for (auto &p : points) {
     transformation t;
     t.translation = glm::vec3(p);
-    sel_points.push_back(add_point(std::move(t), sm.programs[shader_t::GENERAL_SHADER].idx));
+    sel_points.push_back(
+        add_point(std::move(t), sm.programs[shader_t::GENERAL_SHADER].idx));
   }
 
   return add_icurve_impl(program, sel_points);
@@ -944,12 +946,15 @@ ecs::EntityType add_gregory(const GLuint program) {
   return ecs::null_entity;
 }
 
-ecs::EntityType add_intersection(std::vector<glm::vec3>& points, ecs::EntityType first, ecs::EntityType second) {
+ecs::EntityType add_intersection(std::vector<glm::vec3> &points,
+                                 ecs::EntityType first,
+                                 ecs::EntityType second) {
   auto &reg = ecs::registry::get_registry();
   auto &sm = shader_manager::get_manager();
   const auto t = reg.add_entity();
 
-  reg.add_component<tag_figure>(t, tag_figure{"Intersection #" + std::to_string(t)});
+  reg.add_component<tag_figure>(
+      t, tag_figure{"Intersection #" + std::to_string(t)});
   reg.add_component<transformation>(t, {});
   reg.add_component<gl_object>(t, {});
   reg.add_component<tag_parent>(t, {});
@@ -963,7 +968,7 @@ ecs::EntityType add_intersection(std::vector<glm::vec3>& points, ecs::EntityType
 
   auto &g = reg.get_component<gl_object>(t);
   auto idx = 0;
-  for(auto&p : points) {
+  for (auto &p : points) {
     g.points.push_back(glm::vec4(p, 1.0f));
     g.indices.push_back(idx++);
   }

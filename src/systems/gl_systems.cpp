@@ -1,7 +1,7 @@
 #include <systems.h>
 
 namespace systems {
-void render_gl(const gl_object &g) {
+void render_gl(const gl_object &g, bool only_bspline) {
   using gldm = gl_object::draw_mode;
 
   glBindVertexArray(g.vao);
@@ -19,7 +19,7 @@ void render_gl(const gl_object &g) {
     glDrawElements(GL_LINE_STRIP, g.indices.size(), GL_UNSIGNED_INT, NULL);
     glLineWidth(1.0f);
   } else if (g.dmode == gldm::patches) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, only_bspline ? GL_FILL : GL_LINE);
     glPatchParameteri(GL_PATCH_VERTICES, g.patch_size);
     glDrawElements(GL_PATCHES, g.indices.size(), GL_UNSIGNED_INT, NULL);
   } else if (g.dmode == gldm::triangles) {

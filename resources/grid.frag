@@ -26,7 +26,8 @@ vec4 gridColorThick = vec4(0.8, 0.8, 0.8, 1.0);
 
 const float gridMinPixelsBetweenCells = 2.0;
 
-out vec4 frag_color;
+layout (location = 0) out vec4 frag_color;
+layout (location = 1) out vec4 height;
 
 void main() {
     vec2 dudv = vec2(
@@ -62,4 +63,5 @@ void main() {
     if(c.a < 0.2)
         discard;
     frag_color = c;
+    height = vec4(0.0, 0.0, 0.0, 0.0);
 }

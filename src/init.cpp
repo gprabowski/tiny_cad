@@ -45,6 +45,8 @@ static void APIENTRY openglCallbackFunction(GLenum source, GLenum type,
   (void)source;
   (void)type;
   (void)id;
+  if (severity == GL_DEBUG_SEVERITY_NOTIFICATION)
+    return;
   (void)severity;
   (void)length;
   (void)userParam;

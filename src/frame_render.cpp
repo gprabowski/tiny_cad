@@ -14,12 +14,12 @@ namespace render {
 void begin_frame(uint64_t &b) {
   static glm::vec4 clear_color = {47.f / 255.f, 53.f / 255.f, 57.f / 255.f,
                                   1.00f};
-
   b = glfwGetTimerValue();
   glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
                clear_color.z * clear_color.w, clear_color.w);
   glClearDepth(1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   frame_state::changed.clear();
   frame_state::deleted.clear();
   frame_state::changed_parents.clear();
@@ -72,6 +72,18 @@ void render_viewport() {
     fb.bind();
     fb.set_regular();
     glViewport(0, 0, frame_state::content_area.x, frame_state::content_area.y);
+    static glm::vec4 clear_color = {38.f / 255.f, 38.f / 255.f, 38.f / 255.f,
+                                    1.00f};
+    glm::vec4 zero{0.f, 0.f, 0.f, 1.f};
+    glClearDepth(1.0f);
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glClearTexImage(fb.get_height_att(), 0, GL_RGBA, GL_FLOAT,
+                    glm::value_ptr(zero));
+
+    glClearTexImage(fb.get_color_att(), 0, GL_RGBA, GL_FLOAT,
+                    glm::value_ptr(clear_color));
+
     sys::render_app();
     gui::render_selection_rect();
     fb.unbind();
@@ -82,11 +94,21 @@ void render_viewport() {
     // render left eye sight
     fb.set_left();
     update::refresh_ubos_left();
+    static glm::vec4 clear_color = {38.f / 255.f, 38.f / 255.f, 38.f / 255.f,
+                                    1.00f};
+    glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
+                 clear_color.z * clear_color.w, clear_color.w);
+    glClearDepth(1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     sys::render_app();
 
     // render right eye sight
     fb.set_right();
     update::refresh_ubos_right();
+    glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
+                 clear_color.z * clear_color.w, clear_color.w);
+    glClearDepth(1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     sys::render_app();
 
     // render stereo with two textures
@@ -115,5 +137,13 @@ void render_viewport() {
   sys::apply_group_transform(gizmo_trans);
 
   ImGui::End();
+
+  if (is.show_height && fb.current_height.has_value()) {
+    ImGui::Begin("Heightmap");
+    const auto hs = ImGui::GetContentRegionAvail();
+    t = fb.current_height.value();
+    ImGui::Image((void *)(uint64_t)t, hs, {0, 1}, {1, 0});
+    ImGui::End();
+  }
 }
 } // namespace render

@@ -15,11 +15,11 @@
 
 namespace systems {
 
-void render_gl(const gl_object &g);
+void render_gl(const gl_object &g, bool only_bspline = false);
 
-void render_visible_entities();
+void render_visible_entities(bool only_bspline = false);
 
-void render_app();
+void render_app(bool only_bspline = false);
 
 void get_gizmo_transform(glm::mat4 &gtrans);
 
@@ -69,24 +69,25 @@ enum class intersection_status {
 };
 
 struct intersection_params {
-    int subdivisions = 8;
-    int subdivisions_iterations = 10;
-    int gradient_iters = 1000;
-    float start_delta = 1e-4f;
-    float start_acceptance = 1e-2f;
-    float subdivisions_acceptance = 1e-1f;
+  int subdivisions = 8;
+  int subdivisions_iterations = 10;
+  int gradient_iters = 1000;
+  float start_delta = 1e-4f;
+  float start_acceptance = 1e-2f;
+  float subdivisions_acceptance = 1e-1f;
 
-    int newton_iters = 100;
-    float newton_acceptance = 1e-2;
-    float cycle_acceptance = 1e-2;
-    float delta = 1e-2;
+  int newton_iters = 100;
+  float newton_acceptance = 1e-2;
+  float cycle_acceptance = 1e-2;
+  float delta = 1e-2;
 
-    bool start_from_cursor{false};
-    float cursor_dist = 0.1f;
+  bool start_from_cursor{false};
+  float cursor_dist = 0.1f;
 };
 
-intersection_status intersect(ecs::EntityType first_idx, ecs::EntityType second_idx, sampler &first, sampler &second, 
-                              const intersection_params& params, bool self_intersection,
-                              const glm::vec3& cursor_pos);
+intersection_status
+intersect(ecs::EntityType first_idx, ecs::EntityType second_idx, sampler &first,
+          sampler &second, const intersection_params &params,
+          bool self_intersection, const glm::vec3 &cursor_pos);
 
 } // namespace systems

@@ -71,7 +71,7 @@ void set_trimming_uniform(const gl_object &g) {
   glUniform4fv(glGetUniformLocation(program, "trim_info"), 1,
                glm::value_ptr(g.trimming_info));
 
-  if(g.trim_texture.has_value()) {
+  if (g.trim_texture.has_value()) {
     glBindTextureUnit(2, g.trim_texture.value());
     glUniform1i(glGetUniformLocation(program, "trim_texture"), 2);
   }
@@ -79,7 +79,7 @@ void set_trimming_uniform(const gl_object &g) {
 
 void set_bezier_uniforms(ecs::EntityType idx) {
   static auto &reg = ecs::registry::get_registry();
-  auto& bez = reg.get_component<bezier_surface_params>(idx);
+  auto &bez = reg.get_component<bezier_surface_params>(idx);
 
   GLint program;
   glGetIntegerv(GL_CURRENT_PROGRAM, &program);
@@ -90,7 +90,7 @@ void set_bezier_uniforms(ecs::EntityType idx) {
 
 void set_bspline_uniforms(ecs::EntityType idx) {
   static auto &reg = ecs::registry::get_registry();
-  auto& bsp = reg.get_component<bspline_surface_params>(idx);
+  auto &bsp = reg.get_component<bspline_surface_params>(idx);
 
   GLint program;
   glGetIntegerv(GL_CURRENT_PROGRAM, &program);
@@ -99,7 +99,7 @@ void set_bspline_uniforms(ecs::EntityType idx) {
   glUniform1i(glGetUniformLocation(program, "patches_y"), bsp.v);
 }
 
-void render_visible_entities() {
+void render_visible_entities(bool only_bspline) {
   auto &reg = ecs::registry::get_registry();
 
   for (const auto &[idx, _] : reg.get_map<tag_visible>()) {
@@ -109,14 +109,16 @@ void render_visible_entities() {
     systems::set_model_uniform(t);
     set_tesselation_uniform(gl);
     set_trimming_uniform(gl);
-    if(reg.has_component<bezier_surface_params>(idx)) {
-      set_bezier_uniforms(idx);  
+    if (reg.has_component<bezier_surface_params>(idx)) {
+      set_bezier_uniforms(idx);
     }
-    if(reg.has_component<bspline_surface_params>(idx)) {
-      set_bspline_uniforms(idx);  
+    if (reg.has_component<bspline_surface_params>(idx)) {
+      set_bspline_uniforms(idx);
     }
     glVertexAttrib4f(8, gl.color.r, gl.color.g, gl.color.b, gl.color.a);
-    systems::render_gl(gl);
+    if (!only_bspline || reg.has_component<bspline_surface_params>(idx)) {
+      systems::render_gl(gl, only_bspline);
+    }
   }
 }
 
@@ -147,17 +149,10 @@ void update_cursor() {
   t.scale = glm::vec3(val, val, val);
 }
 
-void render_app() {
-  static glm::vec4 clear_color = {38.f / 255.f, 38.f / 255.f, 38.f / 255.f,
-                                  1.00f};
-  glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
-               clear_color.z * clear_color.w, clear_color.w);
-  glClearDepth(1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+void render_app(bool only_bspline) {
   update_center_of_weight();
   update_cursor();
-  render_visible_entities();
+  render_visible_entities(only_bspline);
 }
 
 void update_changed_relationships() {

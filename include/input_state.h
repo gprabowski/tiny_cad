@@ -40,9 +40,17 @@ struct input_state {
   float pitch{0.0f};
   float roll{0.0f};
 
+  bool use_ortho{false};
+
   float clip_near = 0.1f;
   float clip_far = 1000.f;
   float fov_y = 90.f;
+
+  float ortho_x = 75.f;
+  float ortho_y = 75.f;
+  float ortho_z = 75.f;
+
+  bool show_height{false};
 
   glm::vec3 cam_pos{10.0f, 20.0f, 50.0f};
   glm::vec3 cam_front{0.0f, 0.0f, -1.0f};

@@ -14,9 +14,11 @@ uniform mat4 model;
 
 out vec4 color;
 out vec2 torus_uv;
+out vec3 world_pos;
 
 void main() {
     gl_Position = proj * view * model * pos;
     color = col_mat * col;
     torus_uv = uv;
+    world_pos = vec3(model * pos);
 }

@@ -32,13 +32,19 @@ void setup_globals(const ImVec2 &s) {
   frame_state::content_pos = {frame_state::content_pos.x + min.x,
                               frame_state::content_pos.y + min.y};
 
-  auto view = (glm::lookAt(state.cam_pos, state.cam_pos + state.cam_front,
-                           state.cam_up));
+  auto view = (glm::lookAt(
+      state.cam_pos, state.cam_pos + state.cam_front,
+      glm::length(state.cam_front - glm::vec3(0.f, -1.f, 0.f)) < 1e-2
+          ? glm::vec3(0.f, 0.f, -1.f)
+          : state.cam_up));
   auto proj =
-      (glm::perspective(glm::radians(state.fov_y),
-                        static_cast<float>(frame_state::content_area.x) /
-                            frame_state::content_area.y,
-                        state.clip_near, state.clip_far));
+      state.use_ortho
+          ? glm::ortho(-state.ortho_x, state.ortho_x, -state.ortho_y,
+                       state.ortho_y, -state.ortho_z, state.ortho_z)
+          : (glm::perspective(glm::radians(state.fov_y),
+                              static_cast<float>(frame_state::content_area.x) /
+                                  frame_state::content_area.y,
+                              state.clip_near, state.clip_far));
 
   frame_state::view = view;
   frame_state::proj = proj;

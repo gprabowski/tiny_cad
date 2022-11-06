@@ -10,6 +10,7 @@ layout (std140) uniform common_block {
 in vec4 tes_colors[];
 in int primitive_ids[];
 out vec4 color;
+out vec3 world_pos;
 out vec2 uv_coords;
 flat out int primitive_id;
 
@@ -77,6 +78,8 @@ void main() {
     vec3 inter_4 = deboor(v, p30, p31, p32, p33);
 
     vec3 result = deboor(u, inter_1, inter_2, inter_3, inter_4);
+
+    world_pos = result;
 
     gl_Position = proj * view * vec4(result, 1.0);
 

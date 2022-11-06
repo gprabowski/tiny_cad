@@ -2,8 +2,11 @@
 
 in vec4 color;
 in vec2 uv_coords;
+in vec3 world_pos;
+
 flat in int primitive_id;
-out vec4 frag_color;
+layout (location = 0) out vec4 frag_color;
+layout (location = 1) out vec4 height;
 
 uniform sampler2D trim_texture;
 uniform vec4 trim_info;
@@ -25,4 +28,5 @@ void main() {
     }
   }
   frag_color = color;
+  height = vec4(world_pos.y, 0.0, 0.0, 1.0);
 }

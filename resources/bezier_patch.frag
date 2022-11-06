@@ -4,7 +4,7 @@ in vec4 color;
 in vec2 uv_coords;
 flat in int primitive_id;
 
-out vec4 frag_color;
+layout (location = 0) out vec4 frag_color;
 
 uniform sampler2D trim_texture;
 uniform vec4 trim_info;

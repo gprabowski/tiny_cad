@@ -2,7 +2,10 @@
 
 in vec4 color;
 in vec2 torus_uv;
-out vec4 frag_color;
+in vec3 world_pos;
+
+layout (location = 0) out vec4 frag_color;
+layout (location = 1) out float height;
 
 uniform sampler2D trim_texture;
 uniform vec4 trim_info;
