@@ -467,7 +467,7 @@ extend_start_point(std::vector<glm::vec3> &points,
   auto first_point = points[0];
   auto last_coords = start_coords;
   auto iter = 0;
-  while (iter < 10000) {
+  while (iter < 20000) {
     ++iter;
     auto P0 = first.sample(last_coords.x, last_coords.y);
     glm::vec4 next_coords = last_coords;
@@ -506,14 +506,15 @@ extend_start_point(std::vector<glm::vec3> &points,
         std::isnan(next_coords.z) || std::isnan(next_coords.w)) {
       return intersection_status::nan_error;
     }
+
+    auto fs = first.sample(next_coords.x, next_coords.y);
+    auto ss = second.sample(next_coords.z, next_coords.w);
     // Check if Newton is converging
     if ((!first.u_wrapped && needs_wrapping(next_coords.x)) ||
         (!first.v_wrapped && needs_wrapping(next_coords.y)) ||
         (!second.u_wrapped && needs_wrapping(next_coords.z)) ||
         (!second.v_wrapped && needs_wrapping(next_coords.w)) ||
-        (glm::length(first.sample(next_coords.x, next_coords.y) -
-                     second.sample(next_coords.z, next_coords.w)) >
-         std::abs(delta))) {
+        (glm::length(fs - ss) > std::abs(delta))) {
       break;
     }
 
