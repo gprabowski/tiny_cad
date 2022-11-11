@@ -137,7 +137,6 @@ sampler get_sampler(ecs::EntityType idx) {
     const auto rot = glm::toMat4(glm::quat(glm::radians(t.rotation)));
 
     const auto model = trans * scale * rot;
-    const auto model_without_trans = scale * rot;
 
     s.sample = [=](float u, float v) -> glm::vec3 {
       u = glm::pi<float>() * 2.f * u;
@@ -154,45 +153,6 @@ sampler get_sampler(ecs::EntityType idx) {
                             tp.radii[0] * sin_v,
                             tp.radii[1] * sin_u + tp.radii[0] * sin_u * cos_v,
                             1.0f});
-    };
-
-    s.der_u = [=](float u, float v) -> glm::vec3 {
-      u = glm::pi<float>() * 2.f * u;
-      v = glm::pi<float>() * 2.f * v;
-
-      const auto sin_u = sinf(u);
-      const auto cos_u = cosf(u);
-
-      const auto cos_v = cosf(v);
-
-      return glm::vec3(
-          model_without_trans *
-          glm::vec4{-tp.radii[1] * sin_u - tp.radii[0] * sin_u * cos_v, 0,
-                    tp.radii[1] * cos_u + tp.radii[0] * cos_u * cos_v, 0.0f});
-    };
-
-    s.der_u_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
-      return s.der_u(u, v);
-    };
-
-    s.der_v = [=](float u, float v) -> glm::vec3 {
-      u = glm::pi<float>() * 2.f * u;
-      v = glm::pi<float>() * 2.f * v;
-
-      const auto sin_u = sinf(u);
-      const auto cos_u = cosf(u);
-
-      const auto sin_v = sinf(v);
-      const auto cos_v = cosf(v);
-
-      return glm::vec3(model_without_trans *
-                       glm::vec4{-tp.radii[0] * cos_u * sin_v,
-                                 tp.radii[0] * cos_v,
-                                 -tp.radii[0] * sin_u * sin_v, 0.0f});
-    };
-
-    s.der_v_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
-      return s.der_v(u, v);
     };
   }
 
@@ -246,31 +206,8 @@ sampler get_sampler(ecs::EntityType idx) {
       return tmp_f;
     };
 
-    s.der_u = [=](float u, float v) -> glm::vec3 {
-      const auto h = 1e-3f;
-      const auto v_o = s.sample(u, v);
-      const auto v_u = s.sample(u + h, v);
-      return (v_u - v_o) * (1.f / h) / static_cast<float>(bsp.u);
-    };
-
-    s.der_u_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
-      const auto h = 1e-3f;
-      const auto v_u = s.sample(u + h, v);
-      return (v_u - v_o) * (1.f / h) / static_cast<float>(bsp.u);
-    };
-
-    s.der_v = [=](float u, float v) -> glm::vec3 {
-      const auto h = 1e-3f;
-      const auto v_o = s.sample(u, v);
-      const auto v_v = s.sample(u, v + h);
-      return (v_v - v_o) * (1.f / h) / static_cast<float>(bsp.v);
-    };
-
-    s.der_v_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
-      const auto h = 1e-3f;
-      const auto v_v = s.sample(u, v + h);
-      return (v_v - v_o) * (1.f / h) / static_cast<float>(bsp.v);
-    };
+    s.u_divisor = bsp.u;
+    s.v_divisor = bsp.v;
   }
 
   if (reg.has_component<bspline_surface_params>(idx)) {
@@ -322,31 +259,8 @@ sampler get_sampler(ecs::EntityType idx) {
       return tmp_f;
     };
 
-    s.der_u = [=](float u, float v) -> glm::vec3 {
-      const auto h = 1e-3f;
-      const auto v_o = s.sample(u, v);
-      const auto v_u = s.sample(u + h, v);
-      return (v_u - v_o) * (1.f / h) / static_cast<float>(bsp.u);
-    };
-
-    s.der_u_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
-      const auto h = 1e-3f;
-      const auto v_u = s.sample(u + h, v);
-      return (v_u - v_o) * (1.f / h) / static_cast<float>(bsp.u);
-    };
-
-    s.der_v = [=](float u, float v) -> glm::vec3 {
-      const auto h = 1e-3f;
-      const auto v_o = s.sample(u, v);
-      const auto v_v = s.sample(u, v + h);
-      return (v_v - v_o) * (1.f / h) / static_cast<float>(bsp.v);
-    };
-
-    s.der_v_opt = [=](float u, float v, const glm::vec3 &v_o) -> glm::vec3 {
-      const auto h = 1e-3f;
-      const auto v_v = s.sample(u, v + h);
-      return (v_v - v_o) * (1.f / h) / static_cast<float>(bsp.v);
-    };
+    s.u_divisor = bsp.u;
+    s.v_divisor = bsp.v;
   }
 
   return s;

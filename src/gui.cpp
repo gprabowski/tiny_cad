@@ -717,11 +717,15 @@ void render_bezier_surface_gui(tag_figure &fc, bezier_surface_params &bsp,
 
     if (ImGui::SliderFloat2("Sampler", v, 0.0f, 1.0f)) {
       auto samp = get_sampler(idx);
-      auto pos = samp.sample(v[0], v[1]);
+      auto pos = samp.sample(v[0], v[1]) + 5.f * samp.normal(v[0], v[1]);
       auto &ctr = reg.get_component<transformation>(
           reg.get_map<cursor_params>().begin()->first);
       ctr.translation = pos;
     }
+
+    auto samp = get_sampler(idx);
+    auto norm = 5.f * samp.normal(v[0], v[1]);
+    ImGui::Text("Normal here is %f %f %f", norm.x, norm.y, norm.z);
   });
 }
 
@@ -747,11 +751,15 @@ void render_bspline_surface_gui(tag_figure &fc, bspline_surface_params &bsp,
 
     if (ImGui::SliderFloat2("Sampler", v, 0.0f, 1.0f)) {
       auto samp = get_sampler(idx);
-      auto pos = samp.sample(v[0], v[1]);
+      auto pos = samp.sample(v[0], v[1]) + samp.normal(v[0], v[1]);
       auto &ctr = reg.get_component<transformation>(
           reg.get_map<cursor_params>().begin()->first);
       ctr.translation = pos;
     }
+
+    auto samp = get_sampler(idx);
+    auto norm = samp.normal(v[0], v[1]);
+    ImGui::Text("Normal here is %f %f %f", norm.x, norm.y, norm.z);
   });
 }
 
@@ -1375,7 +1383,12 @@ void render_main_menu() {
         pixels[idx] = pixels_vec[idx].r;
       }
       paths::generate_first_stage(pixels.data(), 8000, 150, filePathName);
+      paths::generate_second_stage(filePathName);
       ImGuiFileDialog::Instance()->Close();
+
+      is.use_ortho = false;
+      is.cam_pos = {0.f, 20.f, 0.f};
+      is.cam_front = {0.f, 1.f, 0.f};
     }
   }
 }
@@ -1466,7 +1479,7 @@ void render_intersection_gui() {
           systems::intersect(first, second, first_sampler, second_sampler,
                              params, self_intersection, cursor_pos);
       using is = systems::intersection_status;
-      switch (res) {
+      switch (res.status) {
       case is::self_intersection_error: {
         status_text = "self_intersection_error";
       } break;

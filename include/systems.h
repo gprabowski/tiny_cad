@@ -68,6 +68,11 @@ enum class intersection_status {
   already_has_intersection_error
 };
 
+struct intersect_return {
+  intersection_status status;
+  ecs::EntityType idx;
+};
+
 struct intersection_params {
   int subdivisions = 8;
   int subdivisions_iterations = 10;
@@ -85,9 +90,9 @@ struct intersection_params {
   float cursor_dist = 0.1f;
 };
 
-intersection_status
-intersect(ecs::EntityType first_idx, ecs::EntityType second_idx, sampler &first,
-          sampler &second, const intersection_params &params,
-          bool self_intersection, const glm::vec3 &cursor_pos);
+intersect_return intersect(ecs::EntityType first_idx,
+                           ecs::EntityType second_idx, sampler &first,
+                           sampler &second, const intersection_params &params,
+                           bool self_intersection, const glm::vec3 &cursor_pos);
 
 } // namespace systems

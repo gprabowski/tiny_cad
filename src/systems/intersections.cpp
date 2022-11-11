@@ -485,7 +485,12 @@ extend_start_point(std::vector<glm::vec3> &points,
     next_coords.w = wrap(next_coords.w);
 
     for (int i = 0; i < params.newton_iters; ++i) {
-      next_coords -= get_newton_decrement(
+        if (std::isnan(next_coords.x) || std::isnan(next_coords.y) ||
+            std::isnan(next_coords.z) || std::isnan(next_coords.w)) {
+          return intersection_status::nan_error;
+        }
+
+        next_coords -= get_newton_decrement(
           next_coords.x, next_coords.y, next_coords.z, next_coords.w, delta,
           first, second, tangent, P0, p_def, q_def);
       if (glm::length(p_def - q_def) < params.newton_acceptance) {
@@ -564,10 +569,11 @@ intersection_status find_all_intersection_points(
   return intersection_status::success;
 }
 
-intersection_status
-intersect(ecs::EntityType first_idx, ecs::EntityType second_idx, sampler &first,
-          sampler &second, const intersection_params &params,
-          bool self_intersection, const glm::vec3 &cursor_pos) {
+intersect_return intersect(ecs::EntityType first_idx,
+                           ecs::EntityType second_idx, sampler &first,
+                           sampler &second, const intersection_params &params,
+                           bool self_intersection,
+                           const glm::vec3 &cursor_pos) {
   auto &reg = ecs::registry::get_registry();
   float su{0.0f}, sv{0.0f}, ss{0.0f}, st{0.0f};
 
@@ -576,10 +582,10 @@ intersect(ecs::EntityType first_idx, ecs::EntityType second_idx, sampler &first,
       params, su, sv, ss, st, first, second, self_intersection, cursor_pos);
   if (self_intersection && std::abs(su - ss) < 0.01 &&
       std::abs(sv - st) < 0.01) {
-    return intersection_status::self_intersection_error;
+    return {intersection_status::self_intersection_error, {}};
   }
   if (start_point_status != intersection_status::success) {
-    return start_point_status;
+    return {start_point_status, {}};
   }
 
   // add start point
@@ -592,11 +598,12 @@ intersect(ecs::EntityType first_idx, ecs::EntityType second_idx, sampler &first,
       params, start_coords, points, coords, first, second);
 
   if (newton_status != intersection_status::success) {
-    return newton_status;
+    return {newton_status, {}};
   }
 
   // add intersection figure
-  constructors::add_intersection(points, first_idx, second_idx);
+  auto intersection_idx =
+      constructors::add_intersection(points, first_idx, second_idx);
 
   if (!self_intersection) {
     // add textures
@@ -719,6 +726,6 @@ intersect(ecs::EntityType first_idx, ecs::EntityType second_idx, sampler &first,
     gl2.trimming_info = {1.0f, 1.0f, 0.0f, 0.0f};
   }
 
-  return intersection_status::success;
+  return {intersection_status::success, intersection_idx};
 }
 } // namespace systems

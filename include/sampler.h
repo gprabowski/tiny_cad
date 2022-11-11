@@ -8,17 +8,44 @@
 struct sampler {
   std::function<glm::vec3(float u, float v)> sample;
 
-  std::function<glm::vec3(float u, float v)> der_u;
-  std::function<glm::vec3(float u, float v)> der_v;
-  std::function<glm::vec3(float u, float v, const glm::vec3 &v_o)> der_u_opt;
-  std::function<glm::vec3(float u, float v, const glm::vec3 &v_o)> der_v_opt;
-
-  glm::vec3 normal(float u, float v) {
-    return glm::cross(der_u(u, v), der_v(u, v));
-  }
-
   bool u_wrapped{false};
   bool v_wrapped{false};
+
+  float u_divisor{1.f};
+  float v_divisor{1.f};
+
+  float normal_translation{0.f};
+
+  glm::vec3 der_u(float u, float v) const {
+    const auto h = 1e-3f;
+    const auto v_o = sample(u, v);
+    const auto v_u = sample(u + h, v);
+    return (v_u - v_o) * (1.f / h) / u_divisor;
+  };
+
+  glm::vec3 der_u_opt(float u, float v, const glm::vec3 &v_o) const {
+    const auto h = 1e-3f;
+    const auto v_u = sample(u + h, v);
+    return (v_u - v_o) * (1.f / h) / u_divisor;
+  };
+
+  glm::vec3 der_v(float u, float v) const {
+    const auto h = 1e-3f;
+    const auto v_o = sample(u, v);
+    const auto v_v = sample(u, v + h);
+    return (v_v - v_o) * (1.f / h) / v_divisor;
+  };
+
+  glm::vec3 der_v_opt(float u, float v, const glm::vec3 &v_o) const {
+    const auto h = 1e-3f;
+    const auto v_v = sample(u, v + h);
+    return (v_v - v_o) * (1.f / h) / v_divisor;
+  };
+
+  glm::vec3 normal(float u, float v) const {
+    return glm::normalize(
+        -glm::cross(glm::normalize(der_u(u, v)), glm::normalize(der_v(u, v))));
+  }
 };
 
 sampler get_sampler(ecs::EntityType idx);

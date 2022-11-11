@@ -154,7 +154,11 @@ void registry::load_from_scene(const MG1::Scene &scene) {
       }
     }
     unsigned int patches[2] = {sc2.size.x, sc2.size.y};
-    constructors::add_bspline_surface(points, patches, ucyllinder, samples);
+    auto &reg = ecs::registry::get_registry();
+    auto res_idx =
+        constructors::add_bspline_surface(points, patches, ucyllinder, samples);
+    auto &ftag = reg.get_component<tag_figure>(res_idx);
+    ftag.name = sc2.name;
   }
 }
 
