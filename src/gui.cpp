@@ -751,7 +751,7 @@ void render_bspline_surface_gui(tag_figure &fc, bspline_surface_params &bsp,
 
     if (ImGui::SliderFloat2("Sampler", v, 0.0f, 1.0f)) {
       auto samp = get_sampler(idx);
-      auto pos = samp.sample(v[0], v[1]) + samp.normal(v[0], v[1]);
+      auto pos = samp.sample(v[0], v[1]) + 5.f * samp.normal(v[0], v[1]);
       auto &ctr = reg.get_component<transformation>(
           reg.get_map<cursor_params>().begin()->first);
       ctr.translation = pos;
@@ -953,6 +953,8 @@ void render_intersection_line_gui(tag_figure &fc, gl_object &g, relationship &r,
     if (ImGui::Button("Make Interpolating Spline")) {
       constructors::add_icurve(
           g.points, sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx);
+      auto &r = reg.get_component<relationship>(idx);
+      r.children.clear();
       frame_state::deleted.push_back(idx);
     }
 
@@ -1382,8 +1384,11 @@ void render_main_menu() {
       for (int idx = 0; idx < 8000 * 8000; ++idx) {
         pixels[idx] = pixels_vec[idx].r;
       }
-      paths::generate_first_stage(pixels.data(), 8000, 150, filePathName);
-      paths::generate_second_stage(filePathName);
+      std::filesystem::path p = filePathName;
+      p.replace_extension("k16");
+      paths::generate_first_stage(pixels.data(), 8000, 150, p);
+      p.replace_extension("f10");
+      paths::generate_second_stage(p);
       ImGuiFileDialog::Instance()->Close();
 
       is.use_ortho = false;
@@ -1473,7 +1478,12 @@ void render_intersection_gui() {
       auto &ctr = reg.get_component<transformation>(
           reg.get_map<cursor_params>().begin()->first);
       glm::vec3 cursor_pos = ctr.translation;
-      sampler first_sampler = get_sampler(first);
+      sampler tmp_first_sampler = get_sampler(first);
+      sampler first_sampler = tmp_first_sampler;
+      first_sampler.sample = [&](float u, float v) {
+        return tmp_first_sampler.sample(u, v) +
+               5.f * tmp_first_sampler.normal(u, v);
+      };
       sampler second_sampler = get_sampler(second);
       auto res =
           systems::intersect(first, second, first_sampler, second_sampler,

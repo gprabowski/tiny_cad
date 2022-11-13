@@ -19,7 +19,7 @@ void generate_first_stage(float *data, int resolution, int size,
                           std::filesystem::path path) {
   float pixels_per_milimeter = resolution / 150.f;
   float halfsize = size / 2.f;
-  int num_steps = 10;
+  int num_steps = 50;
   float step = halfsize / num_steps;
   float curr_step = step;
   int instruction = 1;
@@ -41,7 +41,7 @@ void generate_first_stage(float *data, int resolution, int size,
 
     int radius_in_pixels = radius * pixels_per_milimeter;
     for (int i = -radius_in_pixels; i < radius_in_pixels; ++i) {
-      for (int j = -radius_in_pixels; i < radius_in_pixels; ++i) {
+      for (int j = -radius_in_pixels; j < radius_in_pixels; ++j) {
         const int final_x = x + i;
         const int final_y = y + j;
         if (final_x >= 0 && final_x < resolution && final_y >= 0 &&
@@ -120,39 +120,82 @@ ecs::EntityType find_named_c2_surface(const std::string &name) {
 
 void generate_second_stage(std::filesystem::path path) {
   static auto &reg = ecs::registry::get_registry();
-  static auto &sm = shader_manager::get_manager();
-  // 1. generate all intersections
-  static systems::intersection_params params;
+  // 1. assume all intersections already generated
+  // 2. build vector of positions
+  std::vector<glm::vec3> points;
+  for (int i = 1269; i <= 1732; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
 
-  const ecs::EntityType main_body = find_named_c2_surface("main_body");
-  // const ecs::EntityType top = find_named_c2_surface("top");
-  // const ecs::EntityType handle = find_named_c2_surface("handle");
-  // const ecs::EntityType front = find_named_c2_surface("front");
-  const ecs::EntityType plane = find_named_c2_surface("plane");
+  for (int i = 316; i <= 879; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
 
-  auto &ctr = reg.get_component<transformation>(
-      reg.get_map<cursor_params>().begin()->first);
-  glm::vec3 cursor_pos = ctr.translation;
+  points.push_back(reg.get_component<transformation>(5400).translation);
+  points.push_back(reg.get_component<transformation>(5399).translation);
 
-  sampler tmp_main_body_sampler = get_sampler(main_body);
-  sampler main_body_sampler = tmp_main_body_sampler;
-  sampler plane_sampler = get_sampler(plane);
+  for (int i = 880; i <= 1186; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
 
-  main_body_sampler.normal_translation = 5.f;
+  for (int i = 1978; i <= 2293; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
 
-  main_body_sampler.sample = [&](float u, float v) -> glm::vec3 {
-    return tmp_main_body_sampler.sample(u, v) +
-           5.f * tmp_main_body_sampler.normal(u, v);
-  };
+  points.push_back(reg.get_component<transformation>(5401).translation);
 
-  params.delta = 0.2f;
-  params.subdivisions = 12;
-  auto res = systems::intersect(main_body, plane, main_body_sampler,
-                                plane_sampler, params, false, cursor_pos);
-  const auto main_body_plane = res.idx;
-  auto &g = reg.get_component<gl_object>(main_body_plane);
-  constructors::add_icurve(
-      g.points, sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx);
+  for (int i = 3913; i <= 4149; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
+
+  points.push_back(reg.get_component<transformation>(5402).translation);
+
+  for (int i = 4150; i <= 4387; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
+
+  points.push_back(reg.get_component<transformation>(5403).translation);
+
+  for (int i = 2719; i <= 2774; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
+
+  for (int i = 4584; i <= 5348; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
+
+  for (int i = 3278; i <= 3769; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
+
+  points.push_back(reg.get_component<transformation>(1269).translation);
+
+  // prelude
+  std::ofstream output;
+  output.open(path);
+  int instruction = 1;
+  auto halfsize = 75.f;
+  float x{-halfsize - 50}, y{-halfsize - 50}, z{50};
+
+  output << "N" << instruction++ << "G01"
+         << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+  x = points[0].x;
+  z = 16;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+  for (auto &p : points) {
+    x = p.x;
+    z = 16;
+    y = -p.z;
+
+    output << "N" << instruction++ << "G01"
+           << "X" << x << "Y" << y << "Z" << z << std::endl;
+  }
+
+  output.close();
 }
 
 } // namespace paths

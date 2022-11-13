@@ -18,6 +18,10 @@ void registry::load_from_scene(const MG1::Scene &scene) {
     const auto pidx = constructors::add_point(
         std::move(t), sm.programs[shader_t::POINT_SHADER].idx);
     idx_scene_to_ecs[p.GetId()] = pidx;
+
+    auto &reg = ecs::registry::get_registry();
+    auto &ftag = reg.get_component<tag_figure>(pidx);
+    ftag.name = p.name;
   }
 
   for (const auto &tor : scene.tori) {
@@ -70,8 +74,12 @@ void registry::load_from_scene(const MG1::Scene &scene) {
     for (const auto pidx : ic2.controlPoints) {
       points.push_back(idx_scene_to_ecs[pidx.GetId()]);
     }
-    constructors::add_icurve_impl(
+
+    auto &reg = ecs::registry::get_registry();
+    auto res_idx = constructors::add_icurve_impl(
         sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx, points);
+    auto &ftag = reg.get_component<tag_figure>(res_idx);
+    ftag.name = ic2.name;
   }
 
   // surface C0
