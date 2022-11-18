@@ -485,12 +485,12 @@ extend_start_point(std::vector<glm::vec3> &points,
     next_coords.w = wrap(next_coords.w);
 
     for (int i = 0; i < params.newton_iters; ++i) {
-        if (std::isnan(next_coords.x) || std::isnan(next_coords.y) ||
-            std::isnan(next_coords.z) || std::isnan(next_coords.w)) {
-          return intersection_status::nan_error;
-        }
+      if (std::isnan(next_coords.x) || std::isnan(next_coords.y) ||
+          std::isnan(next_coords.z) || std::isnan(next_coords.w)) {
+        return intersection_status::nan_error;
+      }
 
-        next_coords -= get_newton_decrement(
+      next_coords -= get_newton_decrement(
           next_coords.x, next_coords.y, next_coords.z, next_coords.w, delta,
           first, second, tangent, P0, p_def, q_def);
       if (glm::length(p_def - q_def) < params.newton_acceptance) {
@@ -531,6 +531,8 @@ extend_start_point(std::vector<glm::vec3> &points,
 
     points.push_back(pos);
     coords.push_back(next_coords);
+    TINY_CAD_INFO("{0} {1} {2} {3}", next_coords.x, next_coords.y,
+                  next_coords.z, next_coords.w);
     last_coords = next_coords;
   }
   return intersection_status::success;
@@ -603,7 +605,7 @@ intersect_return intersect(ecs::EntityType first_idx,
 
   // add intersection figure
   auto intersection_idx =
-      constructors::add_intersection(points, first_idx, second_idx);
+      constructors::add_intersection(points, coords, first_idx, second_idx);
 
   if (!self_intersection) {
     // add textures

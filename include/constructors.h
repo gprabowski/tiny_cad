@@ -31,7 +31,8 @@ ecs::EntityType add_bspline_impl(const GLuint program,
                                  const std::vector<ecs::EntityType> &points);
 
 ecs::EntityType add_icurve(const GLuint program);
-ecs::EntityType add_icurve(std::vector<glm::vec4>& points, const GLuint program);
+ecs::EntityType add_icurve(std::vector<glm::vec4> &points,
+                           const GLuint program);
 ecs::EntityType add_icurve_impl(const GLuint program,
                                 const std::vector<ecs::EntityType> &points);
 
@@ -47,7 +48,9 @@ ecs::EntityType add_bspline_surface_builder(transformation &&_t,
 
 ecs::EntityType add_bspline_surface(ecs::EntityType builder);
 
-ecs::EntityType add_intersection(std::vector<glm::vec3>& points, ecs::EntityType, ecs::EntityType);
+ecs::EntityType add_intersection(std::vector<glm::vec3> &points,
+                                 std::vector<glm::vec4> &coords,
+                                 ecs::EntityType, ecs::EntityType);
 
 ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points,
                                    unsigned int patches[2], bool cyllinder,

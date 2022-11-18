@@ -1,5 +1,6 @@
 #include <paths.hpp>
 
+#include <array>
 #include <fstream>
 #include <unordered_map>
 
@@ -28,7 +29,7 @@ void generate_first_stage(float *data, int resolution, int size,
   output.open(path);
 
   auto sample = [&](int radius, float fx, float fy) {
-    static std::unordered_map<std::pair<int, int>, float, int_pair_hash<8000>>
+    static std::unordered_map<std::pair<int, int>, float, int_pair_hash<1500>>
         cached;
     const int x = ((fx / size) + 0.5f) * resolution;
     const int y = ((fy / size) + 0.5f) * resolution;
@@ -181,6 +182,8 @@ void generate_second_stage(std::filesystem::path path) {
          << "X" << x << "Y" << y << "Z" << z << std::endl;
 
   x = points[0].x;
+
+  // generate
   z = 16;
 
   output << "N" << instruction++ << "G01"
@@ -194,6 +197,119 @@ void generate_second_stage(std::filesystem::path path) {
     output << "N" << instruction++ << "G01"
            << "X" << x << "Y" << y << "Z" << z << std::endl;
   }
+
+  x = points[0].x;
+  z = 16;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+  x = -halfsize - 50;
+  y = -halfsize - 50;
+  z = 16;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+  x = -halfsize;
+  y = -halfsize;
+  z = 16;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+  // create a table with min_max contour y value for each milimeter
+  struct mm_data {
+    float min{75}, max{-75};
+  };
+
+  std::vector<mm_data> y_values(151);
+  for (size_t pidx = 1; pidx < points.size(); ++pidx) {
+    auto &curr_point = points[pidx - 1];
+    auto &next_point = points[pidx];
+
+    if (glm::length(curr_point - next_point) > 0.9f) {
+      const int num_div = glm::length(curr_point - next_point) / 0.5f;
+
+      for (int i = 0; i <= num_div; ++i) {
+        const float frac = i / static_cast<float>(num_div);
+        auto const inter_point = (1.f - frac) * curr_point + frac * next_point;
+
+        auto cmin = y_values[static_cast<int>(inter_point.x) + 75].min;
+        auto cmax = y_values[static_cast<int>(inter_point.x) + 75].max;
+
+        y_values[static_cast<int>(inter_point.x) + 75].min =
+            std::min(cmin, -inter_point.z);
+        y_values[static_cast<int>(inter_point.x) + 75].max =
+            std::max(cmax, -inter_point.z);
+      }
+    } else {
+      auto cmin = y_values[static_cast<int>(curr_point.x) + 75].min;
+      auto cmax = y_values[static_cast<int>(curr_point.x) + 75].max;
+
+      y_values[static_cast<int>(curr_point.x) + 75].min =
+          std::min(cmin, -curr_point.z);
+      y_values[static_cast<int>(curr_point.x) + 75].max =
+          std::max(cmax, -curr_point.z);
+    }
+  }
+
+  // jump every 5 mm
+  for (int px = -75; px <= 75; px += 5) {
+    // 1. jump to min y
+    x = px;
+    y = y_values[px + 75].min;
+    z = 16;
+
+    output << "N" << instruction++ << "G01"
+           << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+    y = -75;
+
+    output << "N" << instruction++ << "G01"
+           << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+    output << "N" << instruction++ << "G01"
+           << "X" << x + 5.f << "Y" << y << "Z" << z << std::endl;
+  }
+
+  x = 75;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 75 << "Y" << y << "Z" << z << std::endl;
+
+  y = 75;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 75 << "Y" << y << "Z" << z << std::endl;
+
+  // jump every 5 mm
+  for (int px = 75; px >= -75; px -= 5) {
+    // 1. jump to min y
+    x = px;
+    y = y_values[px + 75].max;
+    z = 16;
+
+    output << "N" << instruction++ << "G01"
+           << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+    y = 75;
+
+    output << "N" << instruction++ << "G01"
+           << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+    output << "N" << instruction++ << "G01"
+           << "X" << x - 5.f << "Y" << y << "Z" << z << std::endl;
+  }
+
+  x = -100;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << x - 5.f << "Y" << y << "Z" << z << std::endl;
+
+  x = -halfsize - 50;
+  y = -halfsize - 50;
+  z = 16;
 
   output.close();
 }

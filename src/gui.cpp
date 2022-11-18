@@ -954,6 +954,7 @@ void render_intersection_line_gui(tag_figure &fc, gl_object &g, relationship &r,
       constructors::add_icurve(
           g.points, sm.programs[shader_t::INTERPOLATION_CURVE_SHADER].idx);
       auto &r = reg.get_component<relationship>(idx);
+
       r.children.clear();
       frame_state::deleted.push_back(idx);
     }
@@ -1348,10 +1349,10 @@ void render_main_menu() {
       is.cam_pos = {0.f, 20.f, 0.f};
       is.cam_front = {0.f, -1.f, 0.f};
 
-      glViewport(0, 0, 8000, 8000);
+      glViewport(0, 0, 1500, 1500);
 
-      desc.width = 8000;
-      desc.height = 8000;
+      desc.width = 1500;
+      desc.height = 1500;
       fb.invalidate();
 
       update::setup_globals(ImGui::GetContentRegionAvail());
@@ -1375,18 +1376,18 @@ void render_main_menu() {
       fb.unbind();
       fb.switch_heights();
 
-      std::vector<glm::vec4> pixels_vec(8000 * 8000);
-      std::vector<float> pixels(8000 * 8000);
+      std::vector<glm::vec4> pixels_vec(1500 * 1500);
+      std::vector<float> pixels(1500 * 1500);
       glGetTextureImage(fb.current_height.value(), 0, GL_RGBA, GL_FLOAT,
                         pixels_vec.size() * sizeof(glm::vec4),
                         pixels_vec.data());
 
-      for (int idx = 0; idx < 8000 * 8000; ++idx) {
+      for (int idx = 0; idx < 1500 * 1500; ++idx) {
         pixels[idx] = pixels_vec[idx].r;
       }
       std::filesystem::path p = filePathName;
       p.replace_extension("k16");
-      paths::generate_first_stage(pixels.data(), 8000, 150, p);
+      paths::generate_first_stage(pixels.data(), 1500, 150, p);
       p.replace_extension("f10");
       paths::generate_second_stage(p);
       ImGuiFileDialog::Instance()->Close();

@@ -7,6 +7,7 @@
 #include <shader_manager.h>
 #include <systems.h>
 
+#include <fstream>
 #include <set>
 
 namespace constructors {
@@ -947,6 +948,7 @@ ecs::EntityType add_gregory(const GLuint program) {
 }
 
 ecs::EntityType add_intersection(std::vector<glm::vec3> &points,
+                                 std::vector<glm::vec4> &coords,
                                  ecs::EntityType first,
                                  ecs::EntityType second) {
   auto &reg = ecs::registry::get_registry();
@@ -962,9 +964,28 @@ ecs::EntityType add_intersection(std::vector<glm::vec3> &points,
   reg.add_component<tag_visible>(t, {});
   reg.add_component<tag_intersection>(t, {});
 
+  auto &ff = reg.get_component<tag_figure>(first);
+  auto &sf = reg.get_component<tag_figure>(second);
+
   auto &r = reg.get_component<relationship>(t);
   r.children.push_back(first);
   r.children.push_back(second);
+
+  if (ff.name == "plane") {
+    for (auto &c : coords) {
+      const auto vp =
+          add_virtual_point(transformation{{c.z, c.w, 0.f}, {}, {}},
+                            sm.programs[shader_t::POINT_SHADER].idx);
+      r.virtual_children.push_back(vp);
+    }
+  } else if (sf.name == "plane") {
+    for (auto &c : coords) {
+      const auto vp =
+          add_virtual_point(transformation{{c.x, c.y, 0.f}, {}, {}},
+                            sm.programs[shader_t::POINT_SHADER].idx);
+      r.virtual_children.push_back(vp);
+    }
+  }
 
   auto &g = reg.get_component<gl_object>(t);
   auto idx = 0;
