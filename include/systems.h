@@ -78,13 +78,13 @@ struct intersection_params {
   int subdivisions_iterations = 10;
   int gradient_iters = 1000;
   float start_delta = 1e-4f;
-  float start_acceptance = 1e-1f;
-  float subdivisions_acceptance = 1e-1f;
+  float start_acceptance = 1e-2f;
+  float subdivisions_acceptance = 1e-2f;
 
   int newton_iters = 100;
-  float newton_acceptance = 1e-1;
-  float cycle_acceptance = 1e-1;
-  float delta = 1e-1;
+  float newton_acceptance = 1e-2;
+  float cycle_acceptance = 1e-2;
+  float delta = 1e-2;
 
   bool start_from_cursor{false};
   float cursor_dist = 0.1f;

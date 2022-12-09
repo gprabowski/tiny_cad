@@ -18,29 +18,51 @@ void Bresenham(float _xa, float _ya, float _xb, float _yb, F putpixel) {
   int xb = TexSize * _xb;
   int yb = TexSize * _yb;
 
-  int dx = abs(xa - xb), dy = abs(ya - yb);
-  int p = 2 * dy - dx;
-  int twoDy = 2 * dy, twoDyDx = 2 * (dy - dx);
-  int x, y, xEnd;
-  if (xa > xb) {
-    x = xb;
-    y = yb;
-    xEnd = xa;
-  } else {
+  if (abs(xa - xb) > abs(ya - yb)) {
+    int dx = std::abs(xa - xb), dy = std::abs(ya - yb);
+    int p = 2 * dy - dx;
+    int twoDy = 2 * dy, twoDyDx = 2 * (dy - dx);
+    int x, y, xEnd;
+
+    bool xnormal = xa < xb;
+    bool ynormal = ya < yb;
+
     x = xa;
     y = ya;
     xEnd = xb;
-  }
-  putpixel(x, y, 1.f);
-  while (x < xEnd) {
-    x++;
-    if (p < 0) {
-      p = p + twoDy;
-    } else {
-      y++;
-      p = p + twoDyDx;
-    }
     putpixel(x, y, 1.f);
+    while (xnormal ? x < xEnd : x > xEnd) {
+      xnormal ? x++ : x--;
+      if (p < 0) {
+        p = p + twoDy;
+      } else {
+        ynormal ? y++ : y--;
+        p = p + twoDyDx;
+      }
+
+      putpixel(x, y, 1.f);
+    }
+  } else {
+    int dx = std::abs(xa - xb), dy = std::abs(ya - yb);
+    int p = 2 * dx - dy;
+    int twoDx = 2 * dx, twoDxDy = 2 * (dx - dy);
+    int x, y, yEnd;
+    bool xnormal = xa < xb;
+    bool ynormal = ya < yb;
+    x = xa;
+    y = ya;
+    yEnd = yb;
+    putpixel(x, y, 1.f);
+    while (ynormal ? y < yEnd : y > yEnd) {
+      ynormal ? y++ : y--;
+      if (p < 0) {
+        p = p + twoDx;
+      } else {
+        xnormal ? x++ : x--;
+        p = p + twoDxDy;
+      }
+      putpixel(x, y, 1.f);
+    }
   }
 }
 
@@ -659,8 +681,11 @@ intersect_return intersect(ecs::EntityType first_idx,
           glm::vec4{wrap(fc1.x), wrap(fc1.y), wrap(fc1.z), wrap(fc1.w)};
       auto second_c = coords[seg];
 
-      Bresenham<texture_size>(first_c.x, first_c.y, second_c.x, second_c.y,
-                              set_pixel);
+      if (glm::length(glm::vec2(first_c.x, first_c.y) -
+                      glm::vec2(second_c.x, second_c.y)) < 0.1) {
+        Bresenham<texture_size>(first_c.x, first_c.y, second_c.x, second_c.y,
+                                set_pixel);
+      }
       if (needs_wrapping(second_c.x) || needs_wrapping(second_c.y)) {
         if (second_c.x < 0.f) {
           Bresenham<texture_size>(first_c.x + 1.f, first_c.y, second_c.x + 1.f,
@@ -697,8 +722,11 @@ intersect_return intersect(ecs::EntityType first_idx,
           glm::vec4{wrap(fc1.x), wrap(fc1.y), wrap(fc1.z), wrap(fc1.w)};
       auto second_c = coords[seg];
 
-      Bresenham<texture_size>(first_c.z, first_c.w, second_c.z, second_c.w,
-                              set_pixel);
+      if (glm::length(glm::vec2(first_c.z, first_c.w) -
+                      glm::vec2(second_c.z, second_c.w)) < 0.1) {
+        Bresenham<texture_size>(first_c.z, first_c.w, second_c.z, second_c.w,
+                                set_pixel);
+      }
       if (needs_wrapping(second_c.z) || needs_wrapping(second_c.w)) {
         if (second_c.z < 0.f) {
           Bresenham<texture_size>(first_c.z + 1.f, first_c.w, second_c.z + 1.f,
