@@ -12,4 +12,6 @@ void generate_first_stage(float *data, int resolution, int size,
                           std::filesystem::path path);
 
 void generate_second_stage(std::filesystem::path path);
+
+void generate_third_stage(std::filesystem::path path);
 } // namespace paths

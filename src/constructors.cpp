@@ -949,8 +949,8 @@ ecs::EntityType add_gregory(const GLuint program) {
 
 ecs::EntityType add_intersection(std::vector<glm::vec3> &points,
                                  std::vector<glm::vec4> &coords,
-                                 ecs::EntityType first,
-                                 ecs::EntityType second) {
+                                 ecs::EntityType first, ecs::EntityType second,
+                                 bool add_first_virtual) {
   auto &reg = ecs::registry::get_registry();
   auto &sm = shader_manager::get_manager();
   const auto t = reg.add_entity();
@@ -964,21 +964,18 @@ ecs::EntityType add_intersection(std::vector<glm::vec3> &points,
   reg.add_component<tag_visible>(t, {});
   reg.add_component<tag_intersection>(t, {});
 
-  auto &ff = reg.get_component<tag_figure>(first);
-  auto &sf = reg.get_component<tag_figure>(second);
-
   auto &r = reg.get_component<relationship>(t);
   r.children.push_back(first);
   r.children.push_back(second);
 
-  if (ff.name == "plane") {
+  if (!add_first_virtual) {
     for (auto &c : coords) {
       const auto vp =
           add_virtual_point(transformation{{c.z, c.w, 0.f}, {}, {}},
                             sm.programs[shader_t::POINT_SHADER].idx);
       r.virtual_children.push_back(vp);
     }
-  } else if (sf.name == "plane") {
+  } else if (add_first_virtual) {
     for (auto &c : coords) {
       const auto vp =
           add_virtual_point(transformation{{c.x, c.y, 0.f}, {}, {}},

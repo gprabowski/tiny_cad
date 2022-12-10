@@ -50,7 +50,8 @@ ecs::EntityType add_bspline_surface(ecs::EntityType builder);
 
 ecs::EntityType add_intersection(std::vector<glm::vec3> &points,
                                  std::vector<glm::vec4> &coords,
-                                 ecs::EntityType, ecs::EntityType);
+                                 ecs::EntityType, ecs::EntityType,
+                                 bool add_first_virtual = true);
 
 ecs::EntityType add_bezier_surface(std::vector<ecs::EntityType> &points,
                                    unsigned int patches[2], bool cyllinder,

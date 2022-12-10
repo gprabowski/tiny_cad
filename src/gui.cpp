@@ -1199,8 +1199,13 @@ static void ShowExampleMenuFile() {
         "SaveModelChoice", "Choose Model Filename", ".json,", ".");
   }
 
-  if (ImGui::MenuItem("Generate Paths", "Ctrl+P")) {
-    ImGuiFileDialog::Instance()->OpenDialog("GeneratePathsChoice",
+  if (ImGui::MenuItem("Generate Paths 1 & 2", "Ctrl+P")) {
+    ImGuiFileDialog::Instance()->OpenDialog("GeneratePathsChoice12",
+                                            "Choose Paths Filename", "", ".");
+  }
+
+  if (ImGui::MenuItem("Generate Paths 3", "Ctrl+P")) {
+    ImGuiFileDialog::Instance()->OpenDialog("GeneratePathsChoice3",
                                             "Choose Paths Filename", "", ".");
   }
 
@@ -1338,7 +1343,7 @@ void render_main_menu() {
     ImGuiFileDialog::Instance()->Close();
   }
 
-  if (ImGuiFileDialog::Instance()->Display("GeneratePathsChoice")) {
+  if (ImGuiFileDialog::Instance()->Display("GeneratePathsChoice12")) {
     if (ImGuiFileDialog::Instance()->IsOk()) {
       std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
       // action
@@ -1397,6 +1402,16 @@ void render_main_menu() {
       is.use_ortho = false;
       is.cam_pos = {0.f, 20.f, 0.f};
       is.cam_front = {0.f, 1.f, 0.f};
+    }
+  }
+
+  if (ImGuiFileDialog::Instance()->Display("GeneratePathsChoice3")) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+      std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+      std::filesystem::path p = filePathName;
+      p.replace_extension("k08");
+      paths::generate_third_stage(p);
+      ImGuiFileDialog::Instance()->Close();
     }
   }
 }

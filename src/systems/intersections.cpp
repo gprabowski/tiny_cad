@@ -402,10 +402,6 @@ intersection_status find_start_point(const intersection_params &params,
   auto q_test = second.sample(ss, st);
   float dist = glm::length(p_test - q_test);
   if (dist > params.subdivisions_acceptance) {
-    TINY_CAD_INFO("INTERSECTION_LOG: (dist: {6}) ({7} {8})<{0}, {1}, {2}> ({9} "
-                  "{10})<{3}, {4}, {5}>",
-                  p_test.x, p_test.y, p_test.z, q_test.x, q_test.y, q_test.z,
-                  dist, su, sv, ss, st);
     return intersection_status::start_point_subdivisions_final_point_error;
   }
 
@@ -419,10 +415,6 @@ intersection_status find_start_point(const intersection_params &params,
   dist = glm::length(p_test - q_test);
 
   if (dist > params.start_acceptance) {
-    TINY_CAD_INFO("INTERSECTION_LOG: (dist: {6}) ({7} {8})<{0}, {1}, {2}> ({9} "
-                  "{10})<{3}, {4}, {5}>",
-                  p_test.x, p_test.y, p_test.z, q_test.x, q_test.y, q_test.z,
-                  dist, su, sv, ss, st);
     return intersection_status::start_point_gradient_final_point_error;
   }
 
@@ -553,8 +545,6 @@ extend_start_point(std::vector<glm::vec3> &points,
 
     points.push_back(pos);
     coords.push_back(next_coords);
-    TINY_CAD_INFO("{0} {1} {2} {3}", next_coords.x, next_coords.y,
-                  next_coords.z, next_coords.w);
     last_coords = next_coords;
   }
   return intersection_status::success;

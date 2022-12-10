@@ -84,7 +84,7 @@ struct intersection_params {
   int newton_iters = 100;
   float newton_acceptance = 1e-2;
   float cycle_acceptance = 1e-2;
-  float delta = 1e-2;
+  float delta = 1e-1;
 
   bool start_from_cursor{false};
   float cursor_dist = 0.1f;
