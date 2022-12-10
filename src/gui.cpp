@@ -409,6 +409,8 @@ void render_figure_gui(ecs::EntityType idx, tag_figure &t,
     if (ImGui::InputText("name", &t.name)) {
     }
 
+    ImGui::Text("id: %lu", idx);
+
     render_func();
 
     if (ImGui::Button("Delete")) {

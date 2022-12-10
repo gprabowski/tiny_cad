@@ -20,26 +20,26 @@ struct sampler {
     const auto h = 1e-3f;
     const auto v_o = sample(u, v);
     const auto v_u = sample(u + h, v);
-    return (v_u - v_o) * (1.f / h) / u_divisor;
+    return (v_u - v_o) * (1.f / h);
   };
 
   glm::vec3 der_u_opt(float u, float v, const glm::vec3 &v_o) const {
     const auto h = 1e-3f;
     const auto v_u = sample(u + h, v);
-    return (v_u - v_o) * (1.f / h) / u_divisor;
+    return (v_u - v_o) * (1.f / h);
   };
 
   glm::vec3 der_v(float u, float v) const {
     const auto h = 1e-3f;
     const auto v_o = sample(u, v);
     const auto v_v = sample(u, v + h);
-    return (v_v - v_o) * (1.f / h) / v_divisor;
+    return (v_v - v_o) * (1.f / h);
   };
 
   glm::vec3 der_v_opt(float u, float v, const glm::vec3 &v_o) const {
     const auto h = 1e-3f;
     const auto v_v = sample(u, v + h);
-    return (v_v - v_o) * (1.f / h) / v_divisor;
+    return (v_v - v_o) * (1.f / h);
   };
 
   glm::vec3 normal(float u, float v) const {

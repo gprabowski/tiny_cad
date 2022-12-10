@@ -119,57 +119,93 @@ ecs::EntityType find_named_c2_surface(const std::string &name) {
   return -1;
 }
 
+ecs::EntityType find_named_point(const std::string &name) {
+  auto &reg = ecs::registry::get_registry();
+
+  for (auto &[idx, tf] : reg.get_map<tag_figure>()) {
+    auto &tmp_name = tf.name;
+    if (tmp_name == name) {
+      return idx;
+    }
+  }
+
+  throw;
+  return -1;
+}
+
 void generate_second_stage(std::filesystem::path path) {
   static auto &reg = ecs::registry::get_registry();
   // 1. assume all intersections already generated
   // 2. build vector of positions
+  std::vector<unsigned long> pi{
+      find_named_point("first"),       find_named_point("second"),
+      find_named_point("third"),       find_named_point("fourth"),
+      find_named_point("fifth"),       find_named_point("sixth"),
+      find_named_point("seventh"),     find_named_point("eigth"),
+      find_named_point("ninth"),       find_named_point("tenth"),
+      find_named_point("eleventh"),    find_named_point("twelth"),
+      find_named_point("thirteenth"),  find_named_point("fourteenth"),
+      find_named_point("fifteenth"),   find_named_point("sixteenth"),
+      find_named_point("seventeenth"), find_named_point("eighteenth"),
+      find_named_point("nineteenth"),  find_named_point("twentieth"),
+      find_named_point("twentyfirst"), find_named_point("twentysecond"),
+      find_named_point("twentythird"), find_named_point("twentyfourth"),
+      find_named_point("twentyfifth"), find_named_point("twentysixth"),
+  };
+
   std::vector<glm::vec3> points;
-  for (int i = 1269; i <= 1732; ++i) {
+  for (unsigned long i = pi[0]; i <= pi[1]; ++i) {
     points.push_back(reg.get_component<transformation>(i).translation);
   }
 
-  for (int i = 316; i <= 879; ++i) {
+  for (unsigned long i = pi[2]; i <= pi[3]; ++i) {
     points.push_back(reg.get_component<transformation>(i).translation);
   }
 
-  points.push_back(reg.get_component<transformation>(5400).translation);
-  points.push_back(reg.get_component<transformation>(5399).translation);
+  points.push_back(reg.get_component<transformation>(pi[4]).translation);
+  points.push_back(reg.get_component<transformation>(pi[5]).translation);
 
-  for (int i = 880; i <= 1186; ++i) {
+  for (unsigned long i = pi[6]; i <= pi[7]; ++i) {
     points.push_back(reg.get_component<transformation>(i).translation);
   }
 
-  for (int i = 1978; i <= 2293; ++i) {
+  for (unsigned long i = pi[8]; i <= pi[9]; ++i) {
     points.push_back(reg.get_component<transformation>(i).translation);
   }
 
-  points.push_back(reg.get_component<transformation>(5401).translation);
-
-  for (int i = 3913; i <= 4149; ++i) {
+  for (unsigned long i = pi[10]; i <= pi[11]; ++i) {
     points.push_back(reg.get_component<transformation>(i).translation);
   }
 
-  points.push_back(reg.get_component<transformation>(5402).translation);
+  points.push_back(reg.get_component<transformation>(pi[12]).translation);
 
-  for (int i = 4150; i <= 4387; ++i) {
+  for (unsigned long i = pi[13]; i <= pi[14]; ++i) {
     points.push_back(reg.get_component<transformation>(i).translation);
   }
 
-  points.push_back(reg.get_component<transformation>(5403).translation);
+  points.push_back(reg.get_component<transformation>(pi[15]).translation);
 
-  for (int i = 2719; i <= 2774; ++i) {
+  for (unsigned long i = pi[16]; i <= pi[17]; ++i) {
     points.push_back(reg.get_component<transformation>(i).translation);
   }
 
-  for (int i = 4584; i <= 5348; ++i) {
+  points.push_back(reg.get_component<transformation>(pi[18]).translation);
+
+  for (unsigned long i = pi[19]; i <= pi[20]; ++i) {
     points.push_back(reg.get_component<transformation>(i).translation);
   }
 
-  for (int i = 3278; i <= 3769; ++i) {
+  for (unsigned long i = pi[21]; i <= pi[22]; ++i) {
     points.push_back(reg.get_component<transformation>(i).translation);
   }
 
-  points.push_back(reg.get_component<transformation>(1269).translation);
+  for (unsigned long i = pi[23]; i <= pi[24]; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
+
+  for (unsigned long i = pi[25]; i <= pi[0]; ++i) {
+    points.push_back(reg.get_component<transformation>(i).translation);
+  }
 
   // prelude
   std::ofstream output;
