@@ -20,8 +20,8 @@ void generate_first_stage(float *data, int resolution, int size,
                           std::filesystem::path path) {
   float pixels_per_milimeter = resolution / 150.f;
   float halfsize = size / 2.f;
-  int num_steps = 50;
-  float step = halfsize / num_steps;
+  float step = 8;
+
   float curr_step = step;
   int instruction = 1;
 
@@ -64,6 +64,12 @@ void generate_first_stage(float *data, int resolution, int size,
 
   output << "N" << instruction++ << "G01"
          << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+  x = -halfsize;
+  y = -halfsize;
+  output << "N" << instruction++ << "G01"
+         << "X" << x << "Y" << y << "Z" << std::max(33.f, sample(8, x, y))
+         << std::endl;
 
   while (y <= halfsize) {
     x += curr_step;

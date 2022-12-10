@@ -11,8 +11,8 @@ layout (std140) uniform common_block {
 uniform vec4 tess_outer;
 uniform vec2 tess_inner;
 
-uniform uint patches_x;
-uniform uint patches_y;
+uniform int patches_x;
+uniform int patches_y;
 
 in vec4 color[];
 out vec4 tes_colors[];
