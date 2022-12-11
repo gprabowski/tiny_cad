@@ -8,6 +8,8 @@
 #include <shader_manager.h>
 #include <systems.h>
 
+#include <log.h>
+
 namespace paths {
 
 template <int Resolution> struct int_pair_hash {
@@ -356,13 +358,13 @@ void generate_second_stage(std::filesystem::path path) {
   output.close();
 }
 
-void generate_third_stage(std::filesystem::path path) {
-  static auto &reg = ecs::registry::get_registry();
-  //  R is 4.f
-
+void generate_main_body_detail(std::ofstream &output, int &instruction) {
+  auto &reg = ecs::registry::get_registry();
   // 1. generate intersection between main_body and the plane
   auto main_body_idx = find_named_c2_surface("main_body");
   auto front_idx = find_named_c2_surface("front");
+  auto top_idx = find_named_c2_surface("top");
+  auto handle_idx = find_named_c2_surface("handle");
   auto plane_idx = find_named_c2_surface("plane");
 
   sampler tmp_main_body_sampler = get_sampler(main_body_idx);
@@ -370,6 +372,12 @@ void generate_third_stage(std::filesystem::path path) {
   main_body_sampler.sample = [&](float u, float v) {
     return tmp_main_body_sampler.sample(u, v) +
            4.f * tmp_main_body_sampler.normal(u, v);
+  };
+
+  sampler tmp_top_sampler = get_sampler(top_idx);
+  sampler top_sampler = tmp_top_sampler;
+  top_sampler.sample = [&](float u, float v) {
+    return tmp_top_sampler.sample(u, v) + 4.f * tmp_top_sampler.normal(u, v);
   };
 
   sampler tmp_plane_sampler = get_sampler(plane_idx);
@@ -386,6 +394,13 @@ void generate_third_stage(std::filesystem::path path) {
            4.f * tmp_front_sampler.normal(u, v);
   };
 
+  sampler tmp_handle_sampler = get_sampler(handle_idx);
+  sampler handle_sampler = tmp_handle_sampler;
+  handle_sampler.sample = [&](float u, float v) {
+    return tmp_handle_sampler.sample(u, v) +
+           4.f * tmp_handle_sampler.normal(u, v);
+  };
+
   auto main_body_plane =
       systems::intersect(main_body_idx, plane_idx, main_body_sampler,
                          plane_sampler, {}, false, {});
@@ -393,6 +408,26 @@ void generate_third_stage(std::filesystem::path path) {
   auto main_body_front =
       systems::intersect(main_body_idx, front_idx, main_body_sampler,
                          front_sampler, {}, false, {});
+
+  auto main_body_top = systems::intersect(
+      main_body_idx, top_idx, main_body_sampler, top_sampler, {}, false, {});
+
+  systems::intersection_params params{};
+  params.subdivisions = 12;
+
+  auto &cursor_t = reg.get_component<transformation>(
+                          reg.get_map<cursor_params>().begin()->first)
+                       .translation;
+  cursor_t = {44.403, -0.767, 25.561};
+
+  auto main_body_handle_top =
+      systems::intersect(main_body_idx, handle_idx, main_body_sampler,
+                         handle_sampler, params, false, cursor_t);
+
+  params.start_from_cursor = true;
+  auto main_body_handle_bottom =
+      systems::intersect(main_body_idx, handle_idx, main_body_sampler,
+                         handle_sampler, params, false, cursor_t);
 
   const auto main_body_intersect = main_body_plane.idx;
   auto &main_body_coords =
@@ -403,37 +438,32 @@ void generate_third_stage(std::filesystem::path path) {
       reg.get_component<relationship>(main_body_front_intersect)
           .virtual_children;
 
+  const auto main_body_top_intersect = main_body_top.idx;
+  auto &main_body_top_coords =
+      reg.get_component<relationship>(main_body_top_intersect).virtual_children;
+
+  const auto main_body_handle_top_intersect = main_body_handle_top.idx;
+  auto &main_body_handle_top_coords =
+      reg.get_component<relationship>(main_body_handle_top_intersect)
+          .virtual_children;
+
+  const auto main_body_handle_bottom_intersect = main_body_handle_bottom.idx;
+  auto &main_body_handle_bottom_coords =
+      reg.get_component<relationship>(main_body_handle_bottom_intersect)
+          .virtual_children;
+
   // create a table of min/max
-
-  std::vector<std::vector<std::pair<float, float>>> main_body_holes(100);
-  std::array<std::pair<float, float>, 100> front_tmp;
-  main_body_table.fill({100.f, -100.f});
-
   std::array<std::pair<float, float>, 100> main_body_table;
   main_body_table.fill({100.f, -100.f});
 
-  for (auto &c : main_body_front_coords) {
-    auto &t = reg.get_component<transformation>(c).translation;
-    t.x = std::clamp(t.x, 0.f, 1.f);
-    if (front_tmp[100 * t.x].size() > t.y) {
-      front_tmp[100 * t.x].first = std::clamp(t.y, 0.f, 1.f);
-    }
+  std::array<std::pair<float, float>, 100> front_hole;
+  front_hole.fill({100.f, -100.f});
 
-    if (front_tmp[100 * t.x].second < t.y) {
-      front_tmp[100 * t.x].second = std::clamp(t.y, 0.f, 1.f);
-    }
-  }
+  std::array<std::pair<float, float>, 100> handle_bottom_hole;
+  handle_bottom_hole.fill({100.f, -100.f});
 
-  for (int ftmp = 0; ftmp < 100; ++ftmp) {
-    if (front_tmp[ftmp].first < 1.f) {
-      main_body_holes[ftmp].push_back(front_tmp[ftmp]);
-    }
-  }
-
-  for (auto &v : main_body_holes) {
-    std::sort(begin(v), end(v),
-              [](const auto &a, const auto &b) { return a.first < b.first; })
-  }
+  std::array<std::pair<float, float>, 100> handle_top_hole;
+  handle_top_hole.fill({100.f, -100.f});
 
   for (auto &c : main_body_coords) {
     auto &t = reg.get_component<transformation>(c).translation;
@@ -447,7 +477,354 @@ void generate_third_stage(std::filesystem::path path) {
     }
   }
 
-  // prelude
+  for (auto &c : main_body_top_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.f, 1.f);
+
+    if (main_body_table[100 * t.x].first < 1.f &&
+        main_body_table[100 * t.x].second > 0.f) {
+      if (main_body_table[100 * t.x].second > t.y) {
+        main_body_table[100 * t.x].second = std::clamp(t.y, 0.f, 1.f);
+      }
+    }
+  }
+
+  for (auto &c : main_body_front_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.f, 1.f);
+    if (front_hole[100 * t.x].first > t.y) {
+      front_hole[100 * t.x].first = std::clamp(t.y, 0.f, 1.f);
+    }
+
+    if (front_hole[100 * t.x].second < t.y) {
+      front_hole[100 * t.x].second = std::clamp(t.y, 0.f, 1.f);
+    }
+  }
+
+  for (std::size_t hi = 1; hi < main_body_handle_top_coords.size(); ++hi) {
+    auto &pc = main_body_handle_top_coords[hi];
+    auto &nc = main_body_handle_top_coords[hi];
+
+    auto &pt = reg.get_component<transformation>(pc).translation;
+    auto &nt = reg.get_component<transformation>(nc).translation;
+
+    for (int h = 0; h < 5; ++h) {
+      auto t = glm::mix(pt, nt, h / 4.f);
+      t.x = std::clamp(t.x, 0.f, 1.f);
+      if (handle_top_hole[std::clamp(100 * t.x, 0.f, 99.f)].first > t.y) {
+        handle_top_hole[std::clamp(100 * t.x, 0.f, 99.f)].first =
+            std::clamp(t.y, 0.f, 1.f);
+      }
+
+      if (handle_top_hole[std::clamp(100 * t.x, 0.f, 99.f)].second < t.y) {
+        handle_top_hole[std::clamp(100 * t.x, 0.f, 99.f)].second =
+            std::clamp(t.y, 0.f, 1.f);
+      }
+    }
+  }
+
+  for (auto &c : main_body_handle_bottom_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.f, 1.f);
+    if (handle_bottom_hole[std::clamp(100 * t.x, 0.f, 99.f)].first > t.y) {
+      handle_bottom_hole[std::clamp(100 * t.x, 0.f, 99.f)].first =
+          std::clamp(t.y, 0.f, 1.f);
+    }
+
+    if (handle_bottom_hole[std::clamp(100 * t.x, 0.f, 99.f)].second < t.y) {
+      handle_bottom_hole[std::clamp(100 * t.x, 0.f, 99.f)].second =
+          std::clamp(t.y, 0.f, 1.f);
+    }
+  }
+
+  for (int timp = 0; timp < 100; ++timp) {
+    if (main_body_table[timp].first > 2.f ||
+        main_body_table[timp].second < -1.f) {
+      continue;
+    }
+
+    if (front_hole[timp].first < 1.f &&
+        front_hole[timp].second >= main_body_table[timp].second) {
+      main_body_table[timp].second = front_hole[timp].first;
+      front_hole[timp] = {100.f, -100.f};
+    }
+
+    if (front_hole[timp].second > 0.f &&
+        front_hole[timp].first <= main_body_table[timp].first) {
+      main_body_table[timp].first = front_hole[timp].second;
+      front_hole[timp] = {100.f, -100.f};
+    }
+
+    if (handle_top_hole[timp].first <= 1.f &&
+        handle_top_hole[timp].second >= main_body_table[timp].second) {
+      if (timp != 84 && timp != 83) {
+        main_body_table[timp].second = handle_top_hole[timp].first;
+        handle_top_hole[timp] = {100.f, -100.f};
+      }
+    }
+
+    if (handle_bottom_hole[timp].second >= 0.f &&
+        handle_bottom_hole[timp].first <= main_body_table[timp].first) {
+      main_body_table[timp].first = handle_bottom_hole[timp].second;
+      handle_bottom_hole[timp] = {100.f, -100.f};
+    }
+  }
+
+  int i = 0;
+
+  auto mix = [](float a, float b, float t) { return (1.f - t) * a + t * b; };
+
+  bool started_even = (i % 2) == 0;
+  if (main_body_table[i].first >= 0.f && main_body_table[i].first <= 1.f &&
+      main_body_table[i].second >= 0.f && main_body_table[i].second <= 1.f) {
+    auto s = main_body_sampler.sample(i / 99.f, main_body_table[i].first);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  while (i < 100 &&
+         (main_body_table[i].first >= 0.f && main_body_table[i].first <= 1.f &&
+          main_body_table[i].second >= 0.f &&
+          main_body_table[i].second <= 1.f)) {
+    float tx = i / 99.f;
+    // 1. find start position (not in hole)
+
+    if (front_hole[i].first > 1.f || front_hole[i].second < 0.f) {
+      float start = std::max(main_body_table[i].first, 0.001f);
+      float end = std::min(main_body_table[i].second, 0.999f);
+      for (int j = 0; j < 100; ++j) {
+        auto mix_val = std::clamp(j / 99.f, 0.001f, 0.999f);
+        auto s = main_body_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                                  ? mix(start, end, mix_val)
+                                                  : mix(end, start, mix_val));
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+          throw;
+        output << "N" << instruction++ << "G01"
+               << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+               << std::endl;
+      }
+    } else {
+      float start = std::max(main_body_table[i].first, 0.001f);
+      float middle_start = std::max(front_hole[i].first, 0.001f);
+
+      float middle_end = std::min(front_hole[i].second, 0.999f);
+      float end = std::min(main_body_table[i].second, 0.999f);
+
+      // go till hole
+      for (int j = 0; j < 40; ++j) {
+        auto mix_val = std::clamp(j / 39.f, 0.001f, 0.999f);
+        auto s =
+            main_body_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                             ? mix(start, middle_start, mix_val)
+                                             : mix(end, middle_end, mix_val));
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+          throw;
+        output << "N" << instruction++ << "G01"
+               << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+               << std::endl;
+      }
+      // jump over hole
+      output << "N" << instruction++ << "G01"
+             << "Z" << 33.f << std::endl;
+      auto s = main_body_sampler.sample(
+          tx, (started_even == ((i % 2) == 0)) ? middle_end : middle_start);
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << std::endl;
+      output << "N" << instruction++ << "G01"
+             << "Z" << 16.f + s.y - 4.f << std::endl;
+
+      for (int j = 0; j < 40; ++j) {
+        auto mix_val = std::clamp(j / 39.f, 0.001f, 0.999f);
+        auto s = main_body_sampler.sample(
+            tx, (started_even == ((i % 2) == 0))
+                    ? mix(middle_end, end, mix_val)
+                    : mix(middle_start, start, mix_val));
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+          throw;
+        output << "N" << instruction++ << "G01"
+               << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+               << std::endl;
+      }
+    }
+    ++i;
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 50.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+
+  i = 99;
+  started_even = (i % 2) == 0;
+  if (main_body_table[i].first >= 0.f && main_body_table[i].first <= 1.f &&
+      main_body_table[i].second >= 0.f && main_body_table[i].second <= 1.f) {
+    auto s = main_body_sampler.sample(1.f, main_body_table[i].first);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  // go from the right, two holes here
+  while (i < 100 &&
+         (main_body_table[i].first >= 0.f && main_body_table[i].first <= 1.f &&
+          main_body_table[i].second >= 0.f &&
+          main_body_table[i].second <= 1.f)) {
+    float tx = i / 99.f;
+    if (handle_top_hole[i].first <= 1.f && handle_bottom_hole[i].first <= 1.f) {
+
+      float start = std::max(main_body_table[i].first, 0.001f);
+
+      float first_start = std::max(handle_bottom_hole[i].first, 0.001f);
+      float first_end = std::min(handle_bottom_hole[i].second, 0.999f);
+
+      float second_start = std::max(handle_top_hole[i].first, 0.001f);
+      float second_end = std::min(handle_top_hole[i].second, 0.999f);
+
+      float end = std::min(main_body_table[i].second, 0.999f);
+
+      // go till hole
+      for (int j = 0; j < 40; ++j) {
+        auto mix_val = std::clamp(j / 39.f, 0.001f, 0.999f);
+        auto s =
+            main_body_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                             ? mix(start, first_start, mix_val)
+                                             : mix(end, second_end, mix_val));
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+          throw;
+        output << "N" << instruction++ << "G01"
+               << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+               << std::endl;
+      }
+      // jump over first hole
+      output << "N" << instruction++ << "G01"
+             << "Z" << 33.f << std::endl;
+      auto s = main_body_sampler.sample(
+          tx, (started_even == ((i % 2) == 0)) ? first_end : second_start);
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << std::endl;
+      output << "N" << instruction++ << "G01"
+             << "Z" << 16.f + s.y - 4.f << std::endl;
+
+      for (int j = 0; j < 40; ++j) {
+        auto mix_val = std::clamp(j / 39.f, 0.001f, 0.999f);
+        auto s = main_body_sampler.sample(
+            tx, (started_even == ((i % 2) == 0))
+                    ? mix(first_end, second_start, mix_val)
+                    : mix(second_start, first_end, mix_val));
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+          throw;
+        output << "N" << instruction++ << "G01"
+               << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+               << std::endl;
+      }
+      // jump over second hole
+      output << "N" << instruction++ << "G01"
+             << "Z" << 33.f << std::endl;
+      s = main_body_sampler.sample(
+          tx, (started_even == ((i % 2) == 0)) ? second_end : first_start);
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << std::endl;
+      output << "N" << instruction++ << "G01"
+             << "Z" << 16.f + s.y - 4.f << std::endl;
+
+      for (int j = 0; j < 40; ++j) {
+        auto mix_val = std::clamp(j / 39.f, 0.001f, 0.999f);
+        auto s = main_body_sampler.sample(
+            tx, (started_even == ((i % 2) == 0))
+                    ? mix(second_end, end, mix_val)
+                    : mix(first_start, start, mix_val));
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+          throw;
+        output << "N" << instruction++ << "G01"
+               << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+               << std::endl;
+      }
+    } else if (handle_top_hole[i].first <= 1.f &&
+               handle_bottom_hole[i].first > 1.f) {
+      float start = std::max(main_body_table[i].first, 0.001f);
+      float middle_start = std::max(handle_top_hole[i].first, 0.001f);
+
+      float middle_end = std::min(handle_top_hole[i].second, 0.999f);
+      float end = std::min(main_body_table[i].second, 0.999f);
+
+      if (i != 84) {
+        // go till hole
+        for (int j = 0; j < 40; ++j) {
+          auto mix_val = std::clamp(j / 39.f, 0.001f, 0.999f);
+          auto s = main_body_sampler.sample(
+              tx, (started_even == ((i % 2) == 0))
+                      ? mix(start, middle_start, mix_val)
+                      : mix(end, middle_end, mix_val));
+
+          if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+            throw;
+          output << "N" << instruction++ << "G01"
+                 << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+                 << std::endl;
+        }
+      }
+      // jump over hole
+      output << "N" << instruction++ << "G01"
+             << "Z" << 33.f << std::endl;
+      auto s = main_body_sampler.sample(
+          tx, (started_even == ((i % 2) == 0)) ? middle_end : middle_start);
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << std::endl;
+      output << "N" << instruction++ << "G01"
+             << "Z" << 16.f + s.y - 4.f << std::endl;
+
+      for (int j = 0; j < 40; ++j) {
+        auto mix_val = std::clamp(j / 39.f, 0.001f, 0.999f);
+        auto s = main_body_sampler.sample(
+            tx, (started_even == ((i % 2) == 0))
+                    ? mix(middle_end, end, mix_val)
+                    : mix(middle_start, start, mix_val));
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+          throw;
+        output << "N" << instruction++ << "G01"
+               << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+               << std::endl;
+      }
+    } else if (handle_top_hole[i].first > 2.f &&
+               handle_bottom_hole[i].first > 2.f) {
+      // first option - no intersection
+      float start = std::min(main_body_table[i].first, 0.999f);
+      float end = std::max(main_body_table[i].second, 0.001f);
+
+      for (int j = 0; j < 100; ++j) {
+        auto mix_val = std::clamp(j / 99.f, 0.001f, 0.999f);
+        auto s = main_body_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                                  ? mix(start, end, mix_val)
+                                                  : mix(end, start, mix_val));
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+          throw;
+        output << "N" << instruction++ << "G01"
+               << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+               << std::endl;
+      }
+    }
+    --i;
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 50.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+}
+
+void generate_third_stage(std::filesystem::path path) {
+  //  R is 4.f
   std::ofstream output;
   output.open(path);
   int instruction = 1;
@@ -463,91 +840,7 @@ void generate_third_stage(std::filesystem::path path) {
   output << "N" << instruction++ << "G01"
          << "X" << x << "Y" << y << "Z" << z << std::endl;
 
-  int i = 0;
-
-  auto iters = 0;
-  while (i < 100) {
-    ++iters;
-    if (iters > 100) {
-      throw;
-    }
-
-    while ((i < 100) && (main_body_table[i].first > 1.f ||
-                         main_body_table[i].second < 0.f)) {
-      ++i;
-    }
-
-    auto mix = [](float a, float b, float t) { return (1.f - t) * a + t * b; };
-
-    bool started_even = (i % 2) == 0;
-    if (main_body_table[i].first >= 0.f && main_body_table[i].first <= 1.f &&
-        main_body_table[i].second >= 0.f && main_body_table[i].second <= 1.f) {
-      auto s = main_body_sampler.sample(i / 99.f, main_body_table[i].first);
-
-      output << "N" << instruction++ << "G01"
-             << "X" << s.x << "Y" << -s.z << std::endl;
-    }
-
-    while (i < 100 && (main_body_table[i].first >= 0.f &&
-                       main_body_table[i].first <= 1.f &&
-                       main_body_table[i].second >= 0.f &&
-                       main_body_table[i].second <= 1.f)) {
-      float tx = i / 99.f;
-      // 1. find start position (not in hole)
-      float start = std::min(main_body_table[i].first, 0.999f);
-      // 2. if no holes on this x coord, go till the end
-      float end = std::max(main_body_table[i].second, 0.001f);
-      // 3. if holes here, iterate on holes
-
-      auto is_hole = [&](float v) {
-        for (auto &h : main_body_holes[i]) {
-          if (v >= h.first && v <= h.second) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      auto round_hole = [&](float v) {
-        for (auto &h : main_body_holes[i]) {
-          if (v >= h.first && v <= h.second) {
-            return h.second;
-          }
-        }
-        return 1.f;
-      };
-
-      auto _j = 0.f;
-      while (_j <= 1.f) {
-        if (is_hole(_j)) {
-          auto next_j = round_hole(_j);
-          _j -= 0.01;
-          auto mix_val = std::clamp(_j, 0.001f, 0.999f);
-          auto s = main_body_sampler.sample(tx, (started_even == ((i % 2) == 0))
-                                                    ? mix(start, end, mix_val)
-                                                    : mix(end, start, mix_val));
-        }
-        auto mix_val = std::clamp(j, 0.001f, 0.999f);
-        auto s = main_body_sampler.sample(tx, (started_even == ((i % 2) == 0))
-                                                  ? mix(start, end, mix_val)
-                                                  : mix(end, start, mix_val));
-
-        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
-          throw;
-        output << "N" << instruction++ << "G01"
-               << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
-               << std::endl;
-        _j += 0.01f;
-      }
-      ++i;
-    }
-
-    output << "N" << instruction++ << "G01"
-           << "Z" << 50.f << std::endl;
-
-    output << "N" << instruction++ << "G01"
-           << "X" << 0.f << "Y" << 0.f << std::endl;
-  }
+  generate_main_body_detail(output, instruction);
 
   output.close();
 }

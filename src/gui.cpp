@@ -1500,9 +1500,15 @@ void render_intersection_gui() {
       sampler first_sampler = tmp_first_sampler;
       first_sampler.sample = [&](float u, float v) {
         return tmp_first_sampler.sample(u, v) +
-               5.f * tmp_first_sampler.normal(u, v);
+               4.f * tmp_first_sampler.normal(u, v);
       };
-      sampler second_sampler = get_sampler(second);
+      sampler tmp_second_sampler = get_sampler(second);
+      sampler second_sampler = tmp_second_sampler;
+      second_sampler.sample = [&](float u, float v) {
+        return tmp_second_sampler.sample(u, v) +
+               4.f * tmp_second_sampler.normal(u, v);
+      };
+
       auto res =
           systems::intersect(first, second, first_sampler, second_sampler,
                              params, self_intersection, cursor_pos);
