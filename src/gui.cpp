@@ -719,7 +719,7 @@ void render_bezier_surface_gui(tag_figure &fc, bezier_surface_params &bsp,
 
     if (ImGui::SliderFloat2("Sampler", v, 0.0f, 1.0f)) {
       auto samp = get_sampler(idx);
-      auto pos = samp.sample(v[0], v[1]) + 5.f * samp.normal(v[0], v[1]);
+      auto pos = samp.sample(v[0], v[1]) + 4.f * samp.normal(v[0], v[1]);
       auto &ctr = reg.get_component<transformation>(
           reg.get_map<cursor_params>().begin()->first);
       ctr.translation = pos;

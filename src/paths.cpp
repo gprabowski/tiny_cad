@@ -823,6 +823,457 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
          << "X" << 0.f << "Y" << 0.f << std::endl;
 }
 
+void generate_front_detail(std::ofstream &output, int &instruction) {
+  auto &reg = ecs::registry::get_registry();
+  // 1. generate intersection between main_body and the plane
+  auto main_body_idx = find_named_c2_surface("main_body");
+  auto front_idx = find_named_c2_surface("front");
+  auto plane_idx = find_named_c2_surface("plane");
+
+  sampler tmp_main_body_sampler = get_sampler(main_body_idx);
+  sampler main_body_sampler = tmp_main_body_sampler;
+  main_body_sampler.sample = [&](float u, float v) {
+    return tmp_main_body_sampler.sample(u, v) +
+           4.f * tmp_main_body_sampler.normal(u, v);
+  };
+
+  sampler tmp_plane_sampler = get_sampler(plane_idx);
+  sampler plane_sampler = tmp_plane_sampler;
+  plane_sampler.sample = [&](float u, float v) {
+    return tmp_plane_sampler.sample(u, v) +
+           4.f * tmp_plane_sampler.normal(u, v);
+  };
+
+  sampler tmp_front_sampler = get_sampler(front_idx);
+  sampler front_sampler = tmp_front_sampler;
+  front_sampler.sample = [&](float u, float v) {
+    return tmp_front_sampler.sample(u, v) +
+           4.f * tmp_front_sampler.normal(u, v);
+  };
+
+  systems::intersection_params params{};
+  auto &cursor_t = reg.get_component<transformation>(
+                          reg.get_map<cursor_params>().begin()->first)
+                       .translation;
+  cursor_t = {-48.501, 3.828, 9.344};
+  params.start_from_cursor = true;
+
+  auto front_plane_bottom =
+      systems::intersect(front_idx, plane_idx, front_sampler, plane_sampler,
+                         params, false, cursor_t);
+
+  params.subdivisions = 12;
+  cursor_t = {-47.018, 4.066, -10.705};
+  auto front_plane_top =
+      systems::intersect(front_idx, plane_idx, front_sampler, plane_sampler,
+                         params, false, cursor_t);
+
+  auto front_main_body =
+      systems::intersect(front_idx, main_body_idx, front_sampler,
+                         main_body_sampler, {}, false, cursor_t);
+
+  const auto front_main_body_intersect = front_main_body.idx;
+  auto &front_main_body_coords =
+      reg.get_component<relationship>(front_main_body_intersect)
+          .virtual_children;
+
+  const auto front_plane_top_intersect = front_plane_top.idx;
+  auto &front_plane_top_coords =
+      reg.get_component<relationship>(front_plane_top_intersect)
+          .virtual_children;
+
+  const auto front_plane_bottom_intersect = front_plane_bottom.idx;
+  auto &front_plane_bottom_coords =
+      reg.get_component<relationship>(front_plane_bottom_intersect)
+          .virtual_children;
+
+  // create a table of min/max
+  std::array<std::pair<float, float>, 100> front_table;
+  front_table.fill({0.001f, 0.999f});
+
+  for (auto &c : front_main_body_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.001f, 0.999f);
+    front_table[100 * t.x].first = std::clamp(t.y, 0.001f, 0.999f);
+  }
+
+  int topmin = 101, topmax = -1;
+  for (auto &c : front_plane_top_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.001f, 0.999f);
+
+    if (100 * t.x < topmin) {
+      topmin = 100 * t.x;
+    }
+
+    if (100 * t.x > topmax) {
+      topmax = 100 * t.x;
+    }
+
+    if (t.y <= front_table[100 * t.x].first) {
+      front_table[100 * t.x] = {100.f, -100.f};
+    } else {
+      front_table[100 * t.x].second = std::clamp(t.y, 0.f, 1.f);
+    }
+  }
+
+  int bottommin = 101, bottommax = -1;
+  for (auto &c : front_plane_bottom_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.f, 1.f);
+
+    if (100 * t.x < bottommin) {
+      bottommin = 100 * t.x;
+    }
+
+    if (100 * t.x > bottommax) {
+      bottommax = 100 * t.x;
+    }
+
+    if (t.y <= front_table[100 * t.x].first) {
+      front_table[100 * t.x] = {100.f, -100.f};
+    } else {
+      front_table[100 * t.x].second = std::clamp(t.y, 0.f, 1.f);
+    }
+  }
+
+  int i = 0;
+
+  auto mix = [](float a, float b, float t) { return (1.f - t) * a + t * b; };
+
+  bool started_even = (i % 2) == 0;
+
+  if (front_table[i].first >= 0.f && front_table[i].first <= 1.f &&
+      front_table[i].second >= 0.f && front_table[i].second <= 1.f) {
+    auto s = front_sampler.sample(i / 99.f, front_table[i].first);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  for (; i < bottommax; ++i) {
+    if (front_table[i].first > 1.f) {
+      break;
+    }
+    float tx = i / 99.f;
+    // first option - no intersection
+    float start = std::min(front_table[i].first, 0.999f);
+    float end = std::max(front_table[i].second, 0.001f);
+
+    for (int j = 0; j < 20; ++j) {
+      auto mix_val = std::clamp(j / 19.f, 0.001f, 0.999f);
+      auto s = front_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                            ? mix(start, end, mix_val)
+                                            : mix(end, start, mix_val));
+
+      if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+        throw;
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+             << std::endl;
+    }
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 33.f << std::endl;
+
+  i = topmin;
+  while (front_table[i].first > 1.f) {
+    ++i;
+  }
+
+  if (front_table[i].first >= 0.f && front_table[i].first <= 1.f &&
+      front_table[i].second >= 0.f && front_table[i].second <= 1.f) {
+    auto s = front_sampler.sample(i / 99.f, front_table[i].first);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  for (; i < 100; ++i) {
+    if (front_table[i].first > 1.f) {
+      continue;
+    }
+    float tx = i / 99.f;
+    // first option - no intersection
+    float start = std::min(front_table[i].first, 0.999f);
+    float end = std::max(front_table[i].second, 0.001f);
+
+    for (int j = 0; j < 20; ++j) {
+      auto mix_val = std::clamp(j / 19.f, 0.001f, 0.999f);
+      auto s = front_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                            ? mix(start, end, mix_val)
+                                            : mix(end, start, mix_val));
+
+      if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+        throw;
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+             << std::endl;
+    }
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 50.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+}
+
+void generate_handle_detail(std::ofstream &output, int &instruction) {
+  auto &reg = ecs::registry::get_registry();
+  // 1. generate intersection between main_body and the plane
+  auto main_body_idx = find_named_c2_surface("main_body");
+  auto handle_idx = find_named_c2_surface("handle");
+  auto plane_idx = find_named_c2_surface("plane");
+
+  sampler tmp_main_body_sampler = get_sampler(main_body_idx);
+  sampler main_body_sampler = tmp_main_body_sampler;
+  main_body_sampler.sample = [&](float u, float v) {
+    return tmp_main_body_sampler.sample(u, v) +
+           4.f * tmp_main_body_sampler.normal(u, v);
+  };
+
+  sampler tmp_plane_sampler = get_sampler(plane_idx);
+  sampler plane_sampler = tmp_plane_sampler;
+  plane_sampler.sample = [&](float u, float v) {
+    return tmp_plane_sampler.sample(u, v) +
+           4.f * tmp_plane_sampler.normal(u, v);
+  };
+
+  sampler tmp_handle_sampler = get_sampler(handle_idx);
+  sampler handle_sampler = tmp_handle_sampler;
+  handle_sampler.sample = [&](float u, float v) {
+    return tmp_handle_sampler.sample(u, v) +
+           4.f * tmp_handle_sampler.normal(u, v);
+  };
+
+  systems::intersection_params params{};
+  auto &cursor_t = reg.get_component<transformation>(
+                          reg.get_map<cursor_params>().begin()->first)
+                       .translation;
+
+  auto handle_plane_outer =
+      systems::intersect(handle_idx, plane_idx, handle_sampler, plane_sampler,
+                         {}, false, cursor_t);
+
+  params.start_from_cursor = true;
+  cursor_t = {36.917, 4.108, 10.137};
+  auto handle_plane_inner =
+      systems::intersect(handle_idx, plane_idx, handle_sampler, plane_sampler,
+                         params, false, cursor_t);
+
+  params.start_from_cursor = false;
+  params.subdivisions = 12;
+  auto handle_main_body_top =
+      systems::intersect(handle_idx, main_body_idx, handle_sampler,
+                         main_body_sampler, params, false, cursor_t);
+
+  params.start_from_cursor = true;
+  cursor_t = {43.042, 5.005, 23.815};
+
+  auto handle_main_body_bottom =
+      systems::intersect(handle_idx, main_body_idx, handle_sampler,
+                         main_body_sampler, params, false, cursor_t);
+
+  const auto handle_main_body_top_intersect = handle_main_body_top.idx;
+  auto &handle_main_body_top_coords =
+      reg.get_component<relationship>(handle_main_body_top_intersect)
+          .virtual_children;
+
+  const auto handle_main_body_bottom_intersect = handle_main_body_bottom.idx;
+  auto &handle_main_body_bottom_coords =
+      reg.get_component<relationship>(handle_main_body_bottom_intersect)
+          .virtual_children;
+
+  const auto handle_plane_outer_intersect = handle_plane_outer.idx;
+  auto &handle_plane_outer_coords =
+      reg.get_component<relationship>(handle_plane_outer_intersect)
+          .virtual_children;
+
+  const auto handle_plane_inner_intersect = handle_plane_inner.idx;
+  auto &handle_plane_inner_coords =
+      reg.get_component<relationship>(handle_plane_inner_intersect)
+          .virtual_children;
+
+  // create a table of min/max
+  std::array<std::pair<float, float>, 100> handle_table;
+  handle_table.fill({0.001f, 0.999f});
+
+  for (auto &c : handle_main_body_top_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.001f, 0.999f);
+    handle_table[100 * t.x].first = std::clamp(t.y, 0.001f, 0.999f);
+  }
+
+  for (std::size_t ci = 1; ci < handle_main_body_bottom_coords.size(); ++ci) {
+    auto &pt = reg.get_component<transformation>(
+                      handle_main_body_bottom_coords[ci - 1])
+                   .translation;
+    auto &nt =
+        reg.get_component<transformation>(handle_main_body_bottom_coords[ci])
+            .translation;
+
+    for (int i = 0; i < 5; ++i) {
+      auto t = glm::mix(pt, nt, i / 4.f);
+      t.x = std::clamp(t.x, 0.001f, 0.999f);
+      handle_table[100 * t.x].second = std::clamp(t.y, 0.001f, 0.999f);
+    }
+  }
+
+  int outermin = 101, outermax = -1;
+  for (auto &c : handle_plane_outer_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.001f, 0.999f);
+
+    if (100 * t.x < outermin) {
+      outermin = 100 * t.x;
+    }
+
+    if (100 * t.x > outermax) {
+      outermax = 100 * t.x;
+    }
+
+    if (t.y <= handle_table[100 * t.x].first) {
+      handle_table[100 * t.x] = {100.f, -100.f};
+    } else if (handle_table[100 * t.x].second > 0.f) {
+      handle_table[100 * t.x].second =
+          std::min(std::clamp(t.y, 0.f, 1.f), handle_table[100 * t.x].second);
+    }
+  }
+
+  int innermin = 101, innermax = -1;
+  std::array<std::pair<float, float>, 100> innert;
+  innert.fill({100, -100});
+  for (auto &c : handle_plane_inner_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.f, 1.f);
+
+    if (100 * t.x < innermin) {
+      innermin = 100 * t.x;
+    }
+
+    if (100 * t.x > innermax) {
+      innermax = 100 * t.x;
+    }
+
+    innert[100 * t.x].first = std::min(t.y, innert[100 * t.x].first);
+    innert[100 * t.x].second = std::max(t.y, innert[100 * t.x].second);
+  }
+
+  for (int timp = innermin; timp <= innermax; ++timp) {
+    // cases
+    if (innert[timp].first > 2.f)
+      continue;
+    // 1. both values the same
+    if (timp > 94) {
+      auto v = innert[timp].first;
+      if (v <= handle_table[timp].first) {
+        handle_table[timp] = {100.f, -100.f};
+      } else if (handle_table[timp].second > 0.f) {
+        handle_table[timp].second =
+            std::min(std::clamp(v, 0.001f, 0.999f), handle_table[timp].second);
+      }
+    } // 2. values are different
+    else {
+      auto min = innert[timp].first;
+      auto max = innert[timp].second;
+      // handle min
+      handle_table[timp].first =
+          std::max(std::clamp(min, 0.001f, 0.999f), handle_table[timp].first);
+      handle_table[timp].second =
+          std::min(std::clamp(max, 0.001f, 0.999f), handle_table[timp].second);
+    }
+  }
+
+  int i = 0;
+
+  auto mix = [](float a, float b, float t) { return (1.f - t) * a + t * b; };
+
+  bool started_even = ((i + 1) % 2) == 0;
+
+  if (handle_table[i].first >= 0.f && handle_table[i].first <= 1.f &&
+      handle_table[i].second >= 0.f && handle_table[i].second <= 1.f) {
+    auto s = handle_sampler.sample(i / 99.f, handle_table[i].first);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  for (; i < outermax; ++i) {
+    if (handle_table[i].first > 1.f) {
+      break;
+    }
+    float tx = i / 99.f;
+    // first option - no intersection
+    float start = std::min(handle_table[i].first, 0.999f);
+    float end = std::max(handle_table[i].second, 0.001f);
+
+    for (int j = 0; j < 20; ++j) {
+      auto mix_val = std::clamp(j / 19.f, 0.001f, 0.999f);
+      auto s = handle_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                             ? mix(start, end, mix_val)
+                                             : mix(end, start, mix_val));
+
+      if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+        throw;
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+             << std::endl;
+    }
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 33.f << std::endl;
+
+  i = innermin;
+  while (handle_table[i].first > 1.f) {
+    ++i;
+  }
+
+  started_even = ((i % 2) == 0);
+
+  if (handle_table[i].first >= 0.f && handle_table[i].first <= 1.f &&
+      handle_table[i].second >= 0.f && handle_table[i].second <= 1.f) {
+    auto s = handle_sampler.sample(i / 99.f, handle_table[i].first);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  for (; i < 100; ++i) {
+    if (handle_table[i].first > 1.f) {
+      continue;
+    }
+    float tx = i / 99.f;
+    // first option - no intersection
+    float start = std::min(handle_table[i].first, 0.999f);
+    float end = std::max(handle_table[i].second, 0.001f);
+
+    for (int j = 0; j < 20; ++j) {
+      auto mix_val = std::clamp(j / 19.f, 0.001f, 0.999f);
+      auto s = handle_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                             ? mix(start, end, mix_val)
+                                             : mix(end, start, mix_val));
+
+      if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+        throw;
+
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+             << std::endl;
+    }
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 50.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+}
+
+void generate_top_detail(std::ofstream &output, int &instruction) {}
+
 void generate_third_stage(std::filesystem::path path) {
   //  R is 4.f
   std::ofstream output;
@@ -841,8 +1292,9 @@ void generate_third_stage(std::filesystem::path path) {
          << "X" << x << "Y" << y << "Z" << z << std::endl;
 
   generate_main_body_detail(output, instruction);
+  generate_front_detail(output, instruction);
+  generate_handle_detail(output, instruction);
 
   output.close();
 }
-
 } // namespace paths
