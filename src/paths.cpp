@@ -1272,7 +1272,392 @@ void generate_handle_detail(std::ofstream &output, int &instruction) {
          << "X" << 0.f << "Y" << 0.f << std::endl;
 }
 
-void generate_top_detail(std::ofstream &output, int &instruction) {}
+void generate_top_detail(std::ofstream &output, int &instruction) {
+  auto &reg = ecs::registry::get_registry();
+  // 1. generate intersection between main_body and the plane
+  auto main_body_idx = find_named_c2_surface("main_body");
+  auto top_idx = find_named_c2_surface("top");
+  auto plane_idx = find_named_c2_surface("plane");
+
+  sampler tmp_main_body_sampler = get_sampler(main_body_idx);
+  sampler main_body_sampler = tmp_main_body_sampler;
+  main_body_sampler.sample = [&](float u, float v) {
+    return tmp_main_body_sampler.sample(u, v) +
+           4.f * tmp_main_body_sampler.normal(u, v);
+  };
+
+  sampler tmp_plane_sampler = get_sampler(plane_idx);
+  sampler plane_sampler = tmp_plane_sampler;
+  plane_sampler.sample = [&](float u, float v) {
+    return tmp_plane_sampler.sample(u, v) +
+           4.f * tmp_plane_sampler.normal(u, v);
+  };
+
+  sampler tmp_top_sampler = get_sampler(top_idx);
+  sampler top_sampler = tmp_top_sampler;
+  top_sampler.sample = [&](float u, float v) {
+    return tmp_top_sampler.sample(u, v) + 4.f * tmp_top_sampler.normal(u, v);
+  };
+
+  systems::intersection_params params{};
+  auto &cursor_t = reg.get_component<transformation>(
+                          reg.get_map<cursor_params>().begin()->first)
+                       .translation;
+  params.start_from_cursor = true;
+
+  cursor_t = {-5.390, 3.986, -37.661};
+  auto top_plane_left_bottom = systems::intersect(
+      top_idx, plane_idx, top_sampler, plane_sampler, params, false, cursor_t);
+
+  cursor_t = {-1.709, 4.030, -55.741};
+  auto top_plane_left_top = systems::intersect(
+      top_idx, plane_idx, top_sampler, plane_sampler, params, false, cursor_t);
+
+  cursor_t = {19.668, 4.052, -57.310};
+  auto top_plane_right_top = systems::intersect(
+      top_idx, plane_idx, top_sampler, plane_sampler, params, false, cursor_t);
+
+  cursor_t = {25.641, 4.016, -34.710};
+  auto top_plane_right_bottom = systems::intersect(
+      top_idx, plane_idx, top_sampler, plane_sampler, params, false, cursor_t);
+
+  auto top_main_body =
+      systems::intersect(top_idx, main_body_idx, top_sampler, main_body_sampler,
+                         {}, false, cursor_t);
+
+  const auto top_main_body_intersect = top_main_body.idx;
+  auto &top_main_body_coords =
+      reg.get_component<relationship>(top_main_body_intersect).virtual_children;
+
+  const auto top_plane_left_bottom_intersect = top_plane_left_bottom.idx;
+  auto &top_plane_left_bottom_coords =
+      reg.get_component<relationship>(top_plane_left_bottom_intersect)
+          .virtual_children;
+
+  const auto top_plane_left_top_intersect = top_plane_left_top.idx;
+  auto &top_plane_left_top_coords =
+      reg.get_component<relationship>(top_plane_left_top_intersect)
+          .virtual_children;
+
+  const auto top_plane_right_top_intersect = top_plane_right_top.idx;
+  auto &top_plane_right_top_coords =
+      reg.get_component<relationship>(top_plane_right_top_intersect)
+          .virtual_children;
+
+  const auto top_plane_right_bottom_intersect = top_plane_right_bottom.idx;
+  auto &top_plane_right_bottom_coords =
+      reg.get_component<relationship>(top_plane_right_bottom_intersect)
+          .virtual_children;
+
+  // create a table of min/max
+  std::array<std::pair<float, float>, 100> top_table;
+  top_table.fill({0.2f, 0.999f});
+
+  for (auto &c : top_main_body_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.001f, 0.999f);
+    top_table[100 * t.x].second =
+        std::min(top_table[100 * t.x].second, std::clamp(t.y, 0.02f, 0.999f));
+  }
+
+  int rightbmin = 101, rightbmax = -1;
+  int rightbymin = 101, rightbymax = -1;
+  for (auto &c : top_plane_right_bottom_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.001f, 0.999f);
+
+    if (100 * t.x < rightbmin) {
+      rightbmin = 100 * t.x;
+    }
+
+    if (100 * t.x > rightbmax) {
+      rightbmax = 100 * t.x;
+    }
+
+    if (100 * t.y < rightbymin) {
+      rightbymin = 100 * t.y;
+    }
+
+    if (100 * t.y > rightbymax) {
+      rightbymax = 100 * t.y;
+    }
+
+    if (t.y >= top_table[100 * t.x].second) {
+      top_table[100 * t.x] = {100.f, -100.f};
+    } else {
+      top_table[100 * t.x].first =
+          std::max(top_table[100 * t.x].first, std::clamp(t.y, 0.02f, 1.f));
+    }
+  }
+
+  TINY_CAD_INFO("RIGHTB X: {0}->{1} Y:{2}->{3}", rightbmin, rightbmax,
+                rightbymin, rightbymax);
+
+  int righttmin = 101, righttmax = -1;
+  int righttymin = 101, righttymax = -1;
+  for (auto &c : top_plane_right_top_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.001f, 0.999f);
+
+    if (100 * t.x < righttmin) {
+      righttmin = 100 * t.x;
+    }
+
+    if (100 * t.x > righttmax) {
+      righttmax = 100 * t.x;
+    }
+
+    if (100 * t.y < righttymin) {
+      righttymin = 100 * t.y;
+    }
+
+    if (100 * t.y > righttymax) {
+      righttymax = 100 * t.y;
+    }
+
+    if (t.y >= top_table[100 * t.x].second) {
+      top_table[100 * t.x] = {100.f, -100.f};
+    } else {
+      top_table[100 * t.x].first =
+          std::max(top_table[100 * t.x].first, std::clamp(t.y, 0.02f, 1.f));
+    }
+  }
+
+  TINY_CAD_INFO("rightt X: {0}->{1} Y:{2}->{3}", righttmin, righttmax,
+                righttymin, righttymax);
+
+  int leftbmin = 101, leftbmax = -1;
+  int leftbymin = 101, leftbymax = -1;
+  for (auto &c : top_plane_left_bottom_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.02f, 0.999f);
+
+    if (100 * t.x < leftbmin) {
+      leftbmin = 100 * t.x;
+    }
+
+    if (100 * t.x > leftbmax) {
+      leftbmax = 100 * t.x;
+    }
+
+    if (100 * t.y < leftbymin) {
+      leftbymin = 100 * t.y;
+    }
+
+    if (100 * t.y > leftbymax) {
+      leftbymax = 100 * t.y;
+    }
+
+    if (t.y >= top_table[100 * t.x].second) {
+      top_table[100 * t.x] = {100.f, -100.f};
+    } else {
+      top_table[100 * t.x].first =
+          std::max(top_table[100 * t.x].first, std::clamp(t.y, 0.02f, 1.f));
+    }
+  }
+
+  TINY_CAD_INFO("leftB X: {0}->{1} Y:{2}->{3}", leftbmin, leftbmax, leftbymin,
+                leftbymax);
+
+  int lefttmin = 101, lefttmax = -1;
+  int lefttymin = 101, lefttymax = -1;
+  for (auto &c : top_plane_left_top_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.02f, 0.999f);
+
+    if (100 * t.x < lefttmin) {
+      lefttmin = 100 * t.x;
+    }
+
+    if (100 * t.x > lefttmax) {
+      lefttmax = 100 * t.x;
+    }
+
+    if (100 * t.y < lefttymin) {
+      lefttymin = 100 * t.y;
+    }
+
+    if (100 * t.y > lefttymax) {
+      lefttymax = 100 * t.y;
+    }
+
+    if (t.y >= top_table[100 * t.x].second) {
+      top_table[100 * t.x] = {100.f, -100.f};
+    } else {
+      top_table[100 * t.x].first =
+          std::max(top_table[100 * t.x].first, std::clamp(t.y, 0.02f, 1.f));
+    }
+  }
+
+  TINY_CAD_INFO("leftt X: {0}->{1} Y:{2}->{3}", lefttmin, lefttmax, lefttymin,
+                lefttymax);
+
+  // and now 0.f -> 0.5f
+
+  int i = 0;
+
+  bool started_even = (i % 2) == 0;
+
+  auto mix = [](float a, float b, float t) { return (1.f - t) * a + t * b; };
+
+  if (top_table[i].first >= 0.f && top_table[i].first <= 1.f &&
+      top_table[i].second >= 0.f && top_table[i].second <= 1.f) {
+    auto s = top_sampler.sample(i / 99.f, top_table[i].first);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  for (; i < rightbmax; ++i) {
+    if (top_table[i].first > 0.5f) {
+      break;
+    }
+    float tx = std::clamp(i / 99.f, 0.02f, 1.f);
+    // first option - no intersection
+    float start = std::min(top_table[i].first, 0.999f);
+    float end = std::min(0.5f, std::max(top_table[i].second, 0.001f));
+
+    for (int j = 0; j < 20; ++j) {
+      auto mix_val = std::clamp(j / 19.f, 0.001f, 0.999f);
+      auto s = top_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                          ? mix(start, end, mix_val)
+                                          : mix(end, start, mix_val));
+
+      if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+        throw;
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+             << std::endl;
+    }
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 33.f << std::endl;
+
+  i = leftbmin;
+  while (top_table[i].first > 0.5f) {
+    ++i;
+  }
+
+  if (top_table[i].first >= 0.f && top_table[i].first <= 1.f &&
+      top_table[i].second >= 0.f && top_table[i].second <= 1.f) {
+    auto s = top_sampler.sample(i / 99.f, top_table[i].first);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  started_even = (i % 2) == 0;
+
+  for (; i < 100; ++i) {
+    if (top_table[i].first > 0.5f) {
+      continue;
+    }
+    float tx = i / 99.f;
+    // first option - no intersection
+    float start = std::min(top_table[i].first, 0.999f);
+    float end = std::min(0.5f, std::max(top_table[i].second, 0.001f));
+
+    for (int j = 0; j < 20; ++j) {
+      auto mix_val = std::clamp(j / 19.f, 0.001f, 0.999f);
+      auto s = top_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                          ? mix(start, end, mix_val)
+                                          : mix(end, start, mix_val));
+
+      if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+        throw;
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+             << std::endl;
+    }
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 50.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+  // first do it for 0.5f - 1.f
+  i = 0;
+
+  started_even = (i % 2) == 0;
+
+  if (top_table[i].first >= 0.f && top_table[i].first <= 1.f &&
+      top_table[i].second >= 0.f && top_table[i].second <= 1.f) {
+    auto s = top_sampler.sample(i / 99.f, top_table[i].first);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  for (; i < rightbmax; ++i) {
+    if (top_table[i].first > 1.f) {
+      break;
+    }
+    float tx = i / 99.f;
+    // first option - no intersection
+    float start = std::max(0.5f, std::min(top_table[i].first, 0.999f));
+    float end = std::max(top_table[i].second, 0.001f);
+
+    for (int j = 0; j < 20; ++j) {
+      auto mix_val = std::clamp(j / 19.f, 0.001f, 0.999f);
+      auto s = top_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                          ? mix(start, end, mix_val)
+                                          : mix(end, start, mix_val));
+
+      if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+        throw;
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+             << std::endl;
+    }
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 33.f << std::endl;
+
+  i = leftbmin;
+  while (top_table[i].first > 1.f) {
+    ++i;
+  }
+
+  if (top_table[i].first >= 0.f && top_table[i].first <= 1.f &&
+      top_table[i].second >= 0.f && top_table[i].second <= 1.f) {
+    auto s = top_sampler.sample(i / 99.f, top_table[i].first);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  for (; i < 100; ++i) {
+    if (top_table[i].first > 1.f) {
+      continue;
+    }
+    float tx = i / 99.f;
+    // first option - no intersection
+    float start = std::max(0.5f, std::min(top_table[i].first, 0.999f));
+    float end = std::max(top_table[i].second, 0.001f);
+
+    for (int j = 0; j < 20; ++j) {
+      auto mix_val = std::clamp(j / 19.f, 0.001f, 0.999f);
+      auto s = top_sampler.sample(tx, (started_even == ((i % 2) == 0))
+                                          ? mix(start, end, mix_val)
+                                          : mix(end, start, mix_val));
+
+      if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+        throw;
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+             << std::endl;
+    }
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 50.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+}
 
 void generate_third_stage(std::filesystem::path path) {
   //  R is 4.f
@@ -1290,6 +1675,8 @@ void generate_third_stage(std::filesystem::path path) {
 
   output << "N" << instruction++ << "G01"
          << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+  generate_top_detail(output, instruction);
 
   generate_main_body_detail(output, instruction);
   generate_front_detail(output, instruction);
