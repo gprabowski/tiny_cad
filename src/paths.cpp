@@ -70,7 +70,7 @@ void generate_first_stage(float *data, int resolution, int size,
   x = -halfsize;
   y = -halfsize;
   output << "N" << instruction++ << "G01"
-         << "X" << x << "Y" << y << "Z" << std::max(33.f, sample(8, x, y))
+         << "X" << x << "Y" << y << "Z" << std::max(34.f, sample(8, x, y))
          << std::endl;
 
   while (y <= halfsize) {
@@ -79,17 +79,17 @@ void generate_first_stage(float *data, int resolution, int size,
         (x < -halfsize && (halfsize - x) > step / 2)) {
       x = x < 0 ? -halfsize : halfsize;
       output << "N" << instruction++ << "G01"
-             << "X" << x << "Y" << y << "Z" << std::max(33.f, sample(8, x, y))
+             << "X" << x << "Y" << y << "Z" << std::max(34.f, sample(8, x, y))
              << std::endl;
       y += step;
       output << "N" << instruction++ << "G01"
-             << "X" << x << "Y" << y << "Z" << std::max(33.f, sample(8, x, y))
+             << "X" << x << "Y" << y << "Z" << std::max(34.f, sample(8, x, y))
              << std::endl;
       curr_step = curr_step * -1;
       continue;
     }
     output << "N" << instruction++ << "G01"
-           << "X" << x << "Y" << y << "Z" << std::max(33.f, sample(8, x, y))
+           << "X" << x << "Y" << y << "Z" << std::max(34.f, sample(8, x, y))
            << std::endl;
   }
 
@@ -453,51 +453,77 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
           .virtual_children;
 
   // create a table of min/max
-  std::array<std::pair<float, float>, 100> main_body_table;
+  std::array<std::pair<float, float>, 200> main_body_table;
   main_body_table.fill({100.f, -100.f});
 
-  std::array<std::pair<float, float>, 100> front_hole;
+  std::array<std::pair<float, float>, 200> front_hole;
   front_hole.fill({100.f, -100.f});
 
-  std::array<std::pair<float, float>, 100> handle_bottom_hole;
+  std::array<std::pair<float, float>, 200> handle_bottom_hole;
   handle_bottom_hole.fill({100.f, -100.f});
 
-  std::array<std::pair<float, float>, 100> handle_top_hole;
+  std::array<std::pair<float, float>, 200> handle_top_hole;
   handle_top_hole.fill({100.f, -100.f});
 
-  for (auto &c : main_body_coords) {
-    auto &t = reg.get_component<transformation>(c).translation;
-    t.x = std::clamp(t.x, 0.f, 1.f);
-    if (main_body_table[100 * t.x].first > t.y) {
-      main_body_table[100 * t.x].first = std::clamp(t.y, 0.f, 1.f);
-    }
+  for (std::size_t hi = 0; hi < main_body_coords.size(); ++hi) {
+    auto &pc = main_body_coords[hi];
+    auto &nc = main_body_coords[hi];
 
-    if (main_body_table[100 * t.x].second < t.y) {
-      main_body_table[100 * t.x].second = std::clamp(t.y, 0.f, 1.f);
-    }
-  }
+    auto &pt = reg.get_component<transformation>(pc).translation;
+    auto &nt = reg.get_component<transformation>(nc).translation;
 
-  for (auto &c : main_body_top_coords) {
-    auto &t = reg.get_component<transformation>(c).translation;
-    t.x = std::clamp(t.x, 0.f, 1.f);
+    for (int h = 0; h < 5; ++h) {
+      auto t = glm::mix(pt, nt, h / 4.f);
+      t.x = std::clamp(t.x, 0.f, 1.f);
+      if (main_body_table[200 * t.x].first > t.y) {
+        main_body_table[200 * t.x].first = std::clamp(t.y, 0.f, 1.f);
+      }
 
-    if (main_body_table[100 * t.x].first < 1.f &&
-        main_body_table[100 * t.x].second > 0.f) {
-      if (main_body_table[100 * t.x].second > t.y) {
-        main_body_table[100 * t.x].second = std::clamp(t.y, 0.f, 1.f);
+      if (main_body_table[200 * t.x].second < t.y) {
+        main_body_table[200 * t.x].second = std::clamp(t.y, 0.f, 1.f);
       }
     }
   }
 
-  for (auto &c : main_body_front_coords) {
-    auto &t = reg.get_component<transformation>(c).translation;
-    t.x = std::clamp(t.x, 0.f, 1.f);
-    if (front_hole[100 * t.x].first > t.y) {
-      front_hole[100 * t.x].first = std::clamp(t.y, 0.f, 1.f);
-    }
+  for (std::size_t hi = 0; hi < main_body_top_coords.size(); ++hi) {
+    auto &pc = main_body_top_coords[hi];
+    auto &nc = main_body_top_coords[hi];
 
-    if (front_hole[100 * t.x].second < t.y) {
-      front_hole[100 * t.x].second = std::clamp(t.y, 0.f, 1.f);
+    auto &pt = reg.get_component<transformation>(pc).translation;
+    auto &nt = reg.get_component<transformation>(nc).translation;
+
+    for (int h = 0; h < 5; ++h) {
+      auto t = glm::mix(pt, nt, h / 4.f);
+
+      t.x = std::clamp(t.x, 0.f, 1.f);
+
+      if (main_body_table[200 * t.x].first < 1.f &&
+          main_body_table[200 * t.x].second > 0.f) {
+        if (main_body_table[200 * t.x].second > t.y) {
+          main_body_table[200 * t.x].second = std::clamp(t.y, 0.f, 1.f);
+        }
+      }
+    }
+  }
+
+  for (std::size_t hi = 0; hi < main_body_front_coords.size(); ++hi) {
+    auto &pc = main_body_front_coords[hi];
+    auto &nc = main_body_front_coords[hi];
+
+    auto &pt = reg.get_component<transformation>(pc).translation;
+    auto &nt = reg.get_component<transformation>(nc).translation;
+
+    for (int h = 0; h < 5; ++h) {
+      auto t = glm::mix(pt, nt, h / 4.f);
+
+      t.x = std::clamp(t.x, 0.f, 1.f);
+      if (front_hole[200 * t.x].first > t.y) {
+        front_hole[200 * t.x].first = std::clamp(t.y, 0.f, 1.f);
+      }
+
+      if (front_hole[200 * t.x].second < t.y) {
+        front_hole[200 * t.x].second = std::clamp(t.y, 0.f, 1.f);
+      }
     }
   }
 
@@ -511,33 +537,42 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
     for (int h = 0; h < 5; ++h) {
       auto t = glm::mix(pt, nt, h / 4.f);
       t.x = std::clamp(t.x, 0.f, 1.f);
-      if (handle_top_hole[std::clamp(100 * t.x, 0.f, 99.f)].first > t.y) {
-        handle_top_hole[std::clamp(100 * t.x, 0.f, 99.f)].first =
+      if (handle_top_hole[std::clamp(200 * t.x, 0.f, 199.f)].first > t.y) {
+        handle_top_hole[std::clamp(200 * t.x, 0.f, 199.f)].first =
             std::clamp(t.y, 0.f, 1.f);
       }
 
-      if (handle_top_hole[std::clamp(100 * t.x, 0.f, 99.f)].second < t.y) {
-        handle_top_hole[std::clamp(100 * t.x, 0.f, 99.f)].second =
+      if (handle_top_hole[std::clamp(200 * t.x, 0.f, 199.f)].second < t.y) {
+        handle_top_hole[std::clamp(200 * t.x, 0.f, 199.f)].second =
             std::clamp(t.y, 0.f, 1.f);
       }
     }
   }
 
-  for (auto &c : main_body_handle_bottom_coords) {
-    auto &t = reg.get_component<transformation>(c).translation;
-    t.x = std::clamp(t.x, 0.f, 1.f);
-    if (handle_bottom_hole[std::clamp(100 * t.x, 0.f, 99.f)].first > t.y) {
-      handle_bottom_hole[std::clamp(100 * t.x, 0.f, 99.f)].first =
-          std::clamp(t.y, 0.f, 1.f);
-    }
+  for (std::size_t hi = 1; hi < main_body_handle_bottom_coords.size(); ++hi) {
+    auto &pc = main_body_handle_bottom_coords[hi];
+    auto &nc = main_body_handle_bottom_coords[hi];
 
-    if (handle_bottom_hole[std::clamp(100 * t.x, 0.f, 99.f)].second < t.y) {
-      handle_bottom_hole[std::clamp(100 * t.x, 0.f, 99.f)].second =
-          std::clamp(t.y, 0.f, 1.f);
+    auto &pt = reg.get_component<transformation>(pc).translation;
+    auto &nt = reg.get_component<transformation>(nc).translation;
+
+    for (int h = 0; h < 5; ++h) {
+      auto t = glm::mix(pt, nt, h / 4.f);
+
+      t.x = std::clamp(t.x, 0.f, 1.f);
+      if (handle_bottom_hole[std::clamp(200 * t.x, 0.f, 199.f)].first > t.y) {
+        handle_bottom_hole[std::clamp(200 * t.x, 0.f, 199.f)].first =
+            std::clamp(t.y, 0.f, 1.f);
+      }
+
+      if (handle_bottom_hole[std::clamp(200 * t.x, 0.f, 199.f)].second < t.y) {
+        handle_bottom_hole[std::clamp(200 * t.x, 0.f, 199.f)].second =
+            std::clamp(t.y, 0.f, 1.f);
+      }
     }
   }
 
-  for (int timp = 0; timp < 100; ++timp) {
+  for (int timp = 0; timp < 200; ++timp) {
     if (main_body_table[timp].first > 2.f ||
         main_body_table[timp].second < -1.f) {
       continue;
@@ -557,7 +592,8 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
 
     if (handle_top_hole[timp].first <= 1.f &&
         handle_top_hole[timp].second >= main_body_table[timp].second) {
-      if (timp != 84 && timp != 83) {
+
+      if (timp != 166 && timp != 167 && timp != 170) {
         main_body_table[timp].second = handle_top_hole[timp].first;
         handle_top_hole[timp] = {100.f, -100.f};
       }
@@ -577,17 +613,17 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
   bool started_even = (i % 2) == 0;
   if (main_body_table[i].first >= 0.f && main_body_table[i].first <= 1.f &&
       main_body_table[i].second >= 0.f && main_body_table[i].second <= 1.f) {
-    auto s = main_body_sampler.sample(i / 99.f, main_body_table[i].first);
+    auto s = main_body_sampler.sample(i / 199.f, main_body_table[i].first);
 
     output << "N" << instruction++ << "G01"
            << "X" << s.x << "Y" << -s.z << std::endl;
   }
 
-  while (i < 100 &&
+  while (i < 200 &&
          (main_body_table[i].first >= 0.f && main_body_table[i].first <= 1.f &&
           main_body_table[i].second >= 0.f &&
           main_body_table[i].second <= 1.f)) {
-    float tx = i / 99.f;
+    float tx = i / 199.f;
     // 1. find start position (not in hole)
 
     if (front_hole[i].first > 1.f || front_hole[i].second < 0.f) {
@@ -628,7 +664,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       }
       // jump over hole
       output << "N" << instruction++ << "G01"
-             << "Z" << 33.f << std::endl;
+             << "Z" << 34.f << std::endl;
       auto s = main_body_sampler.sample(
           tx, (started_even == ((i % 2) == 0)) ? middle_end : middle_start);
       output << "N" << instruction++ << "G01"
@@ -659,7 +695,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
   output << "N" << instruction++ << "G01"
          << "X" << 0.f << "Y" << 0.f << std::endl;
 
-  i = 99;
+  i = 199;
   started_even = (i % 2) == 0;
   if (main_body_table[i].first >= 0.f && main_body_table[i].first <= 1.f &&
       main_body_table[i].second >= 0.f && main_body_table[i].second <= 1.f) {
@@ -669,12 +705,14 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
            << "X" << s.x << "Y" << -s.z << std::endl;
   }
 
+  // between 171 and 170
   // go from the right, two holes here
-  while (i < 100 &&
+  while (i < 200 &&
          (main_body_table[i].first >= 0.f && main_body_table[i].first <= 1.f &&
           main_body_table[i].second >= 0.f &&
           main_body_table[i].second <= 1.f)) {
-    float tx = i / 99.f;
+    TINY_CAD_INFO("i: {0}", i);
+    float tx = i / 199.f;
     if (handle_top_hole[i].first <= 1.f && handle_bottom_hole[i].first <= 1.f) {
 
       float start = std::max(main_body_table[i].first, 0.001f);
@@ -703,7 +741,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       }
       // jump over first hole
       output << "N" << instruction++ << "G01"
-             << "Z" << 33.f << std::endl;
+             << "Z" << 34.f << std::endl;
       auto s = main_body_sampler.sample(
           tx, (started_even == ((i % 2) == 0)) ? first_end : second_start);
       output << "N" << instruction++ << "G01"
@@ -726,7 +764,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       }
       // jump over second hole
       output << "N" << instruction++ << "G01"
-             << "Z" << 33.f << std::endl;
+             << "Z" << 34.f << std::endl;
       s = main_body_sampler.sample(
           tx, (started_even == ((i % 2) == 0)) ? second_end : first_start);
       output << "N" << instruction++ << "G01"
@@ -755,7 +793,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       float middle_end = std::min(handle_top_hole[i].second, 0.999f);
       float end = std::min(main_body_table[i].second, 0.999f);
 
-      if (i != 84) {
+      if (i != 168 && i != 169 && i != 170) {
         // go till hole
         for (int j = 0; j < 40; ++j) {
           auto mix_val = std::clamp(j / 39.f, 0.001f, 0.999f);
@@ -773,7 +811,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       }
       // jump over hole
       output << "N" << instruction++ << "G01"
-             << "Z" << 33.f << std::endl;
+             << "Z" << 34.f << std::endl;
       auto s = main_body_sampler.sample(
           tx, (started_even == ((i % 2) == 0)) ? middle_end : middle_start);
       output << "N" << instruction++ << "G01"
@@ -975,7 +1013,7 @@ void generate_front_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 33.f << std::endl;
+         << "Z" << 34.f << std::endl;
 
   i = topmin;
   while (front_table[i].first > 1.f) {
@@ -1224,7 +1262,7 @@ void generate_handle_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 33.f << std::endl;
+         << "Z" << 34.f << std::endl;
 
   i = innermin;
   while (handle_table[i].first > 1.f) {
@@ -1241,7 +1279,7 @@ void generate_handle_detail(std::ofstream &output, int &instruction) {
            << "X" << s.x << "Y" << -s.z << std::endl;
   }
 
-  for (; i < 100; ++i) {
+  for (; i < 99; ++i) {
     if (handle_table[i].first > 1.f) {
       continue;
     }
@@ -1271,6 +1309,160 @@ void generate_handle_detail(std::ofstream &output, int &instruction) {
   output << "N" << instruction++ << "G01"
          << "X" << 0.f << "Y" << 0.f << std::endl;
 }
+
+void generate_hole_detail(std::ofstream &output, int &instruction) {
+  auto &reg = ecs::registry::get_registry();
+  // 1. generate intersection between main_body and the plane
+  auto main_body_idx = find_named_c2_surface("main_body");
+  auto handle_idx = find_named_c2_surface("handle");
+  auto plane_idx = find_named_c2_surface("plane");
+
+  sampler tmp_main_body_sampler = get_sampler(main_body_idx);
+  sampler main_body_sampler = tmp_main_body_sampler;
+  main_body_sampler.sample = [&](float u, float v) {
+    return tmp_main_body_sampler.sample(u, v) +
+           4.f * tmp_main_body_sampler.normal(u, v);
+  };
+
+  sampler tmp_plane_sampler = get_sampler(plane_idx);
+  sampler plane_sampler = tmp_plane_sampler;
+  plane_sampler.sample = [&](float u, float v) {
+    return tmp_plane_sampler.sample(u, v) +
+           4.f * tmp_plane_sampler.normal(u, v);
+  };
+
+  sampler tmp_handle_sampler = get_sampler(handle_idx);
+  sampler handle_sampler = tmp_handle_sampler;
+  handle_sampler.sample = [&](float u, float v) {
+    return tmp_handle_sampler.sample(u, v) +
+           4.f * tmp_handle_sampler.normal(u, v);
+  };
+
+  systems::intersection_params params{};
+  auto &cursor_t = reg.get_component<transformation>(
+                          reg.get_map<cursor_params>().begin()->first)
+                       .translation;
+
+  params.start_from_cursor = true;
+  cursor_t = {36.917, 4.108, 10.137};
+  auto plane_handle =
+      systems::intersect(plane_idx, handle_idx, plane_sampler, handle_sampler,
+                         params, false, cursor_t);
+
+  params.start_from_cursor = false;
+  params.subdivisions = 12;
+  auto plane_main_body =
+      systems::intersect(plane_idx, main_body_idx, plane_sampler,
+                         main_body_sampler, params, false, cursor_t);
+
+  params.start_from_cursor = true;
+  cursor_t = {43.042, 5.005, 23.815};
+
+  const auto plane_main_body_intersect = plane_main_body.idx;
+  auto &plane_main_body_coords =
+      reg.get_component<relationship>(plane_main_body_intersect)
+          .virtual_children;
+
+  const auto plane_handle_intersect = plane_handle.idx;
+  auto &plane_handle_coords =
+      reg.get_component<relationship>(plane_handle_intersect).virtual_children;
+
+  // create a table of min/max
+  // CAREFUL THIS ITERATES OVER V AND SLIDES OVER U,
+  // NOT THE USUAL (REVERSED) WAY
+  std::array<std::pair<float, float>, 100> hole_table;
+  hole_table.fill({100.f, -100.f});
+
+  int min_v =
+      100 *
+      reg.get_component<transformation>(plane_handle_coords[0]).translation.y;
+  int u_val =
+      reg.get_component<transformation>(plane_handle_coords[0]).translation.x;
+  int max_v = 100 * reg.get_component<transformation>(
+                           plane_handle_coords[plane_handle_coords.size() - 1])
+                        .translation.y;
+
+  for (auto &c : plane_handle_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.001f, 0.999f);
+    t.y = std::clamp(t.y, 0.001f, 0.999f);
+    hole_table[100 * t.y].first = std::min(hole_table[100 * t.y].first, t.x);
+    hole_table[100 * t.y].second = std::max(hole_table[100 * t.y].second, t.x);
+  }
+
+  for (int tmp_v = min_v; tmp_v <= max_v; ++tmp_v) {
+    hole_table[tmp_v].first = u_val;
+  }
+
+  for (auto &c : plane_main_body_coords) {
+    auto &t = reg.get_component<transformation>(c).translation;
+    t.x = std::clamp(t.x, 0.001f, 0.999f);
+    t.y = std::clamp(t.y, 0.001f, 0.999f);
+    if (hole_table[100 * t.y].first <= 1.f) {
+      hole_table[100 * t.y].first = std::max(hole_table[100 * t.y].first, t.x);
+    }
+  }
+
+  int i = 0;
+
+  auto mix = [](float a, float b, float t) { return (1.f - t) * a + t * b; };
+
+  while (hole_table[i].first > 1.f) {
+    ++i;
+  }
+
+  bool started_even = (i % 2) == 0;
+
+  if (hole_table[i].first >= 0.f && hole_table[i].first <= 1.f &&
+      hole_table[i].second >= 0.f && hole_table[i].second <= 1.f) {
+
+    float start = std::max(hole_table[i].first, 0.01f);
+    float end = std::min(hole_table[i].second, 0.99f);
+
+    auto mix_val = std::clamp(0.f, 0.001f, 0.999f);
+    auto s = plane_sampler.sample((started_even == ((i % 2) == 0))
+                                      ? mix(start, end, mix_val)
+                                      : mix(end, start, mix_val),
+                                  i / 99.f);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << std::endl;
+  }
+
+  while (i < 99 &&
+         (hole_table[i + 1].first >= 0.f && hole_table[i + 1].first <= 1.f &&
+          hole_table[i + 1].second >= 0.f && hole_table[i + 1].second <= 1.f)) {
+    float ty = i / 99.f;
+    // 1. find start position (not in hole)
+
+    float start = std::max(hole_table[i].first, 0.01f);
+    float end = std::min(hole_table[i].second, 0.99f);
+
+    // go till hole
+    for (int j = 0; j < 40; ++j) {
+      auto mix_val = std::clamp(j / 39.f, 0.001f, 0.999f);
+      auto s = plane_sampler.sample((started_even == ((i % 2) == 0))
+                                        ? mix(start, end, mix_val)
+                                        : mix(end, start, mix_val),
+                                    ty);
+
+      if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z))
+        throw;
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+             << std::endl;
+    }
+    ++i;
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 50.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+}
+
+void finalize_intersections(std::ofstream &output, int &instruction) {}
 
 void generate_top_detail(std::ofstream &output, int &instruction) {
   auto &reg = ecs::registry::get_registry();
@@ -1305,19 +1497,19 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
                        .translation;
   params.start_from_cursor = true;
 
-  cursor_t = {-5.390, 3.986, -37.661};
+  cursor_t = {-4.526, 3.988, -43.332};
   auto top_plane_left_bottom = systems::intersect(
       top_idx, plane_idx, top_sampler, plane_sampler, params, false, cursor_t);
 
-  cursor_t = {-1.709, 4.030, -55.741};
+  cursor_t = {-1.859, 3.954, -57.094};
   auto top_plane_left_top = systems::intersect(
       top_idx, plane_idx, top_sampler, plane_sampler, params, false, cursor_t);
 
-  cursor_t = {19.668, 4.052, -57.310};
+  cursor_t = {20.802, 4.043, -57.624};
   auto top_plane_right_top = systems::intersect(
       top_idx, plane_idx, top_sampler, plane_sampler, params, false, cursor_t);
 
-  cursor_t = {25.641, 4.016, -34.710};
+  cursor_t = {21.855, 4.017, -32.862};
   auto top_plane_right_bottom = systems::intersect(
       top_idx, plane_idx, top_sampler, plane_sampler, params, false, cursor_t);
 
@@ -1390,9 +1582,6 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
     }
   }
 
-  TINY_CAD_INFO("RIGHTB X: {0}->{1} Y:{2}->{3}", rightbmin, rightbmax,
-                rightbymin, rightbymax);
-
   int righttmin = 101, righttmax = -1;
   int righttymin = 101, righttymax = -1;
   for (auto &c : top_plane_right_top_coords) {
@@ -1422,9 +1611,6 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
           std::max(top_table[100 * t.x].first, std::clamp(t.y, 0.02f, 1.f));
     }
   }
-
-  TINY_CAD_INFO("rightt X: {0}->{1} Y:{2}->{3}", righttmin, righttmax,
-                righttymin, righttymax);
 
   int leftbmin = 101, leftbmax = -1;
   int leftbymin = 101, leftbymax = -1;
@@ -1456,9 +1642,6 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
     }
   }
 
-  TINY_CAD_INFO("leftB X: {0}->{1} Y:{2}->{3}", leftbmin, leftbmax, leftbymin,
-                leftbymax);
-
   int lefttmin = 101, lefttmax = -1;
   int lefttymin = 101, lefttymax = -1;
   for (auto &c : top_plane_left_top_coords) {
@@ -1489,16 +1672,58 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
     }
   }
 
-  TINY_CAD_INFO("leftt X: {0}->{1} Y:{2}->{3}", lefttmin, lefttmax, lefttymin,
-                lefttymax);
-
   // and now 0.f -> 0.5f
+  auto start_blade_u = 0.f;
+  auto end_blade_u = 0.f;
+
+  float curr_dist = 100.f;
+  for (int blade = 0; blade < 100; ++blade) {
+    float bladef = blade / 99.f;
+    auto s = top_sampler.sample(bladef, 0.5f);
+    if (blade == 50) {
+      curr_dist = 100.f;
+    }
+    if (std::abs(s.y - 4.f) < curr_dist) {
+      if (blade < 50) {
+        start_blade_u = bladef;
+      } else
+        end_blade_u = bladef;
+    }
+    curr_dist = std::abs(s.y - 4.f);
+  }
+
+  auto mix = [](float a, float b, float t) { return (1.f - t) * a + t * b; };
+
+  const auto output_blade = false;
+  if (output_blade) {
+    {
+      auto s = top_sampler.sample(start_blade_u, 0.5f);
+
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << std::endl;
+    }
+
+    const auto dist = (1.f - end_blade_u) + start_blade_u;
+    for (int j = 0; j < 40; ++j) {
+
+      auto uc = start_blade_u - (j / 39.f) * dist;
+      if (uc < 0.f) {
+        uc += 1.f;
+      }
+      auto s = top_sampler.sample(uc, 0.5f);
+
+      output << "N" << instruction++ << "G01"
+             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
+             << std::endl;
+    }
+
+    output << "N" << instruction++ << "G01"
+           << "Z" << 34.f << std::endl;
+  }
 
   int i = 0;
 
   bool started_even = (i % 2) == 0;
-
-  auto mix = [](float a, float b, float t) { return (1.f - t) * a + t * b; };
 
   if (top_table[i].first >= 0.f && top_table[i].first <= 1.f &&
       top_table[i].second >= 0.f && top_table[i].second <= 1.f) {
@@ -1509,13 +1734,13 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
   }
 
   for (; i < rightbmax; ++i) {
-    if (top_table[i].first > 0.5f) {
+    if (static_cast<int>(100 * top_table[i].first) >= 50) {
       break;
     }
-    float tx = std::clamp(i / 99.f, 0.02f, 1.f);
+    float tx = std::clamp(i / 99.f, 0.02f, 0.99f);
     // first option - no intersection
-    float start = std::min(top_table[i].first, 0.999f);
-    float end = std::min(0.5f, std::max(top_table[i].second, 0.001f));
+    float start = std::min(top_table[i].first, 0.99f);
+    float end = std::min(0.49f, std::max(top_table[i].second, 0.01f));
 
     for (int j = 0; j < 20; ++j) {
       auto mix_val = std::clamp(j / 19.f, 0.001f, 0.999f);
@@ -1532,7 +1757,7 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 33.f << std::endl;
+         << "Z" << 34.f << std::endl;
 
   i = leftbmin;
   while (top_table[i].first > 0.5f) {
@@ -1550,13 +1775,13 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
   started_even = (i % 2) == 0;
 
   for (; i < 100; ++i) {
-    if (top_table[i].first > 0.5f) {
+    if (static_cast<int>(100 * top_table[i].first) >= 50) {
       continue;
     }
     float tx = i / 99.f;
     // first option - no intersection
     float start = std::min(top_table[i].first, 0.999f);
-    float end = std::min(0.5f, std::max(top_table[i].second, 0.001f));
+    float end = std::min(0.49f, std::max(top_table[i].second, 0.001f));
 
     for (int j = 0; j < 20; ++j) {
       auto mix_val = std::clamp(j / 19.f, 0.001f, 0.999f);
@@ -1596,7 +1821,7 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
     }
     float tx = i / 99.f;
     // first option - no intersection
-    float start = std::max(0.5f, std::min(top_table[i].first, 0.999f));
+    float start = std::max(0.51f, std::min(top_table[i].first, 0.999f));
     float end = std::max(top_table[i].second, 0.001f);
 
     for (int j = 0; j < 20; ++j) {
@@ -1614,7 +1839,7 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 33.f << std::endl;
+         << "Z" << 34.f << std::endl;
 
   i = leftbmin;
   while (top_table[i].first > 1.f) {
@@ -1635,7 +1860,7 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
     }
     float tx = i / 99.f;
     // first option - no intersection
-    float start = std::max(0.5f, std::min(top_table[i].first, 0.999f));
+    float start = std::max(0.51f, std::min(top_table[i].first, 0.999f));
     float end = std::max(top_table[i].second, 0.001f);
 
     for (int j = 0; j < 20; ++j) {
@@ -1680,7 +1905,9 @@ void generate_third_stage(std::filesystem::path path) {
 
   generate_main_body_detail(output, instruction);
   generate_front_detail(output, instruction);
+  generate_hole_detail(output, instruction);
   generate_handle_detail(output, instruction);
+  finalize_intersections(output, instruction);
 
   output.close();
 }
