@@ -1506,13 +1506,12 @@ void render_intersection_gui() {
       sampler first_sampler = tmp_first_sampler;
       first_sampler.sample = [&](float u, float v) {
         return tmp_first_sampler.sample(u, v) +
-               4.f * tmp_first_sampler.normal(u, v);
+               5.f * tmp_first_sampler.normal(u, v);
       };
       sampler tmp_second_sampler = get_sampler(second);
       sampler second_sampler = tmp_second_sampler;
       second_sampler.sample = [&](float u, float v) {
-        return tmp_second_sampler.sample(u, v) +
-               4.f * tmp_second_sampler.normal(u, v);
+        return tmp_second_sampler.sample(u, v);
       };
 
       auto res =
