@@ -70,7 +70,7 @@ void generate_first_stage(float *data, int resolution, int size,
   x = -halfsize;
   y = -halfsize;
   output << "N" << instruction++ << "G01"
-         << "X" << x << "Y" << y << "Z" << std::max(34.f, sample(8, x, y))
+         << "X" << x << "Y" << y << "Z" << std::max(35.f, sample(8, x, y))
          << std::endl;
 
   while (y <= halfsize) {
@@ -79,17 +79,17 @@ void generate_first_stage(float *data, int resolution, int size,
         (x < -halfsize && (halfsize - x) > step / 2)) {
       x = x < 0 ? -halfsize : halfsize;
       output << "N" << instruction++ << "G01"
-             << "X" << x << "Y" << y << "Z" << std::max(34.f, sample(8, x, y))
+             << "X" << x << "Y" << y << "Z" << std::max(35.f, sample(8, x, y))
              << std::endl;
       y += step;
       output << "N" << instruction++ << "G01"
-             << "X" << x << "Y" << y << "Z" << std::max(34.f, sample(8, x, y))
+             << "X" << x << "Y" << y << "Z" << std::max(35.f, sample(8, x, y))
              << std::endl;
       curr_step = curr_step * -1;
       continue;
     }
     output << "N" << instruction++ << "G01"
-           << "X" << x << "Y" << y << "Z" << std::max(34.f, sample(8, x, y))
+           << "X" << x << "Y" << y << "Z" << std::max(35.f, sample(8, x, y))
            << std::endl;
   }
 
@@ -664,7 +664,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       }
       // jump over hole
       output << "N" << instruction++ << "G01"
-             << "Z" << 34.f << std::endl;
+             << "Z" << 35.f << std::endl;
       auto s = main_body_sampler.sample(
           tx, (started_even == ((i % 2) == 0)) ? middle_end : middle_start);
       output << "N" << instruction++ << "G01"
@@ -741,7 +741,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       }
       // jump over first hole
       output << "N" << instruction++ << "G01"
-             << "Z" << 34.f << std::endl;
+             << "Z" << 35.f << std::endl;
       auto s = main_body_sampler.sample(
           tx, (started_even == ((i % 2) == 0)) ? first_end : second_start);
       output << "N" << instruction++ << "G01"
@@ -764,7 +764,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       }
       // jump over second hole
       output << "N" << instruction++ << "G01"
-             << "Z" << 34.f << std::endl;
+             << "Z" << 35.f << std::endl;
       s = main_body_sampler.sample(
           tx, (started_even == ((i % 2) == 0)) ? second_end : first_start);
       output << "N" << instruction++ << "G01"
@@ -811,7 +811,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       }
       // jump over hole
       output << "N" << instruction++ << "G01"
-             << "Z" << 34.f << std::endl;
+             << "Z" << 35.f << std::endl;
       auto s = main_body_sampler.sample(
           tx, (started_even == ((i % 2) == 0)) ? middle_end : middle_start);
       output << "N" << instruction++ << "G01"
@@ -1013,7 +1013,7 @@ void generate_front_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 34.f << std::endl;
+         << "Z" << 35.f << std::endl;
 
   i = topmin;
   while (front_table[i].first > 1.f) {
@@ -1262,7 +1262,7 @@ void generate_handle_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 34.f << std::endl;
+         << "Z" << 35.f << std::endl;
 
   i = innermin;
   while (handle_table[i].first > 1.f) {
@@ -1491,6 +1491,16 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
     return tmp_top_sampler.sample(u, v) + 4.f * tmp_top_sampler.normal(u, v);
   };
 
+  sampler top_sampler_blade = tmp_top_sampler;
+  top_sampler_blade.sample = [&](float u, float v) {
+    const static glm::vec3 center =
+        glm::vec3{22.823f + -3.229f, 0.f, -50.611f + -50.106f} / 2.f;
+
+    const auto s = tmp_top_sampler.sample(u, v);
+    const auto norm = glm::normalize(s - center);
+    return s + 4.2f * norm;
+  };
+
   systems::intersection_params params{};
   auto &cursor_t = reg.get_component<transformation>(
                           reg.get_map<cursor_params>().begin()->first)
@@ -1694,32 +1704,28 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
 
   auto mix = [](float a, float b, float t) { return (1.f - t) * a + t * b; };
 
-  const auto output_blade = false;
-  if (output_blade) {
-    {
-      auto s = top_sampler.sample(start_blade_u, 0.5f);
-
-      output << "N" << instruction++ << "G01"
-             << "X" << s.x << "Y" << -s.z << std::endl;
-    }
-
-    const auto dist = (1.f - end_blade_u) + start_blade_u;
-    for (int j = 0; j < 40; ++j) {
-
-      auto uc = start_blade_u - (j / 39.f) * dist;
-      if (uc < 0.f) {
-        uc += 1.f;
-      }
-      auto s = top_sampler.sample(uc, 0.5f);
-
-      output << "N" << instruction++ << "G01"
-             << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f
-             << std::endl;
-    }
+  {
+    auto s = top_sampler_blade.sample(start_blade_u, 0.5f);
 
     output << "N" << instruction++ << "G01"
-           << "Z" << 34.f << std::endl;
+           << "X" << s.x << "Y" << -s.z << std::endl;
   }
+
+  const auto dist = (1.f - end_blade_u) + start_blade_u;
+  for (int j = 0; j < 40; ++j) {
+
+    auto uc = start_blade_u - (j / 39.f) * dist;
+    if (uc < 0.f) {
+      uc += 1.f;
+    }
+    auto s = top_sampler_blade.sample(uc, 0.5f);
+
+    output << "N" << instruction++ << "G01"
+           << "X" << s.x << "Y" << -s.z << "Z" << 16.f + s.y - 4.f << std::endl;
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 35.f << std::endl;
 
   int i = 0;
 
@@ -1757,7 +1763,7 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 34.f << std::endl;
+         << "Z" << 35.f << std::endl;
 
   i = leftbmin;
   while (top_table[i].first > 0.5f) {
@@ -1839,7 +1845,7 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 34.f << std::endl;
+         << "Z" << 35.f << std::endl;
 
   i = leftbmin;
   while (top_table[i].first > 1.f) {
