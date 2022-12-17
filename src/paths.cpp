@@ -95,6 +95,8 @@ void generate_first_stage(float *data, int resolution, int size,
   int instruction = 1;
 
   std::ofstream output;
+  output.setf(std::ios::fixed, std::ios::floatfield);
+  output.precision(3);
   output.open(path);
 
   auto sample = [&](int radius, float fx, float fy) {
@@ -272,6 +274,8 @@ void generate_second_stage(std::filesystem::path path) {
 
   // prelude
   std::ofstream output;
+  output.setf(std::ios::fixed, std::ios::floatfield);
+  output.precision(3);
   output.open(path);
   int instruction = 1;
   auto halfsize = 75.f;
@@ -656,10 +660,10 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
     out(output, instruction++, s.x, -s.z, 50.f);
   }
 
-  while (i < 200 &&
-         (main_body_table[i].first >= 0.f && main_body_table[i].first <= 1.f &&
-          main_body_table[i].second >= 0.f &&
-          main_body_table[i].second <= 1.f)) {
+  while (i < 200 && (main_body_table[i + 1].first >= 0.f &&
+                     main_body_table[i + 1].first <= 1.f &&
+                     main_body_table[i + 1].second >= 0.f &&
+                     main_body_table[i + 1].second <= 1.f)) {
     float tx = i / 199.f;
     // 1. find start position (not in hole)
 
@@ -1905,6 +1909,10 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
 void generate_third_stage(std::filesystem::path path) {
   //  R is 4.f
   std::ofstream output;
+
+  output.setf(std::ios::fixed, std::ios::floatfield);
+  output.precision(3);
+
   output.open(path);
   int instruction = 1;
   auto halfsize = 75.f;
