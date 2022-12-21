@@ -17,27 +17,31 @@ void out(std::ofstream &output, int instruction, float x, float y, float z) {
 
   z = std::max(z, 16.f);
 
+  bool xsame = (std::abs(x - last_x) < 1e-3);
+  bool ysame = (std::abs(y - last_y) < 1e-3);
+  bool zsame = (std::abs(z - last_z) < 1e-3);
+
   // all are the same
-  if (x == last_x && y == last_y && z == last_z) {
+  if (xsame && ysame && zsame) {
     return;
   }
 
   // two are the same
-  if (x != last_x && y == last_y && z == last_z) {
+  if (!xsame && ysame && zsame) {
     last_x = x;
     output << "N" << instruction << "G01"
            << "X" << x << std::endl;
     return;
   }
 
-  if (x == last_x && y != last_y && z == last_z) {
+  if (xsame && !ysame && zsame) {
     last_y = y;
     output << "N" << instruction << "G01"
            << "Y" << y << std::endl;
     return;
   }
 
-  if (x == last_x && y == last_y && z != last_z) {
+  if (xsame && ysame && !zsame) {
     last_z = z;
     output << "N" << instruction << "G01"
            << "Z" << z << std::endl;
@@ -45,7 +49,7 @@ void out(std::ofstream &output, int instruction, float x, float y, float z) {
   }
 
   // one is the same
-  if (x == last_x && y != last_y && z != last_z) {
+  if (xsame && !ysame && !zsame) {
     last_y = y;
     last_z = z;
     output << "N" << instruction << "G01"
@@ -53,7 +57,7 @@ void out(std::ofstream &output, int instruction, float x, float y, float z) {
     return;
   }
 
-  if (x != last_x && y == last_y && z != last_z) {
+  if (!xsame && ysame && !zsame) {
     last_x = x;
     last_z = z;
     output << "N" << instruction << "G01"
@@ -61,7 +65,7 @@ void out(std::ofstream &output, int instruction, float x, float y, float z) {
     return;
   }
 
-  if (x != last_x && y != last_y && z == last_z) {
+  if (!xsame && !ysame && zsame) {
     last_x = x;
     last_y = y;
     output << "N" << instruction << "G01"
@@ -69,7 +73,7 @@ void out(std::ofstream &output, int instruction, float x, float y, float z) {
     return;
   }
 
-  if (x != last_x && y != last_y && z != last_z) {
+  if (!xsame && !ysame && !zsame) {
     last_x = x;
     last_y = y;
     last_z = z;
@@ -125,13 +129,16 @@ void generate_first_stage(float *data, int resolution, int size,
     }
 
     cached[{x, y}] = 16.f + curr_height;
-    return cached[{x, y}];
+    return cached[{x, y}] + 0.5f;
   };
 
-  float x{-halfsize - 50}, y{-halfsize - 50}, z{50};
+  float x{-halfsize - 50}, y{-halfsize - 50}, z{66.f};
 
   output.setf(std::ios::fixed, std::ios::floatfield);
   output.precision(3);
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << "Z" << 66.f << std::endl;
 
   out(output, instruction++, x, y, z);
 
@@ -166,6 +173,12 @@ void generate_first_stage(float *data, int resolution, int size,
     }
     out(output, instruction++, x, y, 0.3f + sample(8, x, y));
   }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 66.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
 
   output.close();
 }
@@ -279,7 +292,10 @@ void generate_second_stage(std::filesystem::path path) {
   output.open(path);
   int instruction = 1;
   auto halfsize = 75.f;
-  float x{-halfsize - 50}, y{-halfsize - 50}, z{50};
+  float x{-halfsize - 50}, y{-halfsize - 50}, z{66};
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << "Z" << 66.f << std::endl;
 
   out(output, instruction++, x, y, z);
 
@@ -355,10 +371,29 @@ void generate_second_stage(std::filesystem::path path) {
   for (int px = -75; px <= 75; px += 5) {
     // 1. jump to min y
     x = px;
-    y = y_values[px + 75].min;
+    y = y_values[px + 75].min - 2;
     z = 16;
 
     out(output, instruction++, x, y, z);
+
+    if (px + 80 < static_cast<int>(y_values.size())) {
+
+      auto nv = y_values[px + 80].min - 2;
+      auto av = (y + nv) / 2.f;
+
+      bool must_skip =
+          (av >= y_values[px + 76].min && av <= y_values[px + 76].max) ||
+          (av >= y_values[px + 77].min && av <= y_values[px + 77].max) ||
+          (av >= y_values[px + 78].min && av <= y_values[px + 78].max) ||
+          (av >= y_values[px + 79].min && av <= y_values[px + 79].max);
+
+      if (!must_skip) {
+        px += 5;
+        x = px;
+        y = y_values[px + 75].min - 2;
+        out(output, instruction++, x, y, z);
+      }
+    }
 
     y = -75;
 
@@ -378,10 +413,28 @@ void generate_second_stage(std::filesystem::path path) {
   for (int px = 75; px >= -75; px -= 5) {
     // 1. jump to min y
     x = px;
-    y = y_values[px + 75].max;
+    y = y_values[px + 75].max + 2;
     z = 16;
 
     out(output, instruction++, x, y, z);
+    if (px != -65 && px + 70 >= 0) {
+
+      auto nv = y_values[px + 70].max + 2;
+      auto av = (y + nv) / 2.f;
+
+      bool must_skip =
+          (av >= y_values[px + 74].min && av <= y_values[px + 74].max) ||
+          (av >= y_values[px + 73].min && av <= y_values[px + 73].max) ||
+          (av >= y_values[px + 72].min && av <= y_values[px + 72].max) ||
+          (av >= y_values[px + 71].min && av <= y_values[px + 71].max);
+
+      if (!must_skip) {
+        px -= 5;
+        x = px;
+        y = y_values[px + 75].max + 2;
+        out(output, instruction++, x, y, z);
+      }
+    }
 
     y = 75;
 
@@ -396,6 +449,12 @@ void generate_second_stage(std::filesystem::path path) {
   x = -halfsize - 50;
   y = -halfsize - 50;
   z = 16;
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 66.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
 
   output.close();
 }
@@ -657,7 +716,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       main_body_table[i].second >= 0.f && main_body_table[i].second <= 1.f) {
     auto s = main_body_sampler.sample(i / 199.f, main_body_table[i].first);
 
-    out(output, instruction++, s.x, -s.z, 50.f);
+    out(output, instruction++, s.x, -s.z, 66.f);
   }
 
   while (i < 200 && (main_body_table[i + 1].first >= 0.f &&
@@ -726,7 +785,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 50.f << std::endl;
+         << "Z" << 66.f << std::endl;
 
   output << "N" << instruction++ << "G01"
          << "X" << 0.f << "Y" << 0.f << std::endl;
@@ -737,7 +796,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
       main_body_table[i].second >= 0.f && main_body_table[i].second <= 1.f) {
     auto s = main_body_sampler.sample(1.f, main_body_table[i].first);
 
-    out(output, instruction++, s.x, -s.z, 50.f);
+    out(output, instruction++, s.x, -s.z, 66.f);
   }
 
   // between 171 and 170
@@ -877,7 +936,7 @@ void generate_main_body_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 50.f << std::endl;
+         << "Z" << 66.f << std::endl;
 
   output << "N" << instruction++ << "G01"
          << "X" << 0.f << "Y" << 0.f << std::endl;
@@ -1007,7 +1066,7 @@ void generate_front_detail(std::ofstream &output, int &instruction) {
       front_table[i].second >= 0.f && front_table[i].second <= 1.f) {
     auto s = front_sampler.sample(i / 99.f, front_table[i].first);
 
-    out(output, instruction++, s.x, -s.z, 50.f);
+    out(output, instruction++, s.x, -s.z, 66.f);
   }
 
   for (; i < bottommax; ++i) {
@@ -1068,7 +1127,7 @@ void generate_front_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 50.f << std::endl;
+         << "Z" << 66.f << std::endl;
 
   output << "N" << instruction++ << "G01"
          << "X" << 0.f << "Y" << 0.f << std::endl;
@@ -1320,7 +1379,7 @@ void generate_handle_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 50.f << std::endl;
+         << "Z" << 66.f << std::endl;
 
   output << "N" << instruction++ << "G01"
          << "X" << 0.f << "Y" << 0.f << std::endl;
@@ -1472,13 +1531,67 @@ void generate_hole_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 50.f << std::endl;
+         << "Z" << 66.f << std::endl;
 
   output << "N" << instruction++ << "G01"
          << "X" << 0.f << "Y" << 0.f << std::endl;
 }
 
-void finalize_intersections(std::ofstream &output, int &instruction) {}
+void finalize_intersections(std::ofstream &output, int &instruction) {
+  auto &reg = ecs::registry::get_registry();
+
+  std::vector<unsigned long> pi{
+      find_named_point("obwodka1"), find_named_point("obwodka2"),
+      find_named_point("obwodka3"), find_named_point("obwodka4"),
+      find_named_point("obwodka5"), find_named_point("obwodka6"),
+      find_named_point("obwodka7"), find_named_point("obwodka8"),
+  };
+
+  auto mill_between = [&](unsigned long p0, unsigned long p1) {
+    std::vector<glm::vec3> points;
+    for (unsigned long i = p0; i < p1; i = i + ((p0 < p1) ? 1 : -1)) {
+      auto trans = reg.get_component<transformation>(i).translation;
+      out(output, instruction++, trans.x, -trans.z, 12 + trans.y);
+    }
+  };
+
+  // first pair
+  auto trans1 = reg.get_component<transformation>(pi[0]).translation;
+  output << "N" << instruction++ << "G01"
+         << "X" << trans1.x << "Y" << -trans1.z << "Z" << 66.f << std::endl;
+  mill_between(pi[0], pi[1]);
+  output << "N" << instruction++ << "G01"
+         << "Z" << 66.f << std::endl;
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+  // second pair
+  auto trans2 = reg.get_component<transformation>(pi[2]).translation;
+  output << "N" << instruction++ << "G01"
+         << "X" << trans2.x << "Y" << -trans2.z << "Z" << 66.f << std::endl;
+  mill_between(pi[2], pi[3]);
+  output << "N" << instruction++ << "G01"
+         << "Z" << 66.f << std::endl;
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+  // third pair
+  auto trans3 = reg.get_component<transformation>(pi[4]).translation;
+  output << "N" << instruction++ << "G01"
+         << "X" << trans3.x << "Y" << -trans3.z << "Z" << 66.f << std::endl;
+  mill_between(pi[4], pi[5]);
+  output << "N" << instruction++ << "G01"
+         << "Z" << 66.f << std::endl;
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+  // fourth pair
+  auto trans4 = reg.get_component<transformation>(pi[6]).translation;
+  output << "N" << instruction++ << "G01"
+         << "X" << trans4.x << "Y" << -trans4.z << "Z" << 66.f << std::endl;
+  mill_between(pi[6], pi[7]);
+  output << "N" << instruction++ << "G01"
+         << "Z" << 66.f << std::endl;
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+}
 
 void generate_top_detail(std::ofstream &output, int &instruction) {
   auto &reg = ecs::registry::get_registry();
@@ -1820,7 +1933,7 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 50.f << std::endl;
+         << "Z" << 66.f << std::endl;
 
   output << "N" << instruction++ << "G01"
          << "X" << 0.f << "Y" << 0.f << std::endl;
@@ -1900,7 +2013,7 @@ void generate_top_detail(std::ofstream &output, int &instruction) {
   }
 
   output << "N" << instruction++ << "G01"
-         << "Z" << 50.f << std::endl;
+         << "Z" << 66.f << std::endl;
 
   output << "N" << instruction++ << "G01"
          << "X" << 0.f << "Y" << 0.f << std::endl;
@@ -1915,11 +2028,10 @@ void generate_third_stage(std::filesystem::path path) {
 
   output.open(path);
   int instruction = 1;
-  auto halfsize = 75.f;
-  float x{-halfsize - 50}, y{-halfsize - 50}, z{50};
+  float x{0}, y{0}, z{66};
 
   output << "N" << instruction++ << "G01"
-         << "X" << x << "Y" << y << "Z" << z << std::endl;
+         << "X" << x << "Y" << y << "Z" << 66.f << std::endl;
 
   x = 0.f;
   y = 0.f;
@@ -1928,12 +2040,129 @@ void generate_third_stage(std::filesystem::path path) {
          << "X" << x << "Y" << y << "Z" << z << std::endl;
 
   generate_top_detail(output, instruction);
-
   generate_main_body_detail(output, instruction);
   generate_front_detail(output, instruction);
   generate_hole_detail(output, instruction);
   generate_handle_detail(output, instruction);
   finalize_intersections(output, instruction);
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 66.f << std::endl;
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
+
+  output.close();
+}
+
+void generate_fourth_stage(std::filesystem::path path) {
+  //  R is 1.f
+  std::ofstream output;
+
+  output.setf(std::ios::fixed, std::ios::floatfield);
+  output.precision(3);
+
+  output.open(path);
+  int instruction = 1;
+  float x{0}, y{0}, z{66.f};
+
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << "Z" << 66.f << std::endl;
+
+  x = 0.f;
+  y = 0.f;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << x << "Y" << y << "Z" << z << std::endl;
+
+  // UKROP here
+  std::vector<glm::vec3> u_points{{-50.f, -45.f, 15.f},
+                                  {-50.f, -65.f, 15.f},
+                                  {-34.f, -65.f, 15.f},
+                                  {-34.f, -45.f, 15.f}};
+
+  std::vector<glm::vec3> k_points{
+      {-29.f, -45.f, 15.f}, {-29.f, -57.f, 15.f},
+      {-13.f, -45.f, 15.f}, {0.f, 0.f, 15.f}, // middle
+      {-13.f, -65.f, 15.f}, {0.f, 0.f, 15.f}, // middle
+      {-29.f, -57.f, 15.f}, {-29.f, -65.f, 15.f}};
+
+  k_points[5] = k_points[3] = glm::mix(k_points[1], k_points[2], 0.45);
+
+  std::vector<glm::vec3> r_points{{-8.f, -65.f, 15.f}, {-8.f, -45.f, 15.f},
+                                  {8.f, -45.f, 15.f},  {8.f, -55.f, 15.f},
+                                  {-8.f, -55.f, 15.f}, {8.f, -65.f, 15.f}};
+  std::vector<glm::vec3> o_points{{13.f, -45.f, 15.f},
+                                  {13.f, -65.f, 15.f},
+                                  {29.f, -65.f, 15.f},
+                                  {29.f, -45.f, 15.f},
+                                  {13.f, -45.f, 15.f}};
+
+  std::vector<glm::vec3> p_points{{34.f, -65.f, 15.f},
+                                  {34.f, -45.f, 15.f},
+                                  {50.f, -45.f, 15.f},
+                                  {50.f, -55.f, 15.f},
+                                  {34.f, -55.f, 15.f}};
+
+  // U
+  output << "N" << instruction++ << "G01"
+         << "X" << u_points[0].x << "Y" << u_points[0].y << std::endl;
+
+  for (auto &p : u_points) {
+    output << "N" << instruction++ << "G01"
+           << "X" << p.x << "Y" << p.y << "Z" << p.z << std::endl;
+  }
+
+  // K
+  output << "N" << instruction++ << "G01"
+         << "Z" << 20.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << k_points[0].x << "Y" << k_points[0].y << std::endl;
+
+  for (auto &p : k_points) {
+    output << "N" << instruction++ << "G01"
+           << "X" << p.x << "Y" << p.y << "Z" << p.z << std::endl;
+  }
+  // R
+  output << "N" << instruction++ << "G01"
+         << "Z" << 20.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << r_points[0].x << "Y" << r_points[0].y << std::endl;
+
+  for (auto &p : r_points) {
+    output << "N" << instruction++ << "G01"
+           << "X" << p.x << "Y" << p.y << "Z" << p.z << std::endl;
+  }
+
+  // O
+  output << "N" << instruction++ << "G01"
+         << "Z" << 20.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << o_points[0].x << "Y" << o_points[0].y << std::endl;
+
+  for (auto &p : o_points) {
+    output << "N" << instruction++ << "G01"
+           << "X" << p.x << "Y" << p.y << "Z" << p.z << std::endl;
+  }
+
+  // P
+  output << "N" << instruction++ << "G01"
+         << "Z" << 20.f << std::endl;
+
+  output << "N" << instruction++ << "G01"
+         << "X" << p_points[0].x << "Y" << p_points[0].y << std::endl;
+
+  for (auto &p : p_points) {
+    output << "N" << instruction++ << "G01"
+           << "X" << p.x << "Y" << p.y << "Z" << p.z << std::endl;
+  }
+
+  output << "N" << instruction++ << "G01"
+         << "Z" << 66.f << std::endl;
+  output << "N" << instruction++ << "G01"
+         << "X" << 0.f << "Y" << 0.f << std::endl;
 
   output.close();
 }

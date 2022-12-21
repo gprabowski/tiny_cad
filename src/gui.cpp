@@ -1205,7 +1205,7 @@ static void ShowExampleMenuFile() {
         "SaveModelChoice", "Choose Model Filename", ".json,", ".");
   }
 
-  if (ImGui::MenuItem("Generate Paths 1 & 2", "Ctrl+P")) {
+  if (ImGui::MenuItem("Generate Paths 1 & 2 & 4", "Ctrl+P")) {
     ImGuiFileDialog::Instance()->OpenDialog("GeneratePathsChoice12",
                                             "Choose Paths Filename", "", ".");
   }
@@ -1403,6 +1403,8 @@ void render_main_menu() {
       paths::generate_first_stage(pixels.data(), 1500, 150, p);
       p.replace_extension("f10");
       paths::generate_second_stage(p);
+      p.replace_extension("k01");
+      paths::generate_fourth_stage(p);
       ImGuiFileDialog::Instance()->Close();
 
       is.use_ortho = false;
@@ -1417,6 +1419,7 @@ void render_main_menu() {
       std::filesystem::path p = filePathName;
       p.replace_extension("k08");
       paths::generate_third_stage(p);
+
       ImGuiFileDialog::Instance()->Close();
     }
   }
@@ -1506,12 +1509,14 @@ void render_intersection_gui() {
       sampler first_sampler = tmp_first_sampler;
       first_sampler.sample = [&](float u, float v) {
         return tmp_first_sampler.sample(u, v) +
-               5.f * tmp_first_sampler.normal(u, v);
+               4.f * tmp_first_sampler.normal(u, v);
       };
+
       sampler tmp_second_sampler = get_sampler(second);
       sampler second_sampler = tmp_second_sampler;
       second_sampler.sample = [&](float u, float v) {
-        return tmp_second_sampler.sample(u, v);
+        return tmp_second_sampler.sample(u, v) +
+               4.f * tmp_second_sampler.normal(u, v);
       };
 
       auto res =
